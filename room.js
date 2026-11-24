@@ -3,7 +3,7 @@
   'use strict';
   var $=PP.$,esc=PP.esc,net=PP.net,sfx=PP.sfx,box=$('room-box');
   var ONLINE=[
-    {id:'fps',name:'Bunker 3D',desc:'Deathmatch entre vous, 3 minutes',min:2},
+    {id:'fps',name:'Bunker 3D',desc:'Battle royale, des bots complètent',min:1},
     {id:'sumo',name:'Sumo Arena',desc:'Pousse les autres dans le vide',min:2,max:4},
     {id:'foot',name:'Foot 2v2',desc:'Équipes mélangées, bots si besoin',min:2,max:4},
     {id:'kart',name:'Pixel Kart',desc:'Course de 3 tours',min:2,max:8},
@@ -14,9 +14,10 @@
     {id:'snake',name:'Paquet Snake',desc:'2 à 4 serpents',min:2,max:4}
   ];
 
-  var GN={fps:'Bunker 3D',sumo:'Sumo Arena',foot:'Foot 2v2',kart:'Pixel Kart',run:'Néon Rush',geo:'Devine où',imp:'Mot imposteur',prob:'Le plus probable',snake:'Paquet Snake'},curGame=null,lobby=PP.lobby;
+  var GN={'fps-br':'Bunker · battle royale',fps:'Bunker 3D',sumo:'Sumo Arena',foot:'Foot 2v2',kart:'Pixel Kart',run:'Néon Rush',geo:'Devine où',imp:'Mot imposteur',prob:'Le plus probable',snake:'Paquet Snake'},curGame=null,lobby=PP.lobby;
   function beat(){if(net.inRoom()&&net.isHost&&lobby)lobby.register({code:net.code,host:net.me.name,n:net.players.length,game:curGame})}
   setInterval(beat,8000);
+  PP.setRoomGame=function(g){curGame=g;beat()};
   function bar(){
     var rb=$('roombar');
     if(net.inRoom()){rb.hidden=false;$('roombar-txt').textContent='Salon '+net.code+' · '+net.players.length+' joueur'+(net.players.length>1?'s':'')}
