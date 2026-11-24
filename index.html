@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
-<link rel="stylesheet" href="style.css?v=3.1">
+<link rel="stylesheet" href="style.css?v=3.2">
 </head>
 <body>
 <header><div class="wrap">
@@ -24,35 +24,18 @@
 
 <!-- ================= MENU ================= -->
 <section class="view on" id="v-menu">
-  <div class="hero">
-    <div class="hero-txt">
-      <span class="eyebrow">Gratuit · sans compte · dans le navigateur</span>
-      <h1>Des jeux pour la pause,<br>seul ou entre potes.</h1>
-      <p class="lead">Sur un seul clavier à plusieurs, ou chacun sur son téléphone avec un code à 3 chiffres. Aucune installation.</p>
-      <div class="row"><button type="button" class="primary" data-go="room">Créer un salon</button><button type="button" class="ghost" data-go="join">J'ai un code</button></div>
+  <div class="topbar">
+    <div class="chips" id="chips" role="tablist">
+      <button type="button" class="chip on" data-f="all">Tous les jeux</button>
+      <button type="button" class="chip" data-f="pc">À plusieurs sur un PC</button>
+      <button type="button" class="chip" data-f="tel">Chacun son téléphone</button>
+      <button type="button" class="chip" data-f="solo">Solo</button>
+      <button type="button" class="chip" data-f="3d">3D</button>
     </div>
-    <button type="button" class="hero-card" data-go="fps" style="--c1:#1f2a44;--c2:#5b8cff"><span class="tag">Nouveau</span><span class="hc-icon" data-svg="gun"></span><b>Bunker 3D</b><span>Deathmatch, zombies ou battle royale</span></button>
+    <div class="room-cta"><button type="button" class="primary" data-go="room">Créer un salon</button><button type="button" data-go="join">Rejoindre</button></div>
   </div>
-
-  <h2 class="sub">Sur un même PC</h2>
-  <div class="games">
-    <button type="button" class="gcard" data-go="sumo" style="--c1:#2a1f44;--c2:#a36bff"><span class="g-icon" data-svg="sumo"></span><div class="txt"><h3>Sumo Arena <em>3D</em></h3><p>Pousse les autres hors de la plateforme. Jusqu'à 4 sur un clavier, bots pour compléter.</p><small>1 à 4 joueurs · 3e personne</small></div></button>
-    <button type="button" class="gcard" data-go="foot" style="--c1:#143322;--c2:#35d07f"><span class="g-icon" data-svg="ball"></span><div class="txt"><h3>Foot 2v2 <em>3D</em></h3><p>Deux équipes, une balle, deux minutes. Fonce dans la balle, frappe fort, marque.</p><small>1 à 4 joueurs · 3e personne</small></div></button>
-    <button type="button" class="gcard" data-go="kart" style="--c1:#3a1f14;--c2:#ff8a3d"><span class="g-icon" data-svg="kart"></span><div class="txt"><h3>Pixel Kart</h3><p>Course en vue arrière contre 5 karts. Solo ou à 2 en écran partagé.</p><small>1 à 2 joueurs · 3e personne</small></div></button>
-    <button type="button" class="gcard" data-go="snake" style="--c1:#113322;--c2:#3cff6e"><span class="g-icon" data-svg="snake"></span><div class="txt"><h3>Paquet Snake</h3><p>Solo, duel sur le même clavier, ou jusqu'à 4 en ligne dans un salon.</p><small>1 à 4 joueurs</small></div></button>
-  </div>
-
-  <h2 class="sub">Chacun sur son téléphone</h2>
-  <div class="games">
-    <button type="button" class="gcard" data-go="imp" style="--c1:#3a1420;--c2:#ff3b6b"><span class="g-icon" data-svg="spy"></span><div class="txt"><h3>Mot imposteur</h3><p>Tout le monde a le même mot… sauf l'imposteur. Et Mr White n'en a aucun.</p><small>3 à 12 joueurs · 1 PC ou en ligne</small></div></button>
-    <button type="button" class="gcard" data-go="prob" style="--c1:#3a1440;--c2:#ff5fd2"><span class="g-icon" data-svg="hand"></span><div class="txt"><h3>Le plus probable</h3><p>« Qui est le plus susceptible de… » Tout le monde vote, les résultats piquent.</p><small>3 à 12 joueurs · en ligne</small></div></button>
-    <button type="button" class="gcard" data-go="geo" style="--c1:#0f2a3a;--c2:#36d6c3"><span class="g-icon" data-svg="globe"></span><div class="txt"><h3>Devine où <em>3D</em></h3><p>Lâché dans une ville en 3D sans aucun nom. Explore, puis pose ton point. Le plus proche gagne.</p><small>1 à 12 joueurs</small></div></button>
-  </div>
-
-  <h2 class="sub">En solo</h2>
-  <div class="games">
-    <button type="button" class="gcard" data-go="fps" style="--c1:#1f2a44;--c2:#5b8cff"><span class="g-icon" data-svg="gun"></span><div class="txt"><h3>Bunker 3D</h3><p>FPS : deathmatch, vagues de zombies ou battle royale avec zone qui rétrécit.</p><small>1 joueur · 3 modes</small></div></button>
-    <button type="button" class="gcard" data-go="run" style="--c1:#1a1f3a;--c2:#7c8cff"><span class="g-icon" data-svg="run"></span><div class="txt"><h3>Néon Rush</h3><p>Fonce dans la ville de nuit : change de couloir, saute et glisse sous les obstacles.</p><small>1 joueur · 3e personne</small></div></button>
+  <div class="tiles" id="tiles">
+<button type="button" class="tile big" data-go="fps" data-cat="solo 3d"><img src="thumb-fps.jpg?v=3.2" alt="" loading="lazy"><span class="tile-badges"><span>1 joueur</span><span class="b3">FPS</span></span><span class="tile-info"><b>Bunker 3D</b><small>Deathmatch, zombies, battle royale</small></span><span class="tile-play">Jouer</span></button><button type="button" class="tile big" data-go="sumo" data-cat="pc 3d"><img src="thumb-sumo.jpg?v=3.2" alt="" loading="lazy"><span class="tile-badges"><span>1-4 joueurs</span><span class="b3">3D</span></span><span class="tile-info"><b>Sumo Arena</b><small>Pousse-les tous dans le vide</small></span><span class="tile-play">Jouer</span></button><button type="button" class="tile" data-go="foot" data-cat="pc 3d"><img src="thumb-foot.jpg?v=3.2" alt="" loading="lazy"><span class="tile-badges"><span>1-4 joueurs</span><span class="b3">3D</span></span><span class="tile-info"><b>Foot 2v2</b><small>Bleus contre rouges, 2 minutes</small></span><span class="tile-play">Jouer</span></button><button type="button" class="tile" data-go="kart" data-cat="pc solo"><img src="thumb-kart.jpg?v=3.2" alt="" loading="lazy"><span class="tile-badges"><span>1-2 joueurs</span></span><span class="tile-info"><b>Pixel Kart</b><small>Course, boosts, écran partagé</small></span><span class="tile-play">Jouer</span></button><button type="button" class="tile" data-go="imp" data-cat="tel pc"><img src="thumb-imp.jpg?v=3.2" alt="" loading="lazy"><span class="tile-badges"><span>3-12 joueurs</span></span><span class="tile-info"><b>Mot imposteur</b><small>Démasque l'imposteur et Mr White</small></span><span class="tile-play">Jouer</span></button><button type="button" class="tile" data-go="geo" data-cat="tel solo 3d"><img src="thumb-geo.jpg?v=3.2" alt="" loading="lazy"><span class="tile-badges"><span>1-12 joueurs</span><span class="b3">3D</span></span><span class="tile-info"><b>Devine où</b><small>Ville en 3D, devine où tu es</small></span><span class="tile-play">Jouer</span></button><button type="button" class="tile" data-go="prob" data-cat="tel"><img src="thumb-prob.jpg?v=3.2" alt="" loading="lazy"><span class="tile-badges"><span>3-12 joueurs</span></span><span class="tile-info"><b>Le plus probable</b><small>Votes entre potes, ça pique</small></span><span class="tile-play">Jouer</span></button><button type="button" class="tile" data-go="snake" data-cat="pc tel solo"><img src="thumb-snake.jpg?v=3.2" alt="" loading="lazy"><span class="tile-badges"><span>1-4 joueurs</span></span><span class="tile-info"><b>Paquet Snake</b><small>Duel sur un clavier ou en ligne</small></span><span class="tile-play">Jouer</span></button><button type="button" class="tile wide" data-go="run" data-cat="solo"><img src="thumb-run.jpg?v=3.2" alt="" loading="lazy"><span class="tile-badges"><span>1 joueur</span></span><span class="tile-info"><b>Néon Rush</b><small>Course sans fin dans la ville</small></span><span class="tile-play">Jouer</span></button>
   </div>
 </section>
 
@@ -211,20 +194,20 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
-<script src="core.js?v=3.1"></script>
-<script src="sfx.js?v=3.1"></script>
-<script src="net.js?v=3.1"></script>
-<script src="room.js?v=3.1"></script>
-<script src="imposteur.js?v=3.1"></script>
-<script src="probable.js?v=3.1"></script>
-<script src="snake.js?v=3.1"></script>
-<script src="fps.js?v=3.1"></script>
-<script src="sumo.js?v=3.1"></script>
-<script src="foot.js?v=3.1"></script>
-<script src="kart.js?v=3.1"></script>
-<script src="rush.js?v=3.1"></script>
-<script src="geo-data.js?v=3.1"></script>
-<script src="geo.js?v=3.1"></script>
-<script src="boot.js?v=3.1"></script>
+<script src="core.js?v=3.2"></script>
+<script src="sfx.js?v=3.2"></script>
+<script src="net.js?v=3.2"></script>
+<script src="room.js?v=3.2"></script>
+<script src="imposteur.js?v=3.2"></script>
+<script src="probable.js?v=3.2"></script>
+<script src="snake.js?v=3.2"></script>
+<script src="fps.js?v=3.2"></script>
+<script src="sumo.js?v=3.2"></script>
+<script src="foot.js?v=3.2"></script>
+<script src="kart.js?v=3.2"></script>
+<script src="rush.js?v=3.2"></script>
+<script src="geo-data.js?v=3.2"></script>
+<script src="geo.js?v=3.2"></script>
+<script src="boot.js?v=3.2"></script>
 </body>
 </html>

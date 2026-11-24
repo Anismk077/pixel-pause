@@ -55,6 +55,7 @@ window.PP=(function(){
     globe:'<svg viewBox="0 0 64 64" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round"><circle cx="32" cy="32" r="22"/><path d="M10 32h44M32 10c-8 8-8 36 0 44M32 10c8 8 8 36 0 44M14 20h36M14 44h36"/></svg>',
     run:'<svg viewBox="0 0 64 64" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="40" cy="12" r="5"/><path d="M26 28l10-6 8 8 8-2M36 22l-6 14 8 6-4 14M30 36l-8 4-6 10"/></svg>'
   };
+  (function(){var ch=$('chips');if(!ch)return;ch.addEventListener('click',function(e){var b=e.target.closest('[data-f]');if(!b)return;ch.querySelectorAll('.chip').forEach(function(x){x.classList.toggle('on',x===b)});var f=b.dataset.f;$('tiles').classList.toggle('filtered',f!=='all');document.querySelectorAll('#tiles .tile').forEach(function(t,i){var ok=f==='all'||t.dataset.cat.split(' ').indexOf(f)>-1;t.classList.toggle('hide',!ok);t.classList.toggle('big',f==='all'&&i<2)})})})();
   document.querySelectorAll('[data-svg]').forEach(function(el){el.innerHTML=SVG[el.dataset.svg]||''});
 
 
