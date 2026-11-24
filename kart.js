@@ -84,7 +84,7 @@
     if(mp.on()){var rk=karts.slice().sort(function(a,b){if(a.done&&b.done)return a.done-b.done;if(a.done)return -1;if(b.done)return 1;return b.prog-a.prog});msg=rk.map(function(q,i){return (i+1)+'. '+q.name+(q.done?' ('+PP.fmtTime(q.done)+')':'')}).join(' · ');$('kt-title').textContent=rk[0]===k?'Victoire !':rk[0].name+' gagne la course'}
     else if(humans===2){var a=karts[0],b=karts[1];msg='J1 : '+a.pos+(a.pos===1?'er':'e')+(a.done?' en '+PP.fmtTime(a.done):'')+' · J2 : '+b.pos+(b.pos===1?'er':'e')+(b.done?' en '+PP.fmtTime(b.done):'');$('kt-title').textContent=(a.done&&(!b.done||a.done<b.done))?'J1 gagne le duel !':'J2 gagne le duel !'}
     else{msg=k.pos+(k.pos===1?'er':'e')+' sur 6 en '+PP.fmtTime(k.done||time)+'.';if(k.done&&(!best||ms<best)){best=ms;PP.store('kt-best',ms);$('kt-best').textContent=PP.fmtTime(ms/1000);msg+=' Meilleur temps !'}$('kt-title').textContent=k.pos===1?'Victoire !':'Arrivée'}
-    sfx.play(k.pos===1?'win':'lose');
+    sfx.play(k.pos===1?'win':'lose');if(k.pos===1)PP.stat('kart','win');
     $('kt-msg').innerHTML=PP.esc(msg)+'<br>Tours J1 : '+k.laps.map(function(t){return PP.fmtTime(t)+'.'+Math.floor((t%1)*10)}).join(' · ');
     $('kt-start').textContent='Rejouer';$('kt-ov').hidden=false;draw();
   }

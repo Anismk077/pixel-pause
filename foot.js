@@ -107,7 +107,7 @@
     running=false;cancelAnimationFrame(raf);
     var t=score[0]===score[1]?'Match nul '+score[0]+' - '+score[1]:(score[0]>score[1]?'Les Bleus gagnent ':'Les Rouges gagnent ')+score[0]+' - '+score[1];
     $('foot-title').textContent=t;$('foot-msg').textContent=humans===1?'Bleus : toi + un bot. Rouges : deux bots.':'Bleus : J1'+(humans>=3?' + J3':' + bot')+' · Rouges : J2'+(humans>=4?' + J4':' + bot');
-    $('foot-start').textContent='Rejouer';$('foot-ov').hidden=false;sfx.play(score[0]>score[1]?'win':'lose');
+    $('foot-start').textContent='Rejouer';$('foot-ov').hidden=false;sfx.play(score[0]>score[1]?'win':'lose');if(score[0]>score[1])PP.stat('foot','win');
     if(mp.on()){$('foot-msg').textContent='Bleus : '+players.filter(function(q){return q.team===0}).map(function(q){return q.name}).join(' + ')+' · Rouges : '+players.filter(function(q){return q.team===1}).map(function(q){return q.name}).join(' + ');if(net.isHost)net.broadcast({t:'foot-end',title:$('foot-title').textContent,msg:$('foot-msg').textContent})}
   }
   function overlayText(){

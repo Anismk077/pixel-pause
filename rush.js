@@ -129,10 +129,10 @@
     $('rn-start').textContent='Recourir';$('rn-ov').hidden=false;$('rn-start').focus();
     if(mp.on()){net.relay({g:'run',d:score,dead:true});$('rn-start').hidden=!net.isHost;$('rn-start').textContent='Relancer pour tout le salon';onlineEnd()}
   }
-  function onlineEnd(){
+  var won1=0;function onlineEnd(){
     var rows=board(),allDead=rows.every(function(r){return r.dead});
     if(!dead)return;
-    $('rn-title').textContent=allDead?(rows[0].me?'Tu gagnes la course !':rows[0].n+' gagne la course'):'Crash ! On attend les autres';
+    $('rn-title').textContent=allDead?(rows[0].me?'Tu gagnes la course !':rows[0].n+' gagne la course'):'Crash ! On attend les autres';if(allDead&&rows[0].me&&!won1){won1=1;PP.stat('run','win')}
     $('rn-msg').innerHTML=rows.map(function(r,i){return (i+1)+'. '+PP.esc(r.n)+' — '+r.s+(r.dead?'':' (en course)')}).join('<br>');
   }
   function loop(t){var dt=last?Math.min(.05,(t-last)/1000):0;last=t;if(running){step(dt);if(running)renderer.render(scene,camera);raf=requestAnimationFrame(loop)}}
@@ -141,7 +141,7 @@
     if(m.t==='run-go'&&!net.isHost){start();return}
     if(m.t==='rel'&&m.d&&m.d.g==='run'){var pl=net.players.filter(function(q){return q.id===m.from})[0];others[m.from]={n:pl?pl.name:'?',s:m.d.d,dead:m.d.dead};board();if(dead)onlineEnd()}
   });
-  function start(){if(!init())return;if(mp.on()){others={};net.players.forEach(function(q){if(q.id!==net.me.id)others[q.id]={n:q.name,s:0,dead:false}});if(net.isHost)net.broadcast({t:'run-go'})}player.rotation.x=0;reset();$('rn-ov').hidden=true;running=true;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);sfx.play('go')}
+  function start(){won1=0;if(!init())return;if(mp.on()){others={};net.players.forEach(function(q){if(q.id!==net.me.id)others[q.id]={n:q.name,s:0,dead:false}});if(net.isHost)net.broadcast({t:'run-go'})}player.rotation.x=0;reset();$('rn-ov').hidden=true;running=true;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);sfx.play('go')}
   function key(k){if(!running)return;if(k==='L')lane=Math.max(0,lane-1);if(k==='R')lane=Math.min(2,lane+1);if(k==='U'&&jumpT<=0){jumpT=.62;slideT=0;sfx.play('ui')}if(k==='D'){slideT=.7;jumpT=0}}
   $('rn-start').addEventListener('click',start);
   $('rn-pad').addEventListener('click',function(e){var b=e.target.closest('[data-k]');if(b)key(b.dataset.k)});

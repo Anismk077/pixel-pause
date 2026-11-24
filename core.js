@@ -3,8 +3,12 @@ window.PP=(function(){
   'use strict';
   var $=function(id){return document.getElementById(id)};
   function esc(t){var d=document.createElement('div');d.textContent=t==null?'':String(t);return d.innerHTML}
-  function store(k,v){try{if(v===undefined)return +localStorage.getItem('pp-'+k)||0;localStorage.setItem('pp-'+k,v)}catch(e){return 0}}
-  function text(k,v){try{if(v===undefined)return localStorage.getItem('pp-'+k)||'';localStorage.setItem('pp-'+k,v)}catch(e){return ''}}
+  /* Profils : chaque compte a ses propres records, stats, skins et sauvegardes (préfixe des clés) */
+  var PROF=(function(){try{return localStorage.getItem('pp-profile')||''}catch(e){return ''}})();
+  function key(k){return PROF?'pp-p-'+PROF+'-'+k:'pp-'+k}
+  function store(k,v){try{if(v===undefined)return +localStorage.getItem(key(k))||0;localStorage.setItem(key(k),v)}catch(e){return 0}}
+  function text(k,v){try{if(v===undefined)return localStorage.getItem(key(k))||'';localStorage.setItem(key(k),v)}catch(e){return ''}}
+  function stat(g,f,n){store('st-'+g+'-'+f,store('st-'+g+'-'+f)+(n==null?1:n))}
   function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
   function pick(a){return a[Math.floor(Math.random()*a.length)]}
   function pad6(n){return ('000000'+Math.max(0,Math.floor(n))).slice(-6)}
@@ -20,6 +24,7 @@ window.PP=(function(){
     try{history.replaceState(null,'',v==='menu'?location.pathname:'#'+v)}catch(e){}
   }
   document.addEventListener('click',function(e){var b=e.target.closest('[data-go]');if(b)go(b.dataset.go)});
+  document.addEventListener('click',function(e){var b=e.target.closest('button[id$="-start"],#sv-cont');if(!b)return;var v=b.closest('.view');if(v&&v.id!=='v-account')stat(v.id.slice(2),'parties')},true);
   document.addEventListener('keydown',function(e){
     if(e.key==='Enter'&&e.target.classList&&e.target.classList.contains('logo'))return go('menu');
     if(e.key==='Enter'&&!/INPUT|TEXTAREA|SELECT|BUTTON/.test(e.target.tagName)){var v=document.querySelector('.view.on .overlay:not([hidden]) button');if(v){v.click();e.preventDefault()}}
@@ -76,7 +81,7 @@ window.PP=(function(){
   refreshHi();
 
   /* ---------- Pseudo ---------- */
-  function myName(){return text('name')||''}
+  function myName(){return text('name')||PROF||''}
   function setName(n){text('name',(n||'').trim().slice(0,14))}
 
   /* ---------- Clavier / pad : touches tenues ---------- */
@@ -122,5 +127,5 @@ window.PP=(function(){
   }
 
 
-  return {toast:toast,avatar:avatar,$:$,esc:esc,store:store,text:text,shuffle:shuffle,pick:pick,pad6:pad6,fmtTime:fmtTime,go:go,games:games,icon:icon,refreshHi:refreshHi,myName:myName,setName:setName,held:held,cur:function(){return current}};
+  return {key:key,stat:stat,profile:function(){return PROF},toast:toast,avatar:avatar,$:$,esc:esc,store:store,text:text,shuffle:shuffle,pick:pick,pad6:pad6,fmtTime:fmtTime,go:go,games:games,icon:icon,refreshHi:refreshHi,myName:myName,setName:setName,held:held,cur:function(){return current}};
 })();

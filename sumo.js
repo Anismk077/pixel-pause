@@ -94,7 +94,7 @@
   }
   function end(){
     running=false;cancelAnimationFrame(raf);
-    var w=players.slice().sort(function(a,b){return b.score-a.score})[0];
+    var w=players.slice().sort(function(a,b){return b.score-a.score})[0];if(w&&!w.bot&&(w===players[0]||w.name===PP.net.me.name))PP.stat('sumo','win');
     $('sumo-title').textContent=w.bot?'Les bots gagnent…':w.name+' remporte le match !';
     $('sumo-msg').textContent=players.map(function(p){return p.name+' '+p.score}).join(' · ');
     $('sumo-start').textContent='Rejouer';$('sumo-ov').hidden=false;

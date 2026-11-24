@@ -491,3 +491,23 @@ footer .wrap{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 /* v4.4 : plus de liste à droite, le sac suffit */
 .sv-inv{display:none}
 .sv-pops{bottom:120px}
+/* v4.5 Comptes et stats */
+.acc-top{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:flex-end;border-bottom:2px solid var(--ink,#141210);padding-bottom:18px;margin-bottom:18px}
+.acc-name{font:400 clamp(40px,7vw,72px)/1 'Anton',sans-serif;letter-spacing:.01em}
+.acc-big{display:flex;gap:10px}.acc-big div{background:#141210;color:#f1ece2;padding:10px 16px;min-width:110px}.acc-big b{display:block;font:400 34px/1 'Anton',sans-serif}.acc-big span{font:600 11px 'IBM Plex Mono',monospace;opacity:.75}
+.acc-table{border:2px solid #141210;margin:10px 0 22px;background:#fff}
+.acc-row{display:grid;grid-template-columns:1.6fr .7fr .8fr 1.6fr;gap:8px;padding:9px 12px;border-top:1px solid rgba(20,18,16,.15);font:500 14px 'Inter Tight',sans-serif;animation:slotIn .3s ease both}
+.acc-row.head{border-top:0;background:#141210;color:#f1ece2;font:700 11px 'IBM Plex Mono',monospace;letter-spacing:.08em;text-transform:uppercase}
+.acc-row span:nth-child(2),.acc-row span:nth-child(3){font-family:'IBM Plex Mono',monospace;font-weight:600}
+.acc-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+#v-account .panel{background:#fff;border:2px solid #141210;padding:16px;box-shadow:5px 5px 0 #141210}
+#v-account input,#v-account textarea{width:100%;box-sizing:border-box;border:2px solid #141210;padding:9px 10px;font:500 14px 'IBM Plex Mono',monospace;background:#f1ece2;color:#141210}
+#v-account textarea{margin-top:10px;font-size:11px}
+#v-account .panel button[id=acc-create]{margin-top:12px}
+.acc-list{display:grid;gap:6px}.acc-item{display:flex;align-items:center;gap:8px;border:2px solid #141210;padding:6px 8px}.acc-item b{flex:1}.acc-item small{font:600 10px 'IBM Plex Mono',monospace;opacity:.6}.acc-item .tag{background:#e2361b;color:#fff;font:700 10px 'IBM Plex Mono',monospace;padding:3px 6px}
+.acc-item.on{background:#fff3d6}
+@media (max-width:700px){.acc-cols{grid-template-columns:1fr}.acc-row{grid-template-columns:1.3fr .6fr .7fr 1.2fr;font-size:12px}}
+/* v4.5 coffres */
+.sv-chest{width:min(92%,560px)}
+.ch-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:10px}.ch-grid.small{grid-template-columns:repeat(8,1fr)}
+.ch-grid .iv-slot.use:hover{background:#d8f0c0}

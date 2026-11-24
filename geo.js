@@ -231,7 +231,7 @@
     $('geo-res').innerHTML=h;
     if(isHost)$('geo-next').onclick=hostNext;
   }
-  function endHtml(rows){return '<div class="result"><h3>Classement</h3><p class="muted">Un point par manche gagnée.</p>'+(rows.length?rows.map(function(r,i){return '<div class="bar"><span>'+(i+1)+'. '+esc(r.name)+'</span><i style="width:'+(r.n*40)+'px;background:var(--y)"></i><span>'+r.n+'</span></div>'}).join(''):'<p>Personne n\'a marqué.</p>')}
+  function endHtml(rows){if(rows.length&&rows[0].name===net.me.name&&rows[0].n>0)PP.stat('geo','win');return '<div class="result"><h3>Classement</h3><p class="muted">Un point par manche gagnée.</p>'+(rows.length?rows.map(function(r,i){return '<div class="bar"><span>'+(i+1)+'. '+esc(r.name)+'</span><i style="width:'+(r.n*40)+'px;background:var(--y)"></i><span>'+r.n+'</span></div>'}).join(''):'<p>Personne n\'a marqué.</p>')}
 
   function listen(){
     if(sub)return;

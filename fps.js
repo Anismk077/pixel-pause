@@ -23,8 +23,8 @@
   var CH_SKINS=[{n:'Commando',c:0x56643a,p:0},{n:'Urbain',c:0x3a3f4a,p:0},{n:'Désert',c:0xb89a6a,p:30},{n:'Neige',c:0xe6ebf0,p:60},{n:'Néon',c:0xe2361b,p:120},{n:'Or',c:0xd4a32a,p:250}];
   var GUN_SKINS=[{n:'Acier',c:0x2b2b30,p:0},{n:'Sable',c:0x9c8659,p:0},{n:'Camo',c:0x4f5d33,p:40},{n:'Rouge',c:0xc22d16,p:80},{n:'Glace',c:0x9fd0e6,p:120},{n:'Or',c:0xd4a32a,p:200}];
   var MAPS={bunker:'Bunker',entrepot:'Entrepôt',village:'Village'};
-  var skins=(function(){try{var s=JSON.parse(localStorage.getItem('pp-fps-skins'));if(s&&s.owned)return s}catch(e){}return {owned:['c0','c1','g0','g1'],ch:0,gun:0}})();
-  function saveSkins(){try{localStorage.setItem('pp-fps-skins',JSON.stringify(skins))}catch(e){}}
+  var skins=(function(){try{var s=JSON.parse(localStorage.getItem(PP.key('fps-skins')));if(s&&s.owned)return s}catch(e){}return {owned:['c0','c1','g0','g1'],ch:0,gun:0}})();
+  function saveSkins(){try{localStorage.setItem(PP.key('fps-skins'),JSON.stringify(skins))}catch(e){}}
   function coins(v){if(v===undefined)return PP.store('fps-coins');PP.store('fps-coins',v)}
 
   /* ---------- Cartes ---------- */
@@ -455,7 +455,7 @@
     else if(zone){var a=pathDir(P,zone.x,zone.z);if(Math.hypot(P.x-zone.x,P.z-zone.z)>zone.target*.6){P.yaw=Math.atan2(-Math.sin(a),-Math.cos(a));keys.F=true}}
   }
   function endRound(w){
-    var me=net.me.name||'Toi',won=w===me&&!dead;
+    var me=net.me.name||'Toi',won=w===me&&!dead;if(won)PP.stat('fps','win');
     if(!dead||won){var place=won?1:aliveCount();var b=PP.store('fps-br');if(!b||place<b)PP.store('fps-br',place)}
     sfx.play(won?'win':'lose');
     if(online){center((won?'VICTOIRE ! ':w+' GAGNE LA MANCHE. ')+'NOUVELLE MANCHE DANS 8 S');addFeed(w+' gagne la manche');sys(w+' gagne la manche')}
