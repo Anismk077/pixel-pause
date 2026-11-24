@@ -392,3 +392,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .rr-info b{display:block;font-size:17px}.rr-info small{font:400 13px var(--mono);color:var(--mute)}
 .rooms-empty{border-top:1.5px solid var(--line);border-bottom:1.5px solid var(--line);padding:16px 0;margin:0}
 @media (max-width:560px){.room-row{grid-template-columns:auto 1fr}.room-row button{grid-column:1/-1}}
+/* v3.7 Devine où : vue de rue 360° */
+#geo-3d canvas{display:block;width:100%;height:100%;touch-action:none}
+#geo-home{background:#f1ece2;color:#141210;border:2px solid #141210;font:600 12px/1 'IBM Plex Mono',monospace;padding:7px 10px;cursor:pointer;box-shadow:3px 3px 0 #141210}
+#geo-home:hover{background:#e2361b;color:#f1ece2}
