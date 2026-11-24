@@ -577,3 +577,13 @@ footer .wrap{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 @keyframes conf{to{transform:translateY(600px) rotate(720deg);opacity:.2}}
 @media (max-width:700px){.pi-grid{grid-template-columns:repeat(2,1fr)}.pt-big b{font-size:24px}}
 .pa-top{justify-content:flex-start;gap:8px}.pt-big{margin-left:auto}
+/* v4.9 roulette des épreuves */
+.pa-roul{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);background:#141210;color:#f1ece2;padding:16px 0 14px;z-index:5;text-align:center;animation:slotIn .3s ease both;border-top:4px solid #e2361b;border-bottom:4px solid #e2361b}
+.pa-roul .lbl{color:#d4a32a}
+.ro-win{position:relative;overflow:hidden;margin:10px 0;height:150px}
+.ro-strip{display:flex;position:absolute;left:0;top:10px;will-change:transform}
+.ro-card{flex:0 0 140px;margin:0 5px;height:128px;background:var(--c);border:3px solid #f1ece2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#141210;transition:transform .3s}
+.ro-card i{font-style:normal;font-size:34px;line-height:1;color:#141210}.ro-card b{font:400 19px/1 'Anton',sans-serif;letter-spacing:.02em}.ro-card small{font:700 10px 'IBM Plex Mono',monospace;text-transform:uppercase;opacity:.75}
+.ro-card.on{transform:scale(1.12);box-shadow:0 0 0 4px #d4a32a,0 0 40px #d4a32a}
+.ro-mark{position:absolute;left:50%;top:0;bottom:0;width:4px;margin-left:-2px;background:#e2361b;box-shadow:0 0 0 2px #141210}
+.ro-d{margin:0;font:500 14px 'Inter Tight',sans-serif;min-height:20px}.ro-d b{color:#d4a32a;font:400 20px 'Anton',sans-serif;letter-spacing:.02em}
