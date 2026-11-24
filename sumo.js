@@ -1,7 +1,7 @@
 /* Pixel Pause — Sumo Arena : 3D (three.js), 1 à 4 joueurs sur un clavier, pousse les autres hors de la plateforme */
 (function(){
   'use strict';
-  var $=PP.$,sfx=PP.sfx,cv=$('sumo-cv');
+  var $=PP.$,sfx=PP.sfx,net=PP.net,mp=PP.mp,cv=$('sumo-cv'),remote={},guestRaf=0,state=null,sendT=0;
   var COLS=[0x3cff6e,0x3fa9ff,0xff5fd2,0xffb02e],CSS=['#3cff6e','#3fa9ff','#ff5fd2','#ffb02e'],NAMES=['J1','J2','J3','J4'];
   var renderer,scene,camera,platform,players=[],keys={},humans=1,running=false,raf=0,last=0,R,roundT,between=0,round=0,ready=false,msgT=0,msgTxt='';
   var KEYMAP={z:'1U',w:'1U',s:'1D',q:'1L',a:'1L',d:'1R',' ':'1X',ArrowUp:'2U',ArrowDown:'2D',ArrowLeft:'2L',ArrowRight:'2R',Enter:'2X',i:'3U',k:'3D',j:'3L',l:'3R',o:'3X','8':'4U','5':'4D','4':'4L','6':'4R','0':'4X'};
@@ -26,7 +26,7 @@
     [-.25,.25].forEach(function(x){var e=new THREE.Mesh(eyeG,eyeM);e.position.set(x,.2,.6);g.add(e);var p=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),pupM);p.position.set(x,.2,.72);g.add(p)});
     var band=new THREE.Mesh(new THREE.TorusGeometry(.72,.06,8,32),new THREE.MeshStandardMaterial({color:bot?0x444455:0xffffff}));band.rotation.x=Math.PI/2;band.position.y=-.1;g.add(band);
     scene.add(g);
-    return {i:i,bot:bot,mesh:g,x:0,z:0,vx:0,vz:0,y:0,vy:0,alive:true,dash:0,dashCd:0,face:0,score:0,aiT:0,name:bot?'Bot '+(i+1):NAMES[i]};
+    return {i:i,bot:bot,mesh:g,x:0,z:0,vx:0,vz:0,y:0,vy:0,alive:true,dash:0,dashCd:0,face:0,score:0,aiT:0,name:bot?'Bot '+(i+1):(mp.on()&&net.players[i]?net.players[i].name:NAMES[i])};
   }
   function setup(){
     players.forEach(function(p){scene.remove(p.mesh)});players=[];
@@ -57,9 +57,9 @@
         else if(tgt){var ang=Math.atan2(tgt.z-p.z,tgt.x-p.x)+Math.sin(roundT*1.3+p.i)*.5;ix=Math.cos(ang);iz=Math.sin(ang);
           var od=Math.hypot(tgt.x,tgt.z);if(bd<2.6&&od>R-3.5&&dc<R-3&&p.dashCd<=0&&Math.random()<.6)dash=true}
       }else{
-        var k=String(p.i+1);
-        if(keys[k+'U'])iz-=1;if(keys[k+'D'])iz+=1;if(keys[k+'L'])ix-=1;if(keys[k+'R'])ix+=1;
-        if(keys[k+'X']&&p.dashCd<=0)dash=true;
+        var k=String(p.i+1),inp=mp.on()?(p.i===0?mp.localInput(keys):(remote[p.i]||{})):{U:keys[k+'U'],D:keys[k+'D'],L:keys[k+'L'],R:keys[k+'R'],X:keys[k+'X']};
+        if(inp.U)iz-=1;if(inp.D)iz+=1;if(inp.L)ix-=1;if(inp.R)ix+=1;
+        if(inp.X&&p.dashCd<=0)dash=true;
       }
       var len=Math.hypot(ix,iz);if(len>0){ix/=len;iz/=len;p.face=Math.atan2(ix,iz)}
       var acc=p.dash>0?10:30;
@@ -84,6 +84,7 @@
       var s=p.dash>0?1.15:1;p.mesh.scale.set(s,1/s,s);
     });
     msgT=Math.max(0,msgT-dt);
+    if(mp.on()&&net.isHost){sendT-=dt;if(sendT<=0){sendT=.05;net.broadcast({t:'sumo-s',p:players.map(function(q){return [+q.x.toFixed(2),+q.y.toFixed(2),+q.z.toFixed(2),+q.face.toFixed(2),q.alive?1:0,q.dash>0?1:0,q.score]}),R:+R.toFixed(2),m:msgT>0?msgTxt:''})}}
     var cxm=0,czm=0,n=0;players.forEach(function(p){if(p.alive){cxm+=p.x;czm+=p.z;n++}});if(n){cxm/=n;czm/=n}
     camera.position.x+=((cxm*.3)-camera.position.x)*dt*2;camera.position.z+=((17+czm*.3)-camera.position.z)*dt*2;camera.lookAt(cxm*.3,-1.5,czm*.3);
   }
@@ -97,6 +98,7 @@
     $('sumo-title').textContent=w.bot?'Les bots gagnent…':w.name+' remporte le match !';
     $('sumo-msg').textContent=players.map(function(p){return p.name+' '+p.score}).join(' · ');
     $('sumo-start').textContent='Rejouer';$('sumo-ov').hidden=false;
+    if(mp.on()&&net.isHost)net.broadcast({t:'sumo-end',title:$('sumo-title').textContent,msg:$('sumo-msg').textContent});
   }
   function render(){
     renderer.render(scene,camera);
@@ -109,10 +111,30 @@
     if(!msgEl){msgEl=document.createElement('div');msgEl.className='stage-msg';cv.parentNode.appendChild(msgEl)}
     msgEl.textContent=msgT>0?msgTxt:'';msgEl.hidden=!(msgT>0);
   }
-  function start(){if(!init())return;setup();$('sumo-ov').hidden=true;running=true;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop)}
+  function start(){if(!init())return;if(mp.on()){humans=Math.min(4,net.players.length);if(net.isHost)net.broadcast({t:'sumo-go',n:humans})}setup();$('sumo-ov').hidden=true;running=true;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop)}
+  function guestStart(n){
+    if(!init())return;humans=n;setup();$('sumo-ov').hidden=true;cancelAnimationFrame(guestRaf);
+    (function gl(){
+      if(PP.cur()!=='sumo')return;
+      if(state){
+        platform.scale.set(state.R,1,state.R);
+        state.p.forEach(function(a,i){var q=players[i];if(!q)return;q.x=a[0];q.y=a[1];q.z=a[2];q.face=a[3];q.alive=!!a[4];q.score=a[6];q.mesh.visible=q.alive;q.mesh.position.set(q.x,q.y+.7,q.z);q.mesh.rotation.y=q.face;var sc=a[5]?1.15:1;q.mesh.scale.set(sc,1/sc,sc)});
+        msgTxt=state.m;msgT=state.m?1:0;hud();
+      }
+      renderer.render(scene,camera);overlayText();guestRaf=requestAnimationFrame(gl);
+    })();
+  }
+  net.on(function(m){
+    if(net.isHost||PP.cur()!=='sumo')return;
+    if(m.t==='sumo-go'){state=null;guestStart(m.n);sfx.play('go')}
+    if(m.t==='sumo-s')state=m;
+    if(m.t==='sumo-end'){$('sumo-title').textContent=m.title;$('sumo-msg').textContent=m.msg;$('sumo-start').hidden=true;$('sumo-ov').hidden=false}
+  });
+  mp.hostInputs('sumo',remote);
   $('sumo-modes').addEventListener('click',function(e){var b=e.target.closest('[data-n]');if(!b)return;humans=+b.dataset.n;$('sumo-modes').querySelectorAll('.mode').forEach(function(x){x.classList.toggle('on',x===b)});sfx.play('ui');if(running){running=false;cancelAnimationFrame(raf);$('sumo-ov').hidden=false;$('sumo-start').textContent='Jouer'}});
-  keys=PP.held('sumo-pad',KEYMAP,function(k,e){if(PP.cur()==='sumo'&&running&&e.preventDefault)e.preventDefault()});
+  keys=PP.held('sumo-pad',KEYMAP,function(k,e){if(PP.cur()==='sumo'&&(running||mp.on())&&e.preventDefault)e.preventDefault()});
+  mp.guestSender('sumo',keys);
   $('sumo-start').addEventListener('click',start);
   PP._sumo=function(){return {players:players,R:R,roundT:roundT}};
-  PP.games.sumo={open:function(){if(init()){if(!players.length){setup();between=0;}render()}$('sumo-title').textContent='Sumo Arena';$('sumo-start').textContent='Jouer';$('sumo-ov').hidden=false},close:function(){if(running){running=false;cancelAnimationFrame(raf)}}};
+  PP.games.sumo={open:function(){if(init()){if(!players.length){setup();between=0;}render()}$('sumo-start').hidden=false;$('sumo-title').textContent='Sumo Arena';$('sumo-start').textContent='Jouer';$('sumo-ov').hidden=false;mp.lobby('sumo','Sumo Arena')},close:function(){if(running){running=false;cancelAnimationFrame(raf)}cancelAnimationFrame(guestRaf)}};
 })();

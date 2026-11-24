@@ -1,7 +1,7 @@
 /* Pixel Pause — Bunker 3D : FPS en raycasting. Modes : deathmatch, zombies, battle royale. Grande carte générée. */
 (function(){
   'use strict';
-  var $=PP.$,sfx=PP.sfx,cv=$('fps-cv'),cx=cv.getContext('2d'),W=cv.width,H=cv.height,CW=(window.innerWidth<800||!matchMedia('(hover:hover)').matches)?4:2,COLS=W/CW,FOV=Math.PI/2.6,TEX=64;
+  var $=PP.$,sfx=PP.sfx,net=PP.net,mp=PP.mp,online=false,respawnT=0,deaths=0,sendT=0,cv=$('fps-cv'),cx=cv.getContext('2d'),W=cv.width,H=cv.height,CW=(window.innerWidth<800||!matchMedia('(hover:hover)').matches)?4:2,COLS=W/CW,FOV=Math.PI/2.6,TEX=64;
   cx.imageSmoothingEnabled=false;
 
   /* ---------- Carte générée (toujours la même grâce à la graine) ---------- */
@@ -64,7 +64,8 @@
     var s=PP.pick(OPEN);p={x:s[0],y:s[1],a:0};
     var dirs=[0,Math.PI/2,Math.PI,-Math.PI/2].filter(function(an){return !wall(s[0]+Math.cos(an)*2.5,s[1]+Math.sin(an)*2.5)});p.a=dirs.length?PP.pick(dirs):0;
     hp=100;kills=0;flash=0;recoil=0;fireCd=0;bob=0;hitMark=0;shots=0;hits=0;parts=[];tracer=0;pitch=0;
-    bots=[];meds=[];wave=0;waveT=0;zone=null;alive=0;place=0;
+    bots=[];meds=[];wave=0;waveT=0;zone=null;alive=0;place=0;respawnT=0;deaths=0;
+    if(online){time=180;for(var q=0;q<3;q++)meds.push(spawnPt());bots=net.players.filter(function(o){return o.id!==net.me.id}).map(function(o){return {kind:'net',pid:o.id,name:o.name,x:-50,y:-50,a:0,hp:100,dead:0,hit:0,anim:0,flash:0,k:0}});hud();return}
     if(mode==='dm'){time=180;for(var i=0;i<6;i++)bots.push(makeBot('bot'));for(var j=0;j<3;j++)meds.push(spawnPt())}
     if(mode==='zombie'){time=0;waveT=2;for(var k=0;k<2;k++)meds.push(spawnPt())}
     if(mode==='br'){time=0;for(var b=0;b<9;b++)bots.push(makeBot('bot',100));for(var m=0;m<4;m++)meds.push(spawnPt());var c=PP.pick(OPEN);zone={x:c[0],y:c[1],r:26,target:26,t:20};alive=10}
@@ -89,6 +90,9 @@
   function step(dt){
     time+=mode==='dm'?-dt:dt;
     if(mode==='dm'){if(time<=0){time=0;return end('Temps écoulé !')}if(time<10&&Math.floor(time)!==Math.floor(time+dt))sfx.play('tick')}
+    if(online){sendT-=dt;if(sendT<=0){sendT=.066;net.relay({g:'fps',x:+p.x.toFixed(2),y:+p.y.toFixed(2),a:+p.a.toFixed(2),dead:respawnT>0,k:kills})}
+      bots.forEach(function(b){b.anim+=dt*6;b.hit=Math.max(0,b.hit-dt*5)});
+      if(respawnT>0){respawnT-=dt;flash=Math.max(flash-dt*2,.3);if(respawnT<=0){var sp0=spawnPt(5);p.x=sp0.x;p.y=sp0.y;hp=100;flash=0}hud();return}}
     if(mode==='zombie'){var left=bots.filter(function(b){return b.dead<=0}).length;if(!left){waveT-=dt;if(waveT<=0)nextWave()}}
     if(mode==='br'){
       zone.t-=dt;if(zone.t<=0){zone.target=Math.max(2.5,zone.target*.68);zone.t=16;sfx.play('tick');PP.toast('La zone rétrécit','warn')}
@@ -106,6 +110,7 @@
     if((keys.S||mouseDown)&&fireCd<=0)fire();
     for(var bi=0;bi<bots.length;bi++){
       var b=bots[bi];
+      if(b.kind==='net')continue;
       b.anim+=dt*(b.kind==='zombie'?4:6);b.flash=Math.max(0,b.flash-dt*6);b.hit=Math.max(0,b.hit-dt*5);
       if(b.dead>0){b.dead-=dt;if(b.dead<=0){if(mode==='dm'){var nb=makeBot('bot');b.x=nb.x;b.y=nb.y;b.hp=100;b.a=nb.a}else b.dead=999}continue}
       if(mode==='br'&&!inZone(b.x,b.y)){b.hp-=dt*12;if(b.hp<=0){b.dead=999;continue}}
@@ -141,7 +146,8 @@
     var bestB=null,bd=99;
     bots.forEach(function(b){if(b.dead>0)return;var d=Math.hypot(b.x-p.x,b.y-p.y),ang=Math.atan2(b.y-p.y,b.x-p.x)-p.a;ang=Math.atan2(Math.sin(ang),Math.cos(ang));
       if(Math.abs(ang)<Math.atan2(.45,d)&&d<bd&&los(p.x,p.y,b.x,b.y)){bestB=b;bd=d}});
-    if(bestB){bestB.hp-=40;bestB.hit=1;hits++;hitMark=1;
+    if(bestB&&bestB.kind==='net'){bestB.hit=1;hits++;hitMark=1;sfx.play('hit');net.relay({g:'fps',hit:bestB.pid,dmg:34})}
+    else if(bestB){bestB.hp-=40;bestB.hit=1;hits++;hitMark=1;
       for(var i=0;i<6;i++)parts.push({x:W/2+(Math.random()-.5)*30,y:H/2+(Math.random()-.5)*30,vx:(Math.random()-.5)*300,vy:-Math.random()*300,t:.4,c:bestB.kind==='zombie'?'#9fe36a':'#ff3b3b'});
       if(bestB.hp<=0){bestB.dead=mode==='dm'?3.5:999;kills++;hud();sfx.play('kill')}else sfx.play('hit')}
   }
@@ -156,6 +162,10 @@
     var stats=mode==='zombie'?kills+' zombie'+(kills>1?'s':'')+' · vague '+wave:mode==='br'?kills+' frag'+(kills>1?'s':''):kills+' frag'+(kills>1?'s':'')+' en '+PP.fmtTime(180-time);
     $('fps-msg').innerHTML=PP.esc(msg)+'<br><b>'+stats+'</b> · précision '+(shots?Math.round(hits/shots*100):0)+' %';
     $('fps-start').textContent='Rejouer';$('fps-ov').hidden=false;$('fps-lockhint').hidden=true;draw();
+    if(online){var rows=[{n:net.me.name,k:kills,me:1}].concat(bots.map(function(b){return {n:b.name,k:b.k||0}})).sort(function(a,b){return b.k-a.k});
+      $('fps-title').textContent=rows[0].me?'Tu gagnes le deathmatch !':rows[0].n+' gagne le deathmatch';
+      $('fps-msg').innerHTML=rows.map(function(r,i){return (i+1)+'. '+PP.esc(r.n)+' — '+r.k+' frag'+(r.k>1?'s':'')}).join('<br>')+'<br><small>Tu es mort '+deaths+' fois · précision '+(shots?Math.round(hits/shots*100):0)+' %</small>';
+      $('fps-start').hidden=!net.isHost;$('fps-start').textContent='Relancer pour tout le salon'}
   }
 
   /* ---------- Rendu ---------- */
@@ -178,7 +188,7 @@
       var fog=Math.min(.85,dist/16);if(fog>.05){cx.fillStyle='rgba(7,7,10,'+fog+')';cx.fillRect(c*CW,y0,CW,h)}
     }
     var sp=[];
-    bots.forEach(function(b){if(b.dead>=999&&b.deadT===undefined)b.deadT=1;var z=b.kind==='zombie';sp.push({x:b.x,y:b.y,img:b.dead>0?(z?SP.zdead:SP.dead):(b.hit>.5?(z?SP.zhit:SP.hit):(z?SP.zom:SP.bot)[(b.anim|0)%2]),sz:b.dead>0?.9:1,flash:b.flash>.7&&!z})});
+    bots.forEach(function(b){if(b.dead>=999&&b.deadT===undefined)b.deadT=1;var z=b.kind==='zombie';sp.push({name:b.kind==='net'?b.name:null,x:b.x,y:b.y,img:b.dead>0?(z?SP.zdead:SP.dead):(b.hit>.5?(z?SP.zhit:SP.hit):(z?SP.zom:SP.bot)[(b.anim|0)%2]),sz:b.dead>0?.9:1,flash:b.flash>.7&&!z})});
     meds.forEach(function(m){sp.push({x:m.x,y:m.y,img:SP.med,sz:.5})});
     sp.forEach(function(s){s.d=Math.hypot(s.x-p.x,s.y-p.y)});
     sp.sort(function(a,b){return b.d-a.d}).forEach(function(s){
@@ -187,6 +197,7 @@
       if(Math.abs(ang)>FOV/2+.35)return;
       var d=s.d*Math.cos(ang),size=Math.min(H*3,H/Math.max(.05,d))*s.sz,scx=(ang/FOV+.5)*W,x0=scx-size/2,y0=horizon+H/Math.max(.05,d)*.5-size,px=size/16;
       for(var i=0;i<16;i++){var xx=x0+i*px,col=(xx/CW)|0;if(col<0||col>=COLS||zb[col]<d)continue;cx.drawImage(s.img,i,0,1,16,xx,y0,px+.5,size)}
+      if(s.name&&size>18&&zb[Math.max(0,Math.min(COLS-1,(scx/CW)|0))]>=d){cx.font='bold 13px Inter,sans-serif';cx.textAlign='center';var tw=cx.measureText(s.name).width+12;cx.fillStyle='rgba(11,13,18,.75)';cx.fillRect(scx-tw/2,y0-22,tw,18);cx.fillStyle='#fff';cx.fillText(s.name,scx,y0-9)}
       if(s.flash){cx.fillStyle='rgba(255,210,63,.9)';cx.beginPath();cx.arc(scx-size*.1,y0+size*.55,size*.08,0,7);cx.fill()}
     });
     if(tracer>0){cx.strokeStyle='rgba(255,210,63,'+tracer+')';cx.lineWidth=2;cx.beginPath();cx.moveTo(W/2+67,H-104+recoil*26);cx.lineTo(W/2,H/2);cx.stroke()}
@@ -220,7 +231,16 @@
     cx.textBaseline='alphabetic';
   }
   function loop(t){var dt=last?Math.min(.05,(t-last)/1000):0;last=t;if(running){step(dt);if(running)draw();raf=requestAnimationFrame(loop)}}
-  function start(){reset();$('fps-ov').hidden=true;running=true;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);lock();sfx.play('go');if(mode==='zombie')PP.toast('Les zombies arrivent','warn')}
+  net.on(function(m){
+    if(PP.cur()!=='fps'||!mp.on())return;
+    if(m.t==='fps-go'&&!net.isHost){start();return}
+    if(m.t!=='rel'||!m.d||m.d.g!=='fps')return;
+    var d=m.d,b=bots.filter(function(q){return q.pid===m.from})[0];
+    if(d.x!==undefined&&b){b.x=d.x;b.y=d.y;b.a=d.a;b.dead=d.dead?1:0;b.k=d.k}
+    if(d.hit===net.me.id&&running&&respawnT<=0){hp-=d.dmg;flash=1;sfx.play('hurt');if(hp<=0){hp=0;deaths++;respawnT=2.5;net.relay({g:'fps',killed:net.me.id,by:m.from});PP.toast('Éliminé par '+(b?b.name:'?'),'warn')}}
+    if(d.killed&&d.by===net.me.id){kills++;sfx.play('kill');var v=bots.filter(function(q){return q.pid===d.killed})[0];PP.toast('Tu as éliminé '+(v?v.name:'?'),'ok');hud()}
+  });
+  function start(){online=mp.on();if(online){mode='dm';$('fps-start').hidden=false;if(net.isHost)net.broadcast({t:'fps-go'})}reset();$('fps-ov').hidden=true;running=true;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);lock();sfx.play('go');if(mode==='zombie')PP.toast('Les zombies arrivent','warn')}
 
   /* ---------- Modes ---------- */
   $('fps-modes').addEventListener('click',function(e){
@@ -251,5 +271,5 @@
   document.addEventListener('keydown',function(e){if(PP.cur()==='fps'&&running&&(e.key===' '||e.key.indexOf('Arrow')===0))e.preventDefault()});
   $('fps-start').addEventListener('click',start);
   PP._fps=function(){return {p:p,bots:bots,zone:zone,setMode:function(m){mode=m}}};
-  PP.games.fps={open:function(){reset();showBest();$('fps-title').textContent='Bunker 3D';$('fps-start').textContent='Entrer dans le bunker';$('fps-ov').hidden=false;$('fps-lockhint').hidden=true;draw()},close:function(){if(running){running=false;cancelAnimationFrame(raf)}unlock()}};
+  PP.games.fps={open:function(){reset();showBest();$('fps-title').textContent='Bunker 3D';$('fps-start').textContent='Entrer dans le bunker';$('fps-ov').hidden=false;$('fps-lockhint').hidden=true;draw();if(mp.lobby('fps','Deathmatch en ligne')){online=true;mode='dm'}else{online=false;$('fps-start').hidden=false}},close:function(){if(running){running=false;cancelAnimationFrame(raf)}unlock()}};
 })();

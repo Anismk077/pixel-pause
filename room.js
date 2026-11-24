@@ -3,10 +3,15 @@
   'use strict';
   var $=PP.$,esc=PP.esc,net=PP.net,sfx=PP.sfx,box=$('room-box');
   var ONLINE=[
-    {id:'imp',name:'Mot imposteur',desc:'Chacun reçoit son mot sur son téléphone',min:3},
-    {id:'prob',name:'Le plus probable',desc:'Des questions, des votes, des résultats qui piquent',min:3},
-    {id:'snake',name:'Paquet Snake en ligne',desc:'2 à 4 serpents sur le même plateau',min:2,max:4},
-    {id:'geo',name:'Devine où',desc:'Une photo, chacun pose son point, le plus proche gagne',min:2}
+    {id:'fps',name:'Bunker 3D',desc:'Deathmatch entre vous, 3 minutes',min:2},
+    {id:'sumo',name:'Sumo Arena',desc:'Pousse les autres dans le vide',min:2,max:4},
+    {id:'foot',name:'Foot 2v2',desc:'Équipes mélangées, bots si besoin',min:2,max:4},
+    {id:'kart',name:'Pixel Kart',desc:'Course de 3 tours',min:2,max:8},
+    {id:'run',name:'Néon Rush',desc:'Celui qui va le plus loin',min:2},
+    {id:'geo',name:'Devine où',desc:'Le plus proche gagne la manche',min:2},
+    {id:'imp',name:'Mot imposteur',desc:'Chacun son mot sur son téléphone',min:3},
+    {id:'prob',name:'Le plus probable',desc:'Votes entre potes',min:3},
+    {id:'snake',name:'Paquet Snake',desc:'2 à 4 serpents',min:2,max:4}
   ];
 
   function bar(){
@@ -24,13 +29,13 @@
       h+='<label class="lbl">Code du salon</label><div class="code-big">'+esc(net.code)+'</div><p class="muted">Tes potes vont sur ce site, « Rejoindre avec un code », et tapent ce code. Ou envoie-leur le lien :</p>';
       h+='<div class="linkbox"><input id="room-link" readonly value="'+esc(net.inviteLink())+'"><button type="button" class="ghost" id="room-copy">Copier</button></div>';
     }else{
-      h+='<label class="lbl">Salon</label><div class="code-big">'+esc(net.code)+'</div><p class="muted">Connecté. L\'hôte choisit le jeu : ton écran suivra tout seul.</p>';
+      h+='<label class="lbl">Salon</label><div class="code-big">'+esc(net.code)+'</div><p class="muted">Tu es connecté. Quand l\'hôte lance un jeu, ton écran le suit tout seul.</p>';
     }
     h+='<label class="lbl" style="margin-top:14px">Joueurs ('+net.players.length+')</label><ul class="plist">'+net.players.map(function(p){return '<li class="'+(p.id===net.me.id?'me ':'')+(p.id==='host'?'host':'')+'">'+PP.avatar(p.name)+esc(p.name)+'</li>'}).join('')+'</ul>';
     if(net.isHost){
-      h+='<label class="lbl" style="margin-top:14px">Lancer un jeu</label><div class="gamepick">'+ONLINE.map(function(g){
-        var n=net.players.length,ok=n>=g.min&&(!g.max||n<=g.max);
-        return '<button type="button" data-launch="'+g.id+'"'+(ok?'':' disabled')+'>'+esc(g.name)+'<small>'+esc(g.desc)+' · '+g.min+(g.max?' à '+g.max:'+')+' joueurs</small></button>';
+      h+='<label class="lbl" style="margin-top:18px">Choisis le jeu pour tout le salon</label><div class="tiles room-tiles">'+ONLINE.map(function(g){
+        var n=net.players.length,ok=n>=g.min,why=ok?(g.max&&n>g.max?'Les '+g.max+' premiers jouent':g.desc):'Il faut '+g.min+' joueurs';
+        return '<button type="button" class="tile'+(ok?'':' locked')+'" data-launch="'+g.id+'"'+(ok?'':' disabled')+'><img src="thumb-'+g.id+'.jpg?v=3.3" alt=""><span class="tile-info"><b>'+esc(g.name)+'</b><small>'+esc(why)+'</small></span><span class="tile-play">Lancer</span></button>';
       }).join('')+'</div>';
     }else h+='<p class="wait">En attente de l\'hôte</p>';
     h+='<p style="margin:18px 0 0"><button type="button" class="red" id="room-leave">Quitter le salon</button></p></div>';

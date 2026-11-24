@@ -51,6 +51,7 @@ PP.net=(function(){
           emit({t:'players',players:players},'host');
           return;
         }
+        if(d.t==='rel'){broadcast({t:'rel',from:conn.peer,d:d.d},conn.peer);emit({t:'rel',from:conn.peer,d:d.d},conn.peer);return}
         emit(d,conn.peer);
       });
       var bye=function(){
@@ -98,6 +99,9 @@ PP.net=(function(){
   /* Invité -> hôte */
   function send(msg){if(isHost)emit(msg,'host');else if(hostConn)try{hostConn.send(msg)}catch(e){}}
 
+  /* Relais : un message de n'importe qui, renvoyé à tous les autres (positions, scores…) */
+  function relay(d){if(isHost)broadcast({t:'rel',from:'host',d:d});else if(hostConn)try{hostConn.send({t:'rel',d:d})}catch(e){}}
+  function slot(id){for(var i=0;i<players.length;i++)if(players[i].id===id)return i;return -1}
   function leave(){
     if(peer){try{peer.destroy()}catch(e){}}
     peer=null;conns={};hostConn=null;isHost=false;code=null;players=[];me={id:null,name:''};
@@ -105,7 +109,7 @@ PP.net=(function(){
   }
   function inRoom(){return !!code}
 
-  return {host:host,join:join,leave:leave,send:send,all:all,to:to,broadcast:broadcast,on:on,
+  return {relay:relay,slot:slot,host:host,join:join,leave:leave,send:send,all:all,to:to,broadcast:broadcast,on:on,
     get code(){return code},get isHost(){return isHost},get me(){return me},get players(){return players},
     inRoom:inRoom,ready:ready,onStatus:function(f){statusCb=f},
     inviteLink:function(){return location.origin+location.pathname+'?salon='+code}};

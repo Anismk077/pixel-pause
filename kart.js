@@ -1,7 +1,7 @@
 /* Pixel Pause — Pixel Kart : course pseudo-3D en vue arrière. Solo contre 5 karts, ou à 2 en écran partagé. */
 (function(){
   'use strict';
-  var $=PP.$,sfx=PP.sfx,cv=$('kt-cv'),cx=cv.getContext('2d'),CW=cv.width,CH=cv.height;
+  var $=PP.$,sfx=PP.sfx,net=PP.net,mp=PP.mp,sendT=0,cv=$('kt-cv'),cx=cv.getContext('2d'),CW=cv.width,CH=cv.height;
   var SEG=200,ROAD=2000,CAM_H=1000,CAM_D=.84,DRAW=90,LAPS=3;
   var track=[],TL=0,running=false,raf=0,last=0,keys={},karts,items,props,time,countdown,humans=1,best=PP.store('kt-best');
   var NAMES=['Rex','Nova','Kiki','Turbo','Zed'],COLS=['#3fa9ff','#ff5fd2','#3cff6e','#ff8a3d','#f2efe6'];
@@ -24,6 +24,13 @@
   function mk(name,col,human,i){return {name:name,col:col,human:human,id:i,z:SEG*(2+i*2),x:(i%2?.45:-.45),v:0,top:human?3400:(2600+i*110)*(.92+Math.random()*.12),lap:1,prog:SEG*(2+i*2),spin:0,boost:0,lapStart:0,laps:[],done:0,pos:6}}
   function reset(){
     build();karts=[];
+    if(mp.on()){
+      var PC=['#ffd23f','#3fa9ff','#ff5fd2','#3cff6e','#ff8a3d','#f2efe6','#b89bff','#36d6c3'],me=net.slot(net.me.id);
+      net.players.slice(0,8).forEach(function(pl,i){var k=mk(pl.name,PC[i%8],pl.id===net.me.id?1:0,i);k.remote=pl.id!==net.me.id;k.pid=pl.id;k.z=SEG*(2+i*2);k.prog=k.z;karts.push(k)});
+      karts.sort(function(a,b){return (b.human?1:0)-(a.human?1:0)});
+      karts.forEach(function(k,i){k.id=i});humans=1;
+      time=0;countdown=3.99;hud();return;
+    }
     karts.push(mk('J1','#ffd23f',1,0));
     if(humans===2)karts.push(mk('J2','#3fa9ff',2,1));
     for(var i=karts.length;i<6;i++)karts.push(mk(NAMES[i-humans],COLS[i-humans],0,i));
@@ -32,7 +39,7 @@
   function ranks(){var all=karts.slice().sort(function(a,b){return b.prog-a.prog});all.forEach(function(k,i){k.pos=i+1})}
   function hud(){
     ranks();var k=karts[0];
-    $('kt-pos').textContent=humans===2?('J1 '+k.pos+' · J2 '+karts[1].pos):(k.pos+'/6');$('kt-lap').textContent=Math.min(LAPS,k.lap)+'/'+LAPS;$('kt-time').textContent=PP.fmtTime(time);
+    $('kt-pos').textContent=humans===2?('J1 '+k.pos+' · J2 '+karts[1].pos):(k.pos+'/'+karts.length);$('kt-lap').textContent=Math.min(LAPS,k.lap)+'/'+LAPS;$('kt-time').textContent=PP.fmtTime(time);
   }
   function input(k){
     if(k.id===0)return {U:keys.U1||keys.U||(humans===1&&keys.U2),D:keys.D1||keys.D||(humans===1&&keys.D2),L:keys.L1||keys.L||(humans===1&&keys.L2),R:keys.R1||keys.R||(humans===1&&keys.R2)};
@@ -44,7 +51,7 @@
     time+=dt;
     karts.forEach(function(k){
       var s=seg(k.z);
-      if(k.done)return;
+      if(k.done||k.remote)return;
       if(k.human){
         var inp=input(k),top=3400+(k.boost>0?1400:0);
         if(k.spin>0){k.spin-=dt;k.v*=.9}
@@ -64,16 +71,18 @@
       if(k.z<old&&k.v>0){k.laps.push(time-k.lapStart);k.lapStart=time;k.lap++;if(k.human)sfx.play('pickup');if(k.lap>LAPS){k.done=time;if(k.human)PP.toast(k.name+' a fini !','ok')}}
     });
     // collisions entre karts
-    for(var i=0;i<karts.length;i++)for(var j=i+1;j<karts.length;j++){var a=karts[i],b=karts[j],dz=b.z-a.z;if(Math.abs(dz)<SEG*.7&&Math.abs(a.x-b.x)<.32){if(dz>0)a.v*=.6;else b.v*=.6}}
+    for(var i=0;i<karts.length;i++)for(var j=i+1;j<karts.length;j++){var a=karts[i],b=karts[j],dz=b.z-a.z;if(a.remote&&b.remote)continue;if(Math.abs(dz)<SEG*.7&&Math.abs(a.x-b.x)<.32){if(dz>0)a.v*=.6;else b.v*=.6}}
     hud();
-    var hs=karts.filter(function(k){return k.human});
+    if(mp.on()){sendT-=dt;if(sendT<=0){sendT=.066;var m=karts[0];net.relay({g:'kart',z:m.z,x:m.x,v:m.v,lap:m.lap,prog:m.prog,done:m.done,spin:m.spin})}}
+    var hs=karts.filter(function(k){return k.human||k.remote});
     if(hs.every(function(k){return k.done}))return finish();
     if(hs.some(function(k){return k.done})&&time-Math.min.apply(null,hs.filter(function(k){return k.done}).map(function(k){return k.done}))>25)return finish();
   }
   function finish(){
     running=false;cancelAnimationFrame(raf);ranks();
     var k=karts[0],ms=Math.round((k.done||time)*1000),msg;
-    if(humans===2){var a=karts[0],b=karts[1];msg='J1 : '+a.pos+(a.pos===1?'er':'e')+(a.done?' en '+PP.fmtTime(a.done):'')+' · J2 : '+b.pos+(b.pos===1?'er':'e')+(b.done?' en '+PP.fmtTime(b.done):'');$('kt-title').textContent=(a.done&&(!b.done||a.done<b.done))?'J1 gagne le duel !':'J2 gagne le duel !'}
+    if(mp.on()){var rk=karts.slice().sort(function(a,b){if(a.done&&b.done)return a.done-b.done;if(a.done)return -1;if(b.done)return 1;return b.prog-a.prog});msg=rk.map(function(q,i){return (i+1)+'. '+q.name+(q.done?' ('+PP.fmtTime(q.done)+')':'')}).join(' · ');$('kt-title').textContent=rk[0]===k?'Victoire !':rk[0].name+' gagne la course'}
+    else if(humans===2){var a=karts[0],b=karts[1];msg='J1 : '+a.pos+(a.pos===1?'er':'e')+(a.done?' en '+PP.fmtTime(a.done):'')+' · J2 : '+b.pos+(b.pos===1?'er':'e')+(b.done?' en '+PP.fmtTime(b.done):'');$('kt-title').textContent=(a.done&&(!b.done||a.done<b.done))?'J1 gagne le duel !':'J2 gagne le duel !'}
     else{msg=k.pos+(k.pos===1?'er':'e')+' sur 6 en '+PP.fmtTime(k.done||time)+'.';if(k.done&&(!best||ms<best)){best=ms;PP.store('kt-best',ms);$('kt-best').textContent=PP.fmtTime(ms/1000);msg+=' Meilleur temps !'}$('kt-title').textContent=k.pos===1?'Victoire !':'Arrivée'}
     sfx.play(k.pos===1?'win':'lose');
     $('kt-msg').innerHTML=PP.esc(msg)+'<br>Tours J1 : '+k.laps.map(function(t){return PP.fmtTime(t)+'.'+Math.floor((t%1)*10)}).join(' · ');
@@ -122,7 +131,7 @@
     kart(W/2,H-30*H/450,ks,me.col,me.spin>0?(Date.now()/60)%6.28:tilt);
     cx.fillStyle='rgba(10,10,12,.75)';cx.fillRect(W-150,H-30,140,22);cx.fillStyle='#3a3744';cx.fillRect(W-144,H-25,90,12);cx.fillStyle=me.boost>0?'#3cff6e':'#ffd23f';cx.fillRect(W-144,H-25,Math.min(90,me.v/4800*90),12);
     cx.fillStyle='#f2efe6';cx.font='bold 12px Inter,sans-serif';cx.textAlign='right';cx.fillText(Math.round(me.v/14)+'',W-16,H-15);
-    cx.fillStyle='rgba(10,10,12,.75)';cx.fillRect(10,H-30,160,22);cx.fillStyle='#ffd23f';cx.textAlign='left';cx.fillText(me.name+'  P'+me.pos+'/6  TOUR '+Math.min(LAPS,me.lap)+'/'+LAPS,18,H-15);
+    cx.fillStyle='rgba(10,10,12,.75)';cx.fillRect(10,H-30,160,22);cx.fillStyle='#ffd23f';cx.textAlign='left';cx.fillText(me.name+'  P'+me.pos+'/'+karts.length+'  TOUR '+Math.min(LAPS,me.lap)+'/'+LAPS,18,H-15);
     if(me.done){cx.fillStyle='rgba(10,10,12,.55)';cx.fillRect(0,H/2-24,W,48);cx.fillStyle='#3cff6e';cx.font='bold 22px Inter,sans-serif';cx.textAlign='center';cx.fillText('ARRIVÉ '+me.pos+(me.pos===1?'er':'e'),W/2,H/2+8)}
     if(countdown>0){var cn=Math.ceil(countdown),txt=cn>3?'':cn>1?String(cn-1):'GO !';if(txt){cx.fillStyle='rgba(10,10,12,.5)';cx.fillRect(0,H/2-40,W,80);cx.fillStyle=txt==='GO !'?'#3cff6e':'#ffd23f';cx.font='800 '+Math.round(H*.14)+'px Inter,sans-serif';cx.textAlign='center';cx.fillText(txt,W/2,H/2+H*.05)}}
   }
@@ -143,9 +152,14 @@
     }else drawView(CW,CH,karts[0]);
   }
   function loop(t){var dt=last?Math.min(.05,(t-last)/1000):0;last=t;if(running){step(dt);if(running)draw();raf=requestAnimationFrame(loop)}}
-  function start(){reset();$('kt-ov').hidden=true;running=true;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop)}
+  net.on(function(m,from){
+    if(PP.cur()!=='kart'||!mp.on())return;
+    if(m.t==='kart-go'&&!net.isHost){start();return}
+    if(m.t==='rel'&&m.d&&m.d.g==='kart'&&karts){var k=karts.filter(function(q){return q.pid===m.from})[0];if(k){var d=m.d;k.z=d.z;k.x=d.x;k.v=d.v;k.lap=d.lap;k.prog=d.prog;k.done=d.done;k.spin=d.spin}}
+  });
+  function start(){if(mp.on()&&net.isHost)net.broadcast({t:'kart-go'});reset();$('kt-ov').hidden=true;running=true;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop)}
   $('kt-modes').addEventListener('click',function(e){var b=e.target.closest('[data-n]');if(!b)return;humans=+b.dataset.n;$('kt-modes').querySelectorAll('.mode').forEach(function(x){x.classList.toggle('on',x===b)});if(running){running=false;cancelAnimationFrame(raf)}reset();countdown=0;$('kt-title').textContent=humans===2?'Duel en écran partagé':'Pixel Kart';$('kt-msg').textContent=humans===2?'J1 en haut (Z gaz, S frein, Q/D), J2 en bas (↑ gaz, ↓ frein, ←/→). 3 tours, contre 4 karts.':'← → pour tourner, ↑ pour accélérer, ↓ pour freiner. Boosts verts, flaques d\'huile. 3 tours.';$('kt-start').textContent='Démarrer';$('kt-ov').hidden=false;draw();sfx.play('ui')});
   keys=PP.held('kt-pad',{z:'U1',w:'U1',s:'D1',q:'L1',a:'L1',d:'R1',ArrowUp:'U2',ArrowDown:'D2',ArrowLeft:'L2',ArrowRight:'R2'},function(k,e){if(PP.cur()==='kart'&&running&&e.preventDefault)e.preventDefault()});
   $('kt-start').addEventListener('click',start);
-  PP.games.kart={open:function(){reset();countdown=0;$('kt-title').textContent='Pixel Kart';$('kt-start').textContent='Démarrer';$('kt-ov').hidden=false;draw()},close:function(){if(running){running=false;cancelAnimationFrame(raf)}}};
+  PP.games.kart={open:function(){reset();countdown=0;$('kt-start').hidden=false;$('kt-title').textContent='Pixel Kart';$('kt-start').textContent='Démarrer';$('kt-ov').hidden=false;draw();mp.lobby('kt','Pixel Kart')},close:function(){if(running){running=false;cancelAnimationFrame(raf)}}};
 })();
