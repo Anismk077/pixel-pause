@@ -536,3 +536,10 @@ footer .wrap{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .tg-big{font:400 56px/1 'Anton',sans-serif;margin:6px 0}.tg-big small{font-size:22px;opacity:.6}
 .tg-board{display:grid;gap:4px;margin-bottom:10px}.tg-board div{display:grid;grid-template-columns:22px 1fr auto auto;gap:8px;align-items:baseline;font:500 13px 'Inter Tight',sans-serif;border-top:1px solid rgba(20,18,16,.15);padding-top:4px}.tg-board em{font-style:normal;opacity:.65;font-size:12px}.tg-board i{font-style:normal;font:700 13px 'IBM Plex Mono',monospace}
 @media (max-width:820px){.tg-wrap{grid-template-columns:1fr}.tg-year{font-size:48px}}
+/* v4.7 Dernier Debout */
+.pa-hud span{border-left:4px solid #141210}
+.pa-say{position:absolute;left:50%;top:16%;transform:translateX(-50%);text-align:center;pointer-events:none;opacity:0}
+.pa-say b{display:block;font:400 clamp(28px,6vw,64px)/1 'Anton',sans-serif;color:#fff;text-shadow:4px 4px 0 #141210;letter-spacing:.02em}
+.pa-say span{display:inline-block;margin-top:8px;background:#141210;color:#f1ece2;font:600 13px 'IBM Plex Mono',monospace;padding:6px 10px;max-width:520px}
+.pa-say.on{animation:paSay 3.2s ease both}
+@keyframes paSay{0%{opacity:0;transform:translateX(-50%) scale(.6)}10%{opacity:1;transform:translateX(-50%) scale(1.08)}18%{transform:translateX(-50%) scale(1)}80%{opacity:1}100%{opacity:0}}

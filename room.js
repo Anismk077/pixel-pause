@@ -4,6 +4,7 @@
   var $=PP.$,esc=PP.esc,net=PP.net,sfx=PP.sfx,box=$('room-box');
   var ONLINE=[
     {id:'fps',name:'Bunker 3D',desc:'Battle royale, des bots complètent',min:1},
+    {id:'party',name:'Dernier Debout',desc:'Épreuves éliminatoires, bots en renfort',min:1,max:8},
     {id:'surv',name:'Survie',desc:'La même île pour tout le salon',min:1},
     {id:'sumo',name:'Sumo Arena',desc:'Pousse les autres dans le vide',min:2,max:4},
     {id:'foot',name:'Foot 2v2',desc:'Équipes mélangées, bots si besoin',min:2,max:4},
@@ -16,7 +17,7 @@
     {id:'snake',name:'Paquet Snake',desc:'2 à 4 serpents',min:2,max:4}
   ];
 
-  var GN={time:'Quand et où',surv:'Survie','fps-br':'Bunker · battle royale',fps:'Bunker 3D',sumo:'Sumo Arena',foot:'Foot 2v2',kart:'Pixel Kart',run:'Néon Rush',geo:'Devine où',imp:'Mot imposteur',prob:'Le plus probable',snake:'Paquet Snake'},curGame=null,lobby=PP.lobby;
+  var GN={party:'Dernier Debout',time:'Quand et où',surv:'Survie','fps-br':'Bunker · battle royale',fps:'Bunker 3D',sumo:'Sumo Arena',foot:'Foot 2v2',kart:'Pixel Kart',run:'Néon Rush',geo:'Devine où',imp:'Mot imposteur',prob:'Le plus probable',snake:'Paquet Snake'},curGame=null,lobby=PP.lobby;
   function beat(){if(net.inRoom()&&net.isHost&&lobby)lobby.register({code:net.code,host:net.me.name,n:net.players.length,game:curGame})}
   setInterval(beat,8000);
   PP.setRoomGame=function(g){curGame=g;beat()};
