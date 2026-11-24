@@ -96,6 +96,16 @@ window.PP=(function(){
   }
 
 
+
+  /* ---------- Plein écran pour les jeux (bouton sur chaque grande scène) ---------- */
+  function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement}
+  document.querySelectorAll('.stage.wide').forEach(function(st){
+    var b=document.createElement('button');b.type='button';b.className='fs-btn';b.textContent='Plein écran';
+    b.addEventListener('click',function(e){e.stopPropagation();if(fsEl()===st){(document.exitFullscreen||document.webkitExitFullscreen).call(document);return}var r=st.requestFullscreen||st.webkitRequestFullscreen;if(r)try{var p=r.call(st);if(p&&p.catch)p.catch(function(){})}catch(x){}});
+    st.appendChild(b);
+  });
+  function fsLabel(){document.querySelectorAll('.fs-btn').forEach(function(b){b.textContent=fsEl()===b.parentNode?'Quitter le plein écran':'Plein écran'})}
+  document.addEventListener('fullscreenchange',fsLabel);document.addEventListener('webkitfullscreenchange',fsLabel);
   /* ---------- Toasts ---------- */
   var toastBox=document.createElement('div');toastBox.className='toasts';document.body.appendChild(toastBox);
   function toast(msg,kind){var t=document.createElement('div');t.className='toast '+(kind||'');t.textContent=msg;toastBox.appendChild(t);setTimeout(function(){t.classList.add('out');setTimeout(function(){t.remove()},400)},2600)}
