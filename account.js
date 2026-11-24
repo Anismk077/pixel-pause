@@ -10,6 +10,7 @@
     {id:'foot',n:'Foot 2v2',rec:function(){return '—'},win:'Match gagné'},
     {id:'kart',n:'Pixel Kart',rec:function(){var t=PP.store('kt-best');return t?PP.fmtTime(t/1000):'—'},win:'Course gagnée'},
     {id:'run',n:'Néon Rush',rec:function(){var r=PP.store('rn-best');return r?r+' pts':'—'},win:'Course en salon gagnée'},
+    {id:'time',n:'Quand et où',rec:function(){var t=PP.store('tg-best');return t?t.toLocaleString('fr-FR')+' pts':'—'},win:'35 000 pts en solo ou partie en salon gagnée'},
     {id:'geo',n:'Devine où',rec:function(){var g=PP.store('geo-best');return g?g.toLocaleString('fr-FR')+' pts':'—'},win:'Partie en salon gagnée'},
     {id:'snake',n:'Paquet Snake',rec:function(){var s=PP.store('sn-best');return s?s+' pts':'—'},win:'—'},
     {id:'imp',n:'Mot imposteur',rec:function(){return '—'},win:'—'},
