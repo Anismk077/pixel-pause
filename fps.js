@@ -117,7 +117,7 @@
     R3=new THREE.WebGLRenderer({canvas:cv,antialias:true});R3.setSize(cv.width,cv.height,false);R3.autoClear=false;
     cam=new THREE.PerspectiveCamera(75,cv.width/cv.height,.05,400);cam.rotation.order='YXZ';
     vscene=new THREE.Scene();vcam=new THREE.PerspectiveCamera(60,cv.width/cv.height,.01,10);
-    vscene.add(new THREE.HemisphereLight(0xffffff,0x555555,1.1));var vl=new THREE.DirectionalLight(0xffffff,.8);vl.position.set(1,2,1);vscene.add(vl);
+    vscene.add(new THREE.HemisphereLight(0xffffff,0x666666,1.4));var vl=new THREE.DirectionalLight(0xffffff,1.3);vl.position.set(1,2,1);vscene.add(vl);var vl2=new THREE.DirectionalLight(0xbfd4ff,.6);vl2.position.set(-1,.5,-1);vscene.add(vl2);
     muzzleL=new THREE.PointLight(0xffc060,0,12);
     textures();buildUI();
     return true;
@@ -197,19 +197,50 @@
     if(e.rise!==undefined&&e.rise<1){e.rise=Math.min(1,e.rise+dt*.8);e.m.position.y=-1.9*(1-e.rise);p.arms[0].rotation.x=p.arms[1].rotation.x=-2.8}
   }
   function animWalk(e,dt,moving){var p=e.m.userData.parts;e.anim=(e.anim||0)+dt*(moving?9:0);var s=Math.sin(e.anim)*.6*(moving?1:0);p.legs[0].rotation.x=s;p.legs[1].rotation.x=-s;if(e.kind==='z'){p.arms[0].rotation.x=-1.35+s*.2;p.arms[1].rotation.x=-1.35-s*.2}}
-  function gunModel(type,col){
-    var g=new THREE.Group(),m=lam({color:col}),dark=lam({color:0x161616});
-    function b(w,h,d,x,y,z,mat){var q=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat||m);q.position.set(x,y,z);g.add(q);return q}
-    if(type==='pistol'){b(.07,.1,.32,0,0,-.1);b(.06,.16,.08,0,-.1,0,dark);b(.03,.03,.1,0,.02,-.3,dark)}
-    if(type==='rifle'){b(.08,.12,.62,0,0,-.2);b(.06,.18,.08,0,-.13,-.12,dark);b(.07,.12,.2,0,-.02,.17);b(.03,.03,.3,0,.02,-.65,dark);b(.04,.05,.12,0,.09,-.15,dark)}
-    if(type==='shotgun'){b(.1,.12,.7,0,0,-.22);b(.06,.06,.5,0,.05,-.62,dark);b(.08,.08,.22,0,-.07,-.42,dark);b(.08,.14,.2,0,-.03,.17)}
-    if(type==='sniper'){b(.07,.1,.9,0,0,-.3);b(.04,.04,.35,0,.02,-.9,dark);var sc=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,.3,10),dark);sc.rotation.x=Math.PI/2;sc.position.set(0,.1,-.2);g.add(sc);b(.08,.14,.24,0,-.02,.22);b(.05,.15,.06,0,-.12,-.05,dark)}
+  /* Armes détaillées : canon vers -z, poignée vers l'origine */
+  function buildGun(type,col){
+    var g=new THREE.Group(),body=new THREE.MeshStandardMaterial({color:new THREE.Color(col).offsetHSL(0,0,.08),roughness:.55,metalness:.1}),steel=new THREE.MeshStandardMaterial({color:0x44474e,roughness:.42,metalness:.35}),bright=new THREE.MeshStandardMaterial({color:0x8a8e96,roughness:.3,metalness:.45}),grip=new THREE.MeshStandardMaterial({color:0x1a1a1c,roughness:.85});
+    function box(w,h,d,x,y,z,mat,rx){var q=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);q.position.set(x,y,z);if(rx)q.rotation.x=rx;g.add(q);return q}
+    function cyl(r1,r2,len,x,y,z,mat,seg){var q=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,len,seg||14),mat);q.rotation.x=Math.PI/2;q.position.set(x,y,z);g.add(q);return q}
+    function guard(z,y,r){var t=new THREE.Mesh(new THREE.TorusGeometry(r||.045,.008,6,14,Math.PI),steel);t.rotation.set(0,Math.PI/2,Math.PI);t.position.set(0,y,z);g.add(t);box(.012,.03,.01,0,y-.005,z-.005,steel)}
+    if(type==='pistol'){
+      box(.068,.07,.36,0,.045,-.12,steel);for(var i=0;i<5;i++)box(.07,.05,.006,0,.05,.02+i*.012,bright);
+      box(.06,.05,.27,0,-.005,-.1,body);cyl(.014,.014,.06,0,.04,-.32,bright,10);
+      box(.058,.17,.085,0,-.1,.02,grip,.22);box(.062,.12,.006,0,-.1,.065,body,.22);
+      guard(-.07,-.035);box(.012,.02,.01,0,.088,-.27,steel);box(.04,.018,.012,0,.088,.04,steel);
+    }else if(type==='rifle'){
+      box(.08,.1,.38,0,.02,-.12,body);box(.075,.09,.3,0,.02,-.45,steel);for(var v=0;v<4;v++)box(.08,.02,.03,0,.035,-.36-v*.06,grip);
+      cyl(.017,.017,.26,0,.03,-.71,bright);cyl(.025,.025,.06,0,.03,-.84,steel);
+      var mag=box(.05,.17,.08,0,-.1,-.2,steel,.18);box(.05,.06,.08,0,-.2,-.18,steel,.45);
+      box(.055,.15,.07,0,-.09,.04,grip,.3);guard(-.08,-.04);
+      box(.07,.08,.26,0,0,.21,body);box(.07,.13,.05,0,-.02,.33,body);box(.04,.04,.18,0,.08,.15,steel);
+      box(.05,.05,.1,0,.1,-.15,steel);var dot=new THREE.Mesh(new THREE.CircleGeometry(.016,12),new THREE.MeshBasicMaterial({color:0xff2a10}));dot.position.set(0,.1,-.21);g.add(dot);box(.02,.03,.03,.045,.04,-.02,bright);
+    }else if(type==='shotgun'){
+      cyl(.028,.028,.78,0,.035,-.5,steel);cyl(.022,.022,.6,0,-.015,-.43,steel);
+      var pump=box(.075,.07,.22,0,-.015,-.46,body);for(var r=0;r<5;r++)box(.078,.072,.012,0,-.015,-.39-r*.035,grip);g.userData.pump=pump;
+      box(.085,.11,.24,0,.01,-.04,steel);box(.06,.15,.07,0,-.1,.08,grip,.3);guard(.0,-.05);
+      box(.07,.09,.3,0,-.02,.26,body,-.1);box(.075,.15,.06,0,-.05,.41,grip);box(.012,.016,.012,0,.07,-.86,bright);
+    }else{
+      cyl(.02,.024,.68,0,.04,-.72,steel);cyl(.03,.03,.08,0,.04,-1.07,steel);
+      box(.075,.09,.34,0,.02,-.2,body);box(.065,.08,.26,0,.015,-.45,body);
+      cyl(.04,.04,.32,0,.13,-.2,steel);cyl(.052,.04,.07,0,.13,-.39,steel);cyl(.046,.04,.06,0,.13,-.02,steel);
+      var lens=new THREE.Mesh(new THREE.CircleGeometry(.042,16),new THREE.MeshStandardMaterial({color:0x2a6aa0,emissive:0x0a2040,roughness:.1,metalness:.5}));lens.position.set(0,.13,-.43);lens.rotation.y=Math.PI;g.add(lens);
+      box(.02,.05,.02,0,.08,-.26,steel);box(.02,.05,.02,0,.08,-.13,steel);
+      var bolt=box(.012,.012,.07,.05,.05,-.02,bright);bolt.rotation.y=-.6;var knob=new THREE.Mesh(new THREE.SphereGeometry(.018,8,6),bright);knob.position.set(.075,.05,.0);g.add(knob);
+      box(.05,.09,.09,0,-.06,-.2,steel);box(.055,.14,.07,0,-.09,.05,grip,.25);guard(-.05,-.04);
+      box(.07,.1,.34,0,-.02,.26,body,-.08);box(.06,.05,.14,0,.05,.22,body);box(.072,.16,.04,0,-.05,.44,grip);
+      [-1,1].forEach(function(s){var leg=box(.012,.012,.22,s*.025,-.02,-.72,steel);leg.rotation.y=s*.05});
+    }
+    g.traverse(function(o){if(o.isMesh)o.castShadow=true});
     return g;
   }
+  function gunModel(type,col){return buildGun(type,col)}
   function setViewGun(){
-    while(vscene.children.length>2)vscene.remove(vscene.children[2]);
+    while(vscene.children.length>3)vscene.remove(vscene.children[3]);
     var gg=new THREE.Group(),gun=gunModel(P.gun,GUN_SKINS[skins.gun].c);gg.add(gun);
-    var hand=box(.12,.12,.2,CH_SKINS[skins.ch].c);hand.position.set(0,-.1,.08);gg.add(hand);
+    var skinM=new THREE.MeshStandardMaterial({color:0xd9a77c,roughness:.7}),glove=new THREE.MeshStandardMaterial({color:CH_SKINS[skins.ch].c,roughness:.8});
+    var hand=new THREE.Mesh(new THREE.SphereGeometry(.07,14,10),glove);hand.scale.set(.75,.85,1.1);hand.position.set(0,-.1,.04);gg.add(hand);
+    if(P.gun!=='pistol'){var h2=new THREE.Mesh(new THREE.SphereGeometry(.065,14,10),glove);h2.scale.set(.8,.65,1.1);h2.position.set(-.02,-.06,P.gun==='shotgun'?-.46:-.4);gg.add(h2);var a2=new THREE.Mesh(new THREE.CapsuleGeometry(.05,.3,4,10),glove);a2.rotation.x=1.2;a2.rotation.z=.5;a2.position.set(-.12,-.16,-.25);gg.add(a2)}
     var arm=box(.1,.1,.34,CH_SKINS[skins.ch].c);arm.position.set(.03,-.15,.24);arm.rotation.x=.25;gg.add(arm);
     var fl=new THREE.Mesh(new THREE.PlaneGeometry(.22,.22),new THREE.MeshBasicMaterial({color:0xffd27a,transparent:true,opacity:0,depthWrite:false}));
     fl.position.set(0,.02,P.gun==='sniper'?-1.1:P.gun==='shotgun'?-.9:P.gun==='rifle'?-.82:-.4);gg.add(fl);muzzle=fl;
