@@ -124,6 +124,73 @@
     cv.width=w;cv.height=h;R3.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();vcam.aspect=w/h;vcam.updateProjectionMatrix();
     if(!running&&P)render();
   }
+  /* ---------- Géométries organiques ---------- */
+  function jitter(geo,amt,seed){var p=geo.attributes.position;for(var i=0;i<p.count;i++){var x=p.getX(i),y=p.getY(i),z=p.getZ(i),kx=Math.round(x*50),ky=Math.round(y*50),kz=Math.round(z*50);p.setXYZ(i,x+(hash(kx,ky+kz,seed)-.5)*amt,y+(hash(ky,kz+kx,seed+1)-.5)*amt*.6,z+(hash(kz,kx+ky,seed+2)-.5)*amt)}geo.computeVertexNormals();return geo}
+  function merge(list,keepNormals){var pos=[],nor=[];list.forEach(function(g){var n=g.index?g.toNonIndexed():g;var p=n.attributes.position.array;for(var i=0;i<p.length;i++)pos.push(p[i]);if(keepNormals){var q=n.attributes.normal.array;for(var j=0;j<q.length;j++)nor.push(q[j])}});var out=new THREE.BufferGeometry();out.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));if(keepNormals)out.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));else out.computeVertexNormals();return out}
+  var windU={value:0};
+  function windMat(base,amp){var m=lam({color:0xffffff});m.onBeforeCompile=function(sh){sh.uniforms.uTime=windU;sh.vertexShader='uniform float uTime;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n#ifdef USE_INSTANCING\nvec3 ip=vec3(instanceMatrix[3][0],instanceMatrix[3][1],instanceMatrix[3][2]);\n#else\nvec3 ip=vec3(0.0);\n#endif\nfloat hh=max(position.y-'+base.toFixed(2)+',0.0);transformed.x+=sin(uTime*1.7+ip.x*0.23+ip.z*0.17)*'+amp.toFixed(3)+'*hh;transformed.z+=cos(uTime*1.3+ip.z*0.21+ip.x*0.11)*'+(amp*.7).toFixed(3)+'*hh;')};m.customProgramCacheKey=function(){return 'wind'+base+'_'+amp};return m}
+  function treeGeos(){
+    var trunk=new THREE.CylinderGeometry(.18,.36,4.4,8,3);trunk.translate(0,2.2,0);jitter(trunk,.08,3);
+    var b1=new THREE.CylinderGeometry(.06,.11,1.6,5);b1.rotateZ(.9);b1.translate(.55,3.6,0);var b2=new THREE.CylinderGeometry(.05,.1,1.3,5);b2.rotateX(-.9);b2.translate(0,3.9,.45);
+    var oakTrunk=merge([trunk.clone(),b1,b2]);
+    var pine=merge([0,1,2,3].map(function(i){var c=new THREE.ConeGeometry(2.3-i*.45,3.4-i*.3,10,2);jitter(c,.35,10+i);c.translate(0,3.6+i*1.75,0);return c}));
+    var crown=merge([[0,5.4,0,2.2],[1.3,5.9,.4,1.5],[-1.1,6.1,-.5,1.6],[.2,6.8,-.2,1.4],[-.3,4.9,1,1.3]].map(function(b,i){var s=new THREE.IcosahedronGeometry(b[3],1);jitter(s,.4,30+i);s.translate(b[0],b[1],b[2]);return s}));
+    var btrunk=new THREE.CylinderGeometry(.13,.2,5.6,7,3);btrunk.translate(0,2.8,0);jitter(btrunk,.05,40);
+    var bcrown=merge([[0,6.2,0,1.5],[.6,7.2,.2,1.1],[-.5,5.6,.3,1.1]].map(function(b,i){var s=new THREE.IcosahedronGeometry(b[3],1);s.scale(1,1.4,1);jitter(s,.3,50+i);s.translate(b[0],b[1],b[2]);return s}));
+    return {trunk:trunk,oakTrunk:oakTrunk,pine:pine,crown:crown,btrunk:btrunk,bcrown:bcrown};
+  }
+  /* ---------- Nuages ---------- */
+  function cloudGeo(seed){var R=rng(seed),parts=[],n=9+(R()*8|0),len=30+R()*40;for(var i=0;i<n;i++){var r=7+R()*9,s=new THREE.SphereGeometry(r,14,10);var x=(R()-.5)*len,y=R()*6,z=(R()-.5)*len*.45;var p=s.attributes.position;for(var j=0;j<p.count;j++){var yy=p.getY(j);if(yy<-r*.25)p.setY(j,-r*.25)}s.translate(x,y+(r-7)*.4,z);parts.push(s)}return merge(parts,true)}
+  /* ---------- Coffres ---------- */
+  var chestTex={};
+  function plankTex(rare){var k=rare?'r':'n';if(chestTex[k])return chestTex[k];chestTex[k]=canvasTex(128,128,function(g,w,h){var base=rare?['#2f3d4f','#3a4a5e','#33435a']:['#7a5230','#8a5f38','#6f4a2a'];for(var y=0;y<h;y+=21){g.fillStyle=base[(y/21)%3|0];g.fillRect(0,y,w,20);g.fillStyle='rgba(0,0,0,.35)';g.fillRect(0,y+19,w,2);for(var i=0;i<8;i++){g.fillStyle='rgba(0,0,0,.12)';g.fillRect(Math.random()*w,y+3+Math.random()*14,10+Math.random()*30,1)}}});return chestTex[k]}
+  function chestMesh(rare){
+    var g=new THREE.Group(),wood=lam({map:plankTex(rare)}),iron=new THREE.MeshPhongMaterial({color:rare?0xd4a32a:0x3a3a3e,shininess:rare?80:30,emissive:rare?0x2a1a00:0}),dark=lam({color:0x1a1a1a});
+    var base=new THREE.Mesh(new THREE.BoxGeometry(1.1,.6,.72),wood);base.position.y=.3;g.add(base);
+    [[-.55,-.36],[.55,-.36],[-.55,.36],[.55,.36]].forEach(function(p){var c=new THREE.Mesh(new THREE.BoxGeometry(.09,.62,.09),iron);c.position.set(p[0]*.96,.31,p[1]*.96);g.add(c)});
+    var bandB=new THREE.Mesh(new THREE.BoxGeometry(1.12,.07,.74),iron);bandB.position.y=.08;g.add(bandB);var bandT=bandB.clone();bandT.position.y=.56;g.add(bandT);
+    var lid=new THREE.Group();lid.position.set(0,.6,.36);g.add(lid);
+    var lm=new THREE.Mesh(new THREE.CylinderGeometry(.36,.36,1.1,16,1,false,0,Math.PI),wood);lm.rotation.z=Math.PI/2;lm.position.z=-.36;lid.add(lm);
+    var cap1=new THREE.Mesh(new THREE.CylinderGeometry(.37,.37,.06,16,1,false,0,Math.PI),iron);cap1.rotation.z=Math.PI/2;cap1.position.set(-.5,0,-.36);lid.add(cap1);var cap2=cap1.clone();cap2.position.x=.5;lid.add(cap2);var cap3=cap1.clone();cap3.position.x=0;cap3.scale.set(1,.9,1);lid.add(cap3);
+    var lock=new THREE.Mesh(new THREE.BoxGeometry(.18,.22,.05),iron);lock.position.set(0,.47,-.39);g.add(lock);var kh=new THREE.Mesh(new THREE.BoxGeometry(.035,.08,.02),dark);kh.position.set(0,.45,-.42);g.add(kh);
+    [-.58,.58].forEach(function(x){var h=new THREE.Mesh(new THREE.TorusGeometry(.08,.018,6,12),iron);h.position.set(x,.38,0);h.rotation.y=Math.PI/2;g.add(h)});
+    var spark=null;
+    if(rare){var gl=new THREE.PointLight(0xffc860,1.1,7);gl.position.y=1.1;g.add(gl);
+      var sg=new THREE.BufferGeometry(),sp=[];for(var i=0;i<24;i++){var a=Math.random()*6.28,r=.4+Math.random()*.5;sp.push(Math.cos(a)*r,.5+Math.random()*1.4,Math.sin(a)*r)}sg.setAttribute('position',new THREE.Float32BufferAttribute(sp,3));
+      spark=new THREE.Points(sg,new THREE.PointsMaterial({color:0xffe08a,size:.09,transparent:true,opacity:.9,depthWrite:false}));g.add(spark)}
+    g.traverse(function(o){if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
+    g.userData={lid:lid,rare:rare,spark:spark};return g;
+  }
+  /* ---------- Animaux ---------- */
+  function animalMesh(kind,antlers){
+    var wolf=kind==='wolf',g=new THREE.Group(),coat=lam({color:wolf?0x7d7d80:0x9a6438}),back=lam({color:wolf?0x4f4f54:0x7a4c2a}),belly=lam({color:wolf?0xd6d4cf:0xe6d2b0}),hoof=lam({color:0x2a2420}),dark=lam({color:0x1a1716});
+    var S=wolf?.78:1;function m(geo,mat,x,y,z){var o=new THREE.Mesh(geo,mat);o.position.set(x*S,y*S,z*S);o.castShadow=true;return o}
+    var body=m(new THREE.SphereGeometry(.5,18,14),coat,0,1.12,0);body.scale.set(.8,.78,1.55);g.add(body);
+    var top=m(new THREE.SphereGeometry(.42,14,10),back,0,1.3,.05);top.scale.set(.75,.5,1.5);g.add(top);
+    var bel=m(new THREE.SphereGeometry(.4,14,10),belly,0,.98,0);bel.scale.set(.7,.55,1.3);g.add(bel);
+    var chest=m(new THREE.SphereGeometry(.42,14,10),wolf?belly:coat,0,1.15,-.55);chest.scale.set(.85,.95,.9);g.add(chest);
+    var rump=m(new THREE.SphereGeometry(.42,14,10),coat,0,1.15,.55);g.add(rump);
+    var neck=new THREE.Group();neck.position.set(0,1.35*S,-.7*S);g.add(neck);
+    var nk=new THREE.Mesh(new THREE.CapsuleGeometry(.15*S,.5*S,4,10),coat);nk.rotation.x=wolf?-1.1:-.5;nk.position.set(0,.18*S,-.12*S);nk.castShadow=true;neck.add(nk);
+    var head=new THREE.Mesh(new THREE.SphereGeometry(.2*S,14,12),coat);head.scale.set(.9,.9,1.25);head.position.set(0,(wolf?.25:.45)*S,(wolf?-.42:-.32)*S);head.userData.head=true;head.castShadow=true;neck.add(head);
+    var snout=new THREE.Mesh(new THREE.CapsuleGeometry(.1*S,(wolf?.3:.2)*S,4,8),wolf?coat:belly);snout.rotation.x=Math.PI/2;snout.position.set(0,(wolf?.2:.38)*S,(wolf?-.7:-.55)*S);neck.add(snout);
+    var nose=new THREE.Mesh(new THREE.SphereGeometry(.05*S,8,6),dark);nose.position.set(0,(wolf?.22:.4)*S,(wolf?-.9:-.7)*S);neck.add(nose);
+    [-1,1].forEach(function(sd){
+      var ear=new THREE.Mesh(new THREE.ConeGeometry(.07*S,(wolf?.22:.24)*S,6),wolf?back:coat);ear.position.set(sd*.13*S,(wolf?.45:.62)*S,(wolf?-.36:-.25)*S);ear.rotation.z=-sd*(wolf?.15:.9);neck.add(ear);
+      var eye=new THREE.Mesh(new THREE.SphereGeometry(.03*S,6,5),wolf?new THREE.MeshBasicMaterial({color:0xffd23f}):dark);eye.position.set(sd*.13*S,(wolf?.32:.5)*S,(wolf?-.55:-.45)*S);neck.add(eye);
+      if(antlers&&!wolf){var ant=new THREE.Group();ant.position.set(sd*.09,.62,-.3);ant.rotation.z=-sd*.4;neck.add(ant);var am=lam({color:0xd8c8a8});
+        var main=new THREE.Mesh(new THREE.CylinderGeometry(.02,.035,.55,5),am);main.position.y=.27;ant.add(main);[[.18,.25,.6],[.36,.18,-.5],[.48,.15,.7]].forEach(function(t){var tn=new THREE.Mesh(new THREE.CylinderGeometry(.012,.022,t[1]*1.3,4),am);tn.position.set(0,t[0]+.1,0);tn.rotation.z=t[2]*sd;tn.rotation.x=-.4;ant.add(tn)})}
+    });
+    var tail;
+    if(wolf){tail=new THREE.Group();tail.position.set(0,1.2*S,.88*S);var tm=new THREE.Mesh(new THREE.ConeGeometry(.13*S,.7*S,8),back);tm.rotation.x=-2;tm.position.set(0,-.12*S,.25*S);tail.add(tm);var tip=new THREE.Mesh(new THREE.SphereGeometry(.06*S,6,5),belly);tip.position.set(0,-.33*S,.5*S);tail.add(tip);g.add(tail)}
+    else{tail=new THREE.Group();tail.position.set(0,1.3,.85);var tw=new THREE.Mesh(new THREE.SphereGeometry(.1,8,6),belly);tw.scale.set(.8,1.2,.6);tail.add(tw);g.add(tail)}
+    var legs=[];[[-.2,-.5],[.2,-.5],[-.2,.5],[.2,.5]].forEach(function(p,i){
+      var lg=new THREE.Group();lg.position.set(p[0]*S,1*S,p[1]*S);g.add(lg);
+      var up=new THREE.Mesh(new THREE.CapsuleGeometry(.09*S,.35*S,3,8),coat);up.position.y=-.22*S;up.castShadow=true;lg.add(up);
+      var lo=new THREE.Mesh(new THREE.CylinderGeometry(.045*S,.035*S,.5*S,6),wolf?back:coat);lo.position.y=-.65*S;lo.castShadow=true;lg.add(lo);
+      var hf=new THREE.Mesh(new THREE.CylinderGeometry(.05*S,.06*S,.1*S,6),wolf?dark:hoof);hf.position.y=-.93*S;lg.add(hf);legs.push(lg)});
+    g.userData.parts={legs:legs,arms:[],neck:neck,tail:tail};return g;
+  }
   function buildSky(){
     skyMat=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,uniforms:{top:{value:new THREE.Color(0x3d7cc9)},hor:{value:new THREE.Color(0xbfdcf0)},sunDir:{value:new THREE.Vector3(0,1,0)},sunCol:{value:new THREE.Color(0xfff0d0)}},
       vertexShader:'varying vec3 vp;void main(){vp=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
@@ -133,11 +200,11 @@
     sg.setAttribute('position',new THREE.Float32BufferAttribute(sp,3));stars=new THREE.Points(sg,new THREE.PointsMaterial({color:0xffffff,size:1.6,sizeAttenuation:false,transparent:true,opacity:0,fog:false,depthWrite:false}));scene.add(stars);
     sunDisk=new THREE.Mesh(new THREE.CircleGeometry(16,24),new THREE.MeshBasicMaterial({color:0xfff3d6,fog:false,transparent:true}));scene.add(sunDisk);
     moonDisk=new THREE.Mesh(new THREE.CircleGeometry(11,24),new THREE.MeshBasicMaterial({color:0xdfe6f2,fog:false,transparent:true}));scene.add(moonDisk);
-    var cm=new THREE.MeshLambertMaterial({color:0xffffff,emissive:0x555555,fog:false,transparent:true,opacity:.92});
-    for(var c=0;c<26;c++){var g=new THREE.Group(),n=4+(Math.random()*4|0);for(var k=0;k<n;k++){var b=new THREE.Mesh(new THREE.IcosahedronGeometry(8+Math.random()*8,1),cm);b.position.set(k*10-n*5+Math.random()*6,Math.random()*4,Math.random()*10-5);b.scale.y=.45;g.add(b)}
-      g.position.set((Math.random()-.5)*900,140+Math.random()*60,(Math.random()-.5)*900);g.userData.v=1+Math.random()*2;scene.add(g);clouds.push(g)}
+    var cm=new THREE.MeshLambertMaterial({color:0xffffff,emissive:0x6a6a70,fog:false});var cgs=[0,1,2,3,4,5].map(function(i){return cloudGeo(SEED*7+i*131)});
+    for(var c=0;c<30;c++){var g=new THREE.Group(),cl=new THREE.Mesh(cgs[c%6],cm);var sc=.8+Math.random()*.9;cl.scale.set(sc,sc*(.55+Math.random()*.3),sc);cl.rotation.y=Math.random()*6;g.add(cl);
+      g.position.set((Math.random()-.5)*1000,150+Math.random()*90,(Math.random()-.5)*1000);g.userData.v=1.5+Math.random()*2.5;scene.add(g);clouds.push(g)}
   }
-  function buildWorld(seed){
+  function buildWorld(seed,noAnimals){
     SEED=seed;scene=new THREE.Scene();cols=[];grid={};structs=[];zombies=[];animals=[];drops=[];bushes=[];chests=[];clouds=[];grassC=null;
     scene.background=new THREE.Color(0xbfdcf0);scene.fog=new THREE.Fog(0xbfdcf0,80,380);
     buildSky();
@@ -162,16 +229,13 @@
     for(var r=0;r<560;r++){var x3=(R()-.5)*SIZE*.9,z3=(R()-.5)*SIZE*.9,h3=height(x3,z3);if(h3<.5)continue;rl.push({x:x3,z:z3,y:h3,s:.6+R()*1.5,r:R()*6})}
     for(var o=0;o<900&&ol.length<90;o++){var x6=(R()-.5)*SIZE*.85,z6=(R()-.5)*SIZE*.85,h6=height(x6,z6);if(h6<17||h6>40)continue;ol.push({x:x6,z:z6,y:h6,s:.8+R()*.6,r:R()*6})}
     function inst(geo,mat,list,fn,col){var im=new THREE.InstancedMesh(geo,mat,list.length);im.castShadow=true;im.receiveShadow=true;list.forEach(function(o,i){fn(o,i,m4);im.setMatrixAt(i,m4);if(col){col(o,tc);im.setColorAt(i,tc)}});scene.add(im);return im}
-    var trunkG=new THREE.CylinderGeometry(.2,.34,4.2,7);trunkG.translate(0,2.1,0);
-    var pine1=new THREE.ConeGeometry(2.1,4.6,9);pine1.translate(0,4.4,0);var pine2=new THREE.ConeGeometry(1.6,3.8,9);pine2.translate(0,6.4,0);var pine3=new THREE.ConeGeometry(1.05,2.8,9);pine3.translate(0,8.2,0);
-    var leaf1=new THREE.IcosahedronGeometry(2.3,1);leaf1.translate(0,5.2,0);var leaf2=new THREE.IcosahedronGeometry(1.6,1);leaf2.translate(.9,6.4,.4);
-    var birchT=new THREE.CylinderGeometry(.15,.22,5.2,7);birchT.translate(0,2.6,0);var birchL=new THREE.IcosahedronGeometry(1.7,1);birchL.scale(1,1.5,1);birchL.translate(0,6,0);
+    var TG=treeGeos();
     function place(o,i,m){q.setFromAxisAngle(new THREE.Vector3(0,1,0),o.r);s3.set(o.s,o.s,o.s);p3.set(o.x,o.y-.25,o.z);m.compose(p3,q,s3)}
     function green(base,var1){return function(o,c){c.setHex(base);c.offsetHSL((o.c-.5)*.05,(o.c-.5)*.1,(o.c-.5)*var1)}}
     trees={list:tl,meshes:[]};
-    [[0,[trunkG,pine1,pine2,pine3],[0x5b3b22,0x2c5a2c,0x336a31,0x3b7537]],[1,[trunkG,leaf1,leaf2],[0x5f4027,0x4b7f2c,0x568d31]],[2,[birchT,birchL],[0xe8e4da,0x86a83a]]].forEach(function(set){
+    [[0,[TG.trunk,TG.pine],[0x5b3b22,0x2f5e2e],[3,.025]],[1,[TG.oakTrunk,TG.crown],[0x5f4027,0x4f8530],[4,.03]],[2,[TG.btrunk,TG.bcrown],[0xe8e4da,0x8aae3c],[4,.035]]].forEach(function(set){
       var lst=tl.filter(function(o){return o.k===set[0]});
-      var ms=set[1].map(function(geo,j){return inst(geo,lam({color:0xffffff}),lst,place,j===0?function(o,c){c.setHex(set[2][0])}:green(set[2][j],.12))});
+      var ms=set[1].map(function(geo,j){return inst(geo,j===0?lam({color:0xffffff}):windMat(set[3][0],set[3][1]),lst,place,j===0?function(o,c){c.setHex(set[2][0]);if(set[0]===2){c.offsetHSL(0,0,(o.c-.5)*.06)}}:green(set[2][j],.14))});
       lst.forEach(function(o,i){o.ms=ms;o.i=i;o.hp=5;addCol({x:o.x,z:o.z,r:.45*o.s,type:'tree',ref:o})});
       trees.meshes.push(ms);
     });
@@ -198,10 +262,10 @@
     // herbe et fleurs (placées autour du joueur)
     var bladeG=new THREE.ConeGeometry(.05,.55,3);bladeG.translate(0,.27,0);
     var tuft=new THREE.BufferGeometry();(function(){var arr=[];for(var k=0;k<5;k++){var a=k*1.25,ox=Math.cos(a)*.12,oz=Math.sin(a)*.12,lean=.12;arr.push(ox-.03,0,oz, ox+.03,0,oz, ox+Math.cos(a)*lean,.45+k%2*.15,oz+Math.sin(a)*lean)}tuft.setAttribute('position',new THREE.Float32BufferAttribute(arr,3));tuft.computeVertexNormals()})();
-    grass=new THREE.InstancedMesh(tuft,new THREE.MeshLambertMaterial({color:0xffffff,side:THREE.DoubleSide}),7000);grass.count=0;scene.add(grass);
+    var gm=windMat(0,.22);gm.side=THREE.DoubleSide;grass=new THREE.InstancedMesh(tuft,gm,7000);grass.count=0;scene.add(grass);
     flowers=new THREE.InstancedMesh(new THREE.SphereGeometry(.09,6,4),new THREE.MeshLambertMaterial({color:0xffffff,emissive:0x111111}),900);flowers.count=0;scene.add(flowers);
     // animaux
-    for(var an=0;an<30;an++)addAnimal('deer',R);for(var w2=0;w2<10;w2++)addAnimal('wolf',R);
+    if(!noAnimals){for(var an=0;an<30;an++)addAnimal('deer',R);for(var w2=0;w2<10;w2++)addAnimal('wolf',R)}
   }
   function placeGrass(){
     var cx=Math.round(P.x/10)*10,cz=Math.round(P.z/10)*10;if(grassC&&grassC.x===cx&&grassC.z===cz)return;grassC={x:cx,z:cz};
@@ -217,14 +281,6 @@
     }
     grass.count=n;flowers.count=f;grass.instanceMatrix.needsUpdate=true;flowers.instanceMatrix.needsUpdate=true;if(grass.instanceColor)grass.instanceColor.needsUpdate=true;if(flowers.instanceColor)flowers.instanceColor.needsUpdate=true;
   }
-  function chestMesh(rare){
-    var g=new THREE.Group(),wood=lam({color:rare?0x3c4a5a:0x7a5230}),band=lam({color:rare?0xd4a32a:0x3a3a3a,emissive:rare?0x3a2a00:0});
-    var base=new THREE.Mesh(new THREE.BoxGeometry(1.1,.6,.7),wood);base.position.y=.3;base.castShadow=true;g.add(base);
-    var lid=new THREE.Group(),lm=new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,1.1,12,1,false,0,Math.PI),wood);lm.rotation.z=Math.PI/2;lid.add(lm);lid.position.set(0,.6,0);g.add(lid);
-    [-.35,.35].forEach(function(x){var b=new THREE.Mesh(new THREE.BoxGeometry(.08,.62,.72),band);b.position.set(x,.31,0);g.add(b)});
-    if(rare){var gl=new THREE.PointLight(0xffc860,.8,6);gl.position.y=1;g.add(gl)}
-    g.userData={lid:lid,rare:rare};return g;
-  }
   function humanoid(col,skin,zombie){
     var g=new THREE.Group(),m=lam({color:col}),sk=lam({color:skin}),dk=lam({color:0x2b2a28});
     var body=new THREE.Mesh(new THREE.CapsuleGeometry(.3,.6,4,10),m);body.position.y=1.25;body.castShadow=true;g.add(body);
@@ -235,26 +291,16 @@
     if(zombie){var e1=new THREE.Mesh(new THREE.SphereGeometry(.04,6,4),new THREE.MeshBasicMaterial({color:0xff2a10}));e1.position.set(-.08,1.95,-.2);var e2=e1.clone();e2.position.x=.08;g.add(e1);g.add(e2)}
     g.userData.parts={legs:legs,arms:arms};return g;
   }
-  function quad(col,wolf){
-    var g=new THREE.Group(),m=lam({color:col}),l=lam({color:wolf?0x3a3a3a:0x6b4426}),s=wolf?.75:1;
-    var b=new THREE.Mesh(new THREE.CapsuleGeometry(.33*s,1*s,4,10),m);b.rotation.x=Math.PI/2;b.position.y=1.05*s;b.castShadow=true;g.add(b);
-    var n=new THREE.Mesh(new THREE.CapsuleGeometry(.14*s,.45*s,3,8),m);n.position.set(0,(wolf?1.15:1.5)*s,-.7*s);n.rotation.x=wolf?1.1:.6;g.add(n);
-    var h=new THREE.Mesh(new THREE.SphereGeometry(.21*s,12,8),m);h.scale.set(.9,.9,wolf?1.7:1.4);h.position.set(0,(wolf?1.25:1.75)*s,(wolf?-1.05:-.95)*s);h.userData.head=true;g.add(h);
-    if(wolf){[-.1,.1].forEach(function(x){var e=new THREE.Mesh(new THREE.ConeGeometry(.07,.18,4),m);e.position.set(x,1.45*s,-.95*s);g.add(e)});var tl=new THREE.Mesh(new THREE.CapsuleGeometry(.07,.5,3,6),m);tl.position.set(0,1.05*s,.75*s);tl.rotation.x=-.8;g.add(tl);var ey=new THREE.Mesh(new THREE.SphereGeometry(.035,6,4),new THREE.MeshBasicMaterial({color:0xffd23f}));ey.position.set(-.08,1.32*s,-1.3*s);g.add(ey);var ey2=ey.clone();ey2.position.x=.08;g.add(ey2)}
-    else{[-.12,.12].forEach(function(x){var an=new THREE.Mesh(new THREE.CylinderGeometry(.02,.03,.5,4),lam({color:0x7a6a50}));an.position.set(x,2.05,-.85);an.rotation.z=x*3;g.add(an)})}
-    var legs=[];[[-.18,-.45],[.18,-.45],[-.18,.45],[.18,.45]].forEach(function(p){var lg=new THREE.Mesh(new THREE.CylinderGeometry(.06*s,.05*s,.85*s,6),l);lg.geometry.translate(0,-.42*s,0);lg.position.set(p[0]*s,.88*s,p[1]*s);lg.castShadow=true;g.add(lg);legs.push(lg)});
-    g.userData.parts={legs:legs,arms:[]};return g;
-  }
   function addAnimal(kind,R){
     var x,z,t=0;do{x=(R()-.5)*SIZE*.8;z=(R()-.5)*SIZE*.8;t++}while((height(x,z)<2||(P&&Math.hypot(x-P.x,z-P.z)<60))&&t<30);
-    var wolf=kind==='wolf',m=quad(wolf?0x77777a:0x8a5a33,wolf);scene.add(m);
-    var a={kind:kind,x:x,z:z,yaw:R()*6,hp:wolf?60:40,m:m,alive:true,t:0,flee:0,r:wolf?.5:.6,cd:0};m.userData.ent=a;animals.push(a);
+    var wolf=kind==='wolf',ant=!wolf&&R()<.45,m=animalMesh(kind,ant);scene.add(m);
+    var a={id:++eid,ant:ant,kind:kind,x:x,z:z,yaw:R()*6,hp:wolf?60:40,m:m,alive:true,t:0,flee:0,r:wolf?.5:.6,cd:0};m.userData.ent=a;animals.push(a);
   }
-  function addZombie(){
-    var x,z,n=0;do{var a=Math.random()*6.28,d=40+Math.random()*25;x=P.x+Math.cos(a)*d;z=P.z+Math.sin(a)*d;n++}while(height(x,z)<.5&&n<12);if(height(x,z)<.5)return;
+  function addZombie(px,pz){
+    if(px===undefined){px=P.x;pz=P.z}var x,z,n=0;do{var a=Math.random()*6.28,d=40+Math.random()*25;x=px+Math.cos(a)*d;z=pz+Math.sin(a)*d;n++}while(height(x,z)<.5&&n<12);if(height(x,z)<.5)return;
     var blood=bloodNight(),big=Math.random()<(blood?.2:.06)+day*.01;
     var m=humanoid([0x4d5a3a,0x5a4a3a,0x3a4a5a,0x5a3a3a][Math.random()*4|0],big?0x6f8a5a:0x86a070,true);if(big)m.scale.setScalar(1.45);scene.add(m);
-    var e={kind:'z',x:x,z:z,yaw:0,hp:(70+day*12)*(big?3.5:1),dmg:(9+day*1.5)*(big?2:1),sp:(2.2+Math.random()*.9+Math.min(1.4,day*.1))*(big?.75:1)*(blood?1.15:1),m:m,alive:true,cd:0,r:big?.6:.4,anim:0};m.userData.ent=e;zombies.push(e);
+    var e={id:++eid,big:big,kind:'z',x:x,z:z,yaw:0,hp:(70+day*12)*(big?3.5:1),dmg:(9+day*1.5)*(big?2:1),sp:(2.2+Math.random()*.9+Math.min(1.4,day*.1))*(big?.75:1)*(blood?1.15:1),m:m,alive:true,cd:0,r:big?.6:.4,anim:0};m.userData.ent=e;zombies.push(e);
   }
 
   /* ---------- Joueur et sauvegarde ---------- */
@@ -268,6 +314,7 @@
   function findSpawn(){for(var i=0;i<300;i++){var a=Math.random()*6.28,d=HALF*.55*Math.random(),x=Math.cos(a)*d,z=Math.sin(a)*d,h=height(x,z);if(h>2&&h<12&&!hitsCol(x,z,1))return {x:x,z:z}}return {x:0,z:0}}
   function save(){
     if(!P||won)return;
+    if(online&&!auth){try{localStorage.setItem('pp-survie-g',JSON.stringify({seed:SEED,p:{x:P.x,z:P.z,hp:P.hp,food:P.food,water:P.water,spawn:P.spawn},inv:inv,st:st,goal:goalI}))}catch(e){}return}
     var s={v:2,seed:SEED,day:day,t:dayT,p:{x:P.x,z:P.z,hp:P.hp,food:P.food,water:P.water,spawn:P.spawn},inv:inv,st:st,goal:goalI,rescue:rescueT,
       sts:structs.filter(function(o){return !o.dead}).map(function(o){return [o.type,+o.x.toFixed(2),+o.z.toFixed(2),o.rot,Math.round(o.hp),o.store||null]}),
       ch:chests.filter(function(c){return c.open}).map(function(c){return c.id}),
@@ -329,8 +376,8 @@
     var o={type:type,x:x,z:z,rot:rot,hp:B.hp,max:B.hp,m:m,box:true,hw:hw,hd:hd};
     if(type!=='fire')addCol(o);
     structs.push(o);
-    if(type==='bed')P.spawn={x:x,z:z+1.6};
-    if(!free){sfx.play('pickup');hudInv()}
+    if(type==='bed'&&!free)P.spawn={x:x,z:z+1.6};
+    if(!free){sfx.play('pickup');hudInv();relayEv({e:'build',ty:type,x:x,z:z,r:rot})}
     return o;
   }
   function destroyStruct(o){remCol(o);scene.remove(o.m)}
@@ -352,13 +399,13 @@
   function treeBase(o){return new THREE.Vector3(o.x,o.y-.25,o.z)}
   function treeM0(o){if(!o.m0){o.m0=new THREE.Matrix4();o.ms[0].getMatrixAt(o.i,o.m0)}return o.m0}
   function shakeTree(o,dir){treeM0(o);var s=shakes.filter(function(x){return x.o===o})[0];if(s){s.t=.35;return}shakes.push({o:o,t:.35,ax:new THREE.Vector3(dir.z,0,-dir.x).normalize()})}
-  function fallTree(o){
+  function fallTree(o,nd){
     var m0=treeM0(o),base=treeBase(o),inv0=new THREE.Matrix4().makeTranslation(-base.x,-base.y,-base.z).multiply(m0),g=new THREE.Group(),c=new THREE.Color();
     o.ms.forEach(function(im){if(im.instanceColor)im.getColorAt(o.i,c);else c.setHex(0x5b3b22);var m=new THREE.Mesh(im.geometry,lam({color:c.getHex()}));m.applyMatrix4(inv0);m.castShadow=true;g.add(m)});
     g.position.copy(base);scene.add(g);
     var dx=o.x-P.x,dz=o.z-P.z,l=Math.hypot(dx,dz)||1;dx/=l;dz/=l;
-    falls.push({g:g,x:o.x,z:o.z,dx:dx,dz:dz,axis:new THREE.Vector3(dz,0,-dx),a:0,w:0,phase:0,t:0,len:8*o.s});
-    sfx.play('hit');msg('L\'arbre tombe !');
+    falls.push({nd:nd,g:g,x:o.x,z:o.z,dx:dx,dz:dz,axis:new THREE.Vector3(dz,0,-dx),a:0,w:0,phase:0,t:0,len:8*o.s});
+    if(!nd){sfx.play('hit');msg('L\'arbre tombe !')}
   }
   function itemMesh(k){
     var g=new THREE.Group();function add(geo,col,x,y,z,rx,ry,rz){var m=new THREE.Mesh(geo,lam({color:col}));m.position.set(x||0,y||0,z||0);m.rotation.set(rx||0,ry||0,rz||0);m.castShadow=true;g.add(m);return m}
@@ -382,6 +429,8 @@
     scene.remove(d.m);d.gone=true;sfx.play('pickup');hudInv();
   }
   function stepFx(dt){
+    windU.value+=dt;
+    chests.forEach(function(c){if(c.anim!==undefined&&c.anim<1){c.anim=Math.min(1,c.anim+dt*2.2);var e=1-Math.pow(1-c.anim,3);c.m.userData.lid.rotation.x=-1.9*e-Math.sin(c.anim*Math.PI)*.15}if(c.m.userData.spark&&c.m.userData.spark.visible){c.m.userData.spark.rotation.y+=dt*.8;c.m.userData.spark.material.opacity=.6+Math.sin(windU.value*3+c.id)*.35}});
     parts.forEach(function(p){p.t-=dt;p.v.y-=15*dt;p.m.position.addScaledVector(p.v,dt);p.m.rotation.x+=p.rx*dt;p.m.rotation.y+=p.ry*dt;var g=height(p.m.position.x,p.m.position.z)+.05;if(p.m.position.y<g){p.m.position.y=g;p.v.x*=.5;p.v.z*=.5;p.v.y=Math.abs(p.v.y)*.25;p.rx*=.5;p.ry*=.5}if(p.t<.3)p.m.scale.multiplyScalar(.88)});
     parts=parts.filter(function(p){if(p.t<=0){scene.remove(p.m);return false}return true});
     if(!TMP4)TMP4={a:new THREE.Matrix4(),b:new THREE.Matrix4(),c:new THREE.Matrix4()};
@@ -392,7 +441,7 @@
     falls.forEach(function(f){f.t+=dt;
       if(f.phase===0){f.w+=dt*2.6;f.a=Math.min(Math.PI/2-.04,f.a+f.w*dt);f.g.quaternion.setFromAxisAngle(f.axis,f.a);
         if(f.a>=Math.PI/2-.04){f.phase=1;f.t=0;sfx.play('crash');shakeT=.3;var tip=f.len*.6,tx=f.x+f.dx*tip,tz=f.z+f.dz*tip;burst(tx,height(tx,tz)+.6,tz,0x3b6e2c,26,7);burst(tx,height(tx,tz)+.4,tz,0x2c5a2c,14,5);burst(f.x+f.dx*2,height(f.x,f.z)+.3,f.z+f.dz*2,0x7a5230,10,4);
-          for(var k=0;k<3;k++){var d=1.6+k*1.9;dropItem(f.x+f.dx*d+(Math.random()-.5)*.6,f.z+f.dz*d+(Math.random()-.5)*.6,'bois',3,true)}}}
+          if(!f.nd)for(var k=0;k<3;k++){var d=1.6+k*1.9;dropItem(f.x+f.dx*d+(Math.random()-.5)*.6,f.z+f.dz*d+(Math.random()-.5)*.6,'bois',3,true)}}}
       else if(f.t>1.1){var s=Math.max(0,1-(f.t-1.1)*1.4);f.g.scale.setScalar(Math.max(.01,s));if(s<=0){scene.remove(f.g);f.dead=1}}
     });
     falls=falls.filter(function(f){return !f.dead});
@@ -491,6 +540,7 @@
     else{var im=type==='rock'?rocks:ores;im.setMatrixAt(o.i,ZERO);im.instanceMatrix.needsUpdate=true}
     near(o.x,o.z,2).forEach(function(c){if(c.ref===o)remCol(c)});
     if(silent)return;
+    relayEv({e:'fell',ty:type,i:type==='tree'?trees.list.indexOf(o):o.i});
     var gy=height(o.x,o.z)+.6;
     if(type==='rock'){burst(o.x,gy,o.z,0x8c8a84,30,7);burst(o.x,gy,o.z,0x6f6c66,12,5);for(var k=0;k<2;k++)dropItem(o.x+(Math.random()-.5)*1.5,o.z+(Math.random()-.5)*1.5,'pierre',2,true);sfx.play('kill');shakeT=.15}
     if(type==='ore'){burst(o.x,gy,o.z,0x8a5a3c,24,7);burst(o.x,gy+.3,o.z,0xffb060,12,6);for(var k2=0;k2<2;k2++)dropItem(o.x+(Math.random()-.5)*1.5,o.z+(Math.random()-.5)*1.5,'fer',2,true);sfx.play('kill');shakeT=.15}
@@ -515,19 +565,19 @@
   function interact(){
     var t=interactTarget();if(!t)return;
     if(t.k==='chest')openChest(t.o);
-    if(t.k==='bush'){t.o.full=false;t.o.t=DAY*.8;t.o.b.visible=false;inv.baies+=3;msg('+3 baies');sfx.play('eat')}
+    if(t.k==='bush'){relayEv({e:'bush',i:bushes.indexOf(t.o)});t.o.full=false;t.o.t=DAY*.8;t.o.b.visible=false;inv.baies+=3;msg('+3 baies');sfx.play('eat')}
     if(t.k==='drop'){collect(t.o);drops=drops.filter(function(x){return !x.gone})}
     if(t.k==='water'){P.water=Math.min(100,P.water+35);msg('Tu bois');sfx.play('ui')}
     if(t.k==='fire'){if(inv.viande>0){inv.cuite+=inv.viande;msg(inv.viande+' viande cuite');inv.viande=0;sfx.play('pickup')}else msg('Pas de viande crue')}
-    if(t.k==='bed'){if(isNight()){if(zombies.some(function(z){return z.alive&&Math.hypot(z.x-P.x,z.z-P.z)<25}))msg('Impossible : des zombies sont tout près');else{dayT=.26;newDay();zombies.forEach(function(z){z.alive=false;scene.remove(z.m)});zombies=[];P.food=Math.max(0,P.food-15);P.water=Math.max(0,P.water-15);msg('Tu dors jusqu\'au matin');sfx.play('win');save()}}else msg('Tu ne peux dormir que la nuit')}
+    if(t.k==='bed'&&online&&!auth){P.spawn={x:t.o.x,z:t.o.z+1.6};msg('Point de réapparition enregistré. Seul l\'hôte peut faire passer la nuit.')}else if(t.k==='bed'){P.spawn={x:t.o.x,z:t.o.z+1.6};if(isNight()){if(zombies.some(function(z){return z.alive&&Math.hypot(z.x-P.x,z.z-P.z)<25}))msg('Impossible : des zombies sont tout près');else{dayT=.26;newDay();zombies.forEach(function(z){z.alive=false;scene.remove(z.m)});zombies=[];P.food=Math.max(0,P.food-15);P.water=Math.max(0,P.water-15);msg('Tu dors jusqu\'au matin');sfx.play('win');save()}}else msg('Tu ne peux dormir que la nuit')}
     if(t.k==='box'){var b=t.o;b.store=b.store||{};['bois','pierre','fer','cuir','tissu'].forEach(function(k){b.store[k]=(b.store[k]||0)+inv[k];inv[k]=0});msg('Ressources rangées dans le coffre');sfx.play('pickup')}
-    if(t.k==='door'){var dd=t.o;dd.openD=!dd.openD;dd.m.rotation.y=dd.rot*Math.PI/2+(dd.openD?Math.PI/2:0);var gl=grid[dd.k]||[];if(dd.openD){var gi=gl.indexOf(dd);if(gi>=0)gl.splice(gi,1)}else if(gl.indexOf(dd)<0)gl.push(dd);sfx.play('ui')}
+    if(t.k==='door')toggleDoor(t.o);
     if(t.k==='bench'||t.k==='forge')craftMenu();
     hudInv();
   }
   function lootTxt(it){return Object.keys(it).map(function(k){return '+'+it[k]+' '+({pistol:'pistolet',rifle:'fusil'}[k]||(NAMES[k]||k).toLowerCase())}).join(', ')}
   function openChest(c){
-    c.open=true;c.m.userData.lid.rotation.x=-1.9;sfx.play('win');
+    c.open=true;c.anim=0;if(c.m.userData.spark)c.m.userData.spark.visible=false;burst(c.x,height(c.x,c.z)+.9,c.z,c.rare?0xffd060:0xc9a26a,c.rare?22:10,4);sfx.play('win');relayEv({e:'chest',id:c.id});
     var it={},R=Math.random;function add(k,n){it[k]=(it[k]||0)+n}
     add(PP.pick(['conserve','eau','bandage','tissu','tissu']),1+(R()*2|0));add(PP.pick(['munitions','conserve','tissu','eau','fleches']),R()<.5?1:3);
     if(R()<.45)add('munitions',6+(R()*10|0));if(R()<.3)add('fer',1+(R()*2|0));
@@ -547,8 +597,7 @@
     var tg=[];zombies.forEach(function(z){if(z.alive)tg.push(z.m)});animals.forEach(function(a){if(a.alive)tg.push(a.m)});
     var hs=ray.intersectObjects(tg,true),ht=ray.intersectObject(terrain,false),tdist=ht.length?ht[0].distance:1e9;
     var dmg=T.dmg*(tool==='axe'&&inv.iaxe?1.4:1);
-    if(hs.length&&hs[0].distance<tdist){var o=hs[0].object,head=!!o.userData.head;while(o&&!o.userData.ent)o=o.parent;if(o){var e=o.userData.ent;e.hp-=dmg*(head?1.8:1);e.hurt=.15;flashEnt(e,hs[0].point);if(e.kind==='deer')e.flee=6;if(e.kind==='wolf')e.angry=20;sfx.play('hit');if(e.hp<=0){e.alive=false;e.dieT=1;sfx.play('kill');st.kills++;
-      if(e.kind==='deer'){dropItem(e.x+.4,e.z,'viande',3);dropItem(e.x-.4,e.z+.3,'cuir',2);st.deer++}else if(e.kind==='wolf'){dropItem(e.x,e.z,'viande',1);dropItem(e.x+.4,e.z,'cuir',3)}else{var r=Math.random();if(r<.35)dropItem(e.x,e.z,'munitions',6);else if(r<.6)dropItem(e.x,e.z,'tissu',2);else if(r<.8)dropItem(e.x,e.z,'conserve',1);else dropItem(e.x,e.z,'fer',1)}}}}
+    if(hs.length&&hs[0].distance<tdist){var o=hs[0].object,head=!!o.userData.head;while(o&&!o.userData.ent)o=o.parent;if(o&&online&&!auth){var ge=o.userData.ent;flashEnt(ge,hs[0].point);sfx.play('hit');net.send({t:'sv-hit',id:ge.id,d:dmg*(head?1.8:1)});o=null}if(o){var e=o.userData.ent;e.hp-=dmg*(head?1.8:1);e.hurt=.15;flashEnt(e,hs[0].point);if(e.kind==='deer')e.flee=6;if(e.kind==='wolf')e.angry=20;sfx.play('hit');if(e.hp<=0){e.alive=false;e.dieT=1;sfx.play('kill');killDrops(e.kind,e.x,e.z)}}}
     else if(T.melee){
       var l=near(P.x,P.z,4),best=null,bd=T.range;
       l.forEach(function(c){if(c.dead||(c.type!=='tree'&&c.type!=='rock'&&c.type!=='ore'))return;var d=Math.hypot(c.x-P.x,c.z-P.z)-c.r;if(d<bd&&isInFront(c.x,c.z,.4)){bd=d;best=c}});
@@ -569,6 +618,7 @@
   function die(){
     sfx.play('lose');var best=PP.store('sv-best');if(day>best){PP.store('sv-best',day);PP.refreshHi()}
     if(P.spawn){var lost={};['bois','pierre','fer','baies','viande','cuite','conserve','cuir'].forEach(function(k){var n=Math.floor((inv[k]||0)/2);if(n){lost[k]=n;inv[k]-=n}});dropAt(P.x,P.z,lost);P.x=P.spawn.x;P.z=P.spawn.z;P.hp=60;P.food=Math.max(P.food,40);P.water=Math.max(P.water,40);msg('Tu te réveilles dans ton lit. Ton sac est resté là où tu es tombé.');save();return}
+    if(online){var lost2={};['bois','pierre','fer','baies','viande','cuite','conserve','cuir'].forEach(function(k){var n=Math.floor((inv[k]||0)/2);if(n){lost2[k]=n;inv[k]-=n}});dropAt(P.x,P.z,lost2);var rs=Object.keys(remotes).map(function(k){return remotes[k]}).filter(function(r){return r.hp>0})[0],sp=rs?{x:rs.x+2,z:rs.z+2}:findSpawn();P.x=sp.x;P.z=sp.z;P.hp=60;P.food=Math.max(P.food,40);P.water=Math.max(P.water,40);msg('Tu réapparais près de tes potes. Ton sac est resté là où tu es tombé.');return}
     running=false;cancelAnimationFrame(raf);unlock();exitFull();try{localStorage.removeItem('pp-survie2')}catch(e){}
     $('sv-title').textContent='Tu es mort';$('sv-msg').textContent='Tu as survécu '+day+' jour'+(day>1?'s':'')+' et rempli '+goalI+' objectif'+(goalI>1?'s':'')+' sur '+GOALS.length+'. Construis un lit pour réapparaître la prochaine fois.';$('sv-start').textContent='Nouvelle île';$('sv-cont').hidden=true;$('sv-ov').hidden=false;
   }
@@ -630,7 +680,7 @@
   /* ---------- Boucle ---------- */
   function step(dt){
     var now=performance.now();
-    dayT+=dt/DAY;if(dayT>=1){dayT-=1;newDay();if(won)return}
+    dayT+=dt/DAY;if(dayT>=1){dayT-=1;if(!online||auth){newDay();if(won)return}}
     lightCycle(dt);
     var sprint=keys.SH&&P.stam>5&&(keys.F||keys.B||keys.L||keys.R),sp=(sprint?8.5:4.8)*dt;
     if(sprint)P.stam=Math.max(0,P.stam-dt*18);else P.stam=Math.min(100,P.stam+dt*12);
@@ -644,37 +694,8 @@
     else if(P.food>55&&P.water>55&&now-lastHurt>5000&&P.hp<100)P.hp=Math.min(100,P.hp+dt*1.2);
     // torche
     torchL.intensity=tool==='torch'?(isNight()?2.4:1)+Math.sin(now/70)*.2:0;torchL.position.set(P.x-Math.sin(P.yaw)*.6,P.y+EYE,P.z-Math.cos(P.yaw)*.6);
-    // zombies la nuit
-    if(isNight()){spawnT-=dt;var cap=Math.min(32,4+day*3)*(bloodNight()?1.6:1);if(spawnT<=0&&zombies.filter(function(z){return z.alive}).length<cap){spawnT=Math.max(1,(6-day*.4)*(bloodNight()?.5:1));addZombie()}}
-    else if(dayT>.3&&dayT<.7){zombies.forEach(function(z){if(z.alive&&Math.random()<dt*.15)z.hp=0})}
-    zombies.forEach(function(z){
-      if(!z.alive){if(z.dieT>0){z.dieT-=dt;z.m.rotation.x=Math.min(1.5,(1-z.dieT)*3);if(z.dieT<=0)scene.remove(z.m)}return}
-      if(z.hp<=0){z.alive=false;z.dieT=1;return}
-      var dx=P.x-z.x,dz=P.z-z.z,d=Math.hypot(dx,dz),a=Math.atan2(dx,dz);z.yaw=a;
-      var fear=structs.some(function(s){return !s.dead&&s.type==='fire'&&Math.hypot(s.x-z.x,s.z-z.z)<4})||(tool==='torch'&&d<3.5);if(fear)a+=Math.PI*.6;
-      if(d>1.2){var hit=moveCirc(z,Math.sin(a)*z.sp*dt,Math.cos(a)*z.sp*dt,z.r,'z');
-        if(hit&&hit.box){z.cd-=dt;if(z.cd<=0){z.cd=1;hit.hp-=z.dmg;if(Math.hypot(hit.x-P.x,hit.z-P.z)<20)sfx.play('hit');if(hit.hp<=0){destroyStruct(hit);msg('Un zombie a cassé : '+BUILD[hit.type].n.toLowerCase())}}if(hit.type==='spike')z.hp-=dt*25}}
-      else{z.cd-=dt;if(z.cd<=0){z.cd=1.1;hurt(z.dmg)}}
-      z.m.position.set(z.x,height(z.x,z.z),z.z);z.m.rotation.y=z.yaw+Math.PI;walk(z,dt,d>1.2);
-      if(d>150){z.alive=false;scene.remove(z.m)}
-    });
-    zombies=zombies.filter(function(z){return z.alive||z.dieT>0});
-    animals.forEach(function(a){
-      if(!a.alive){if(a.dieT>0){a.dieT-=dt;a.m.rotation.z=Math.min(1.5,(1-a.dieT)*3);if(a.dieT<=0)scene.remove(a.m)}return}
-      var d=Math.hypot(P.x-a.x,P.z-a.z);if(d>140)return;
-      var sp3=0;
-      if(a.kind==='wolf'){
-        if(d<16||a.angry>0){a.angry=Math.max(0,(a.angry||0)-dt);a.yaw=Math.atan2(P.x-a.x,P.z-a.z);if(tool==='torch'&&d<5){a.yaw+=Math.PI;sp3=5}else if(d>1.6)sp3=6.2;else{a.cd-=dt;if(a.cd<=0){a.cd=1.1;hurt(6+day*.5)}}}
-        else{a.t-=dt;if(a.t<=0){a.t=2+Math.random()*4;a.yaw+=(Math.random()-.5)*2;a.walk=Math.random()<.6}sp3=a.walk?1.8:0}
-      }else{
-        if(d<10&&(keys.SH||a.flee>0))a.flee=Math.max(a.flee,4);
-        if(a.flee>0){a.flee-=dt;a.yaw=Math.atan2(a.x-P.x,a.z-P.z);sp3=7}else{a.t-=dt;if(a.t<=0){a.t=2+Math.random()*4;a.yaw+=(Math.random()-.5)*2;a.walk=Math.random()<.5}sp3=a.walk?1.3:0}
-      }
-      if(sp3){var hb=moveCirc(a,Math.sin(a.yaw)*sp3*dt,Math.cos(a.yaw)*sp3*dt,a.r,'a');if(hb)a.yaw+=1}
-      a.m.position.set(a.x,height(a.x,a.z),a.z);a.m.rotation.y=a.yaw+Math.PI;walk(a,dt,sp3>0);
-    });
-    animals=animals.filter(function(a){return a.alive||a.dieT>0});
-    if(animals.filter(function(a){return a.kind==='deer'}).length<24&&Math.random()<dt*.05)addAnimal('deer',Math.random);
+    if(online&&!auth)stepGuestEnts(dt);else stepEnts(dt,now);
+    if(online){stepRemotes(dt);sendNet(dt)}
     bushes.forEach(function(b){if(!b.full){b.t-=dt;if(b.t<=0){b.full=true;b.b.visible=true}}});
     structs.forEach(function(s){if(s.dead||!s.m.userData.light)return;var f=s.m.userData.flame;if(s.type==='fire')f.scale.set(1+Math.sin(now/90)*.1,1+Math.sin(now/70)*.2,1);s.m.userData.light.intensity=(isNight()?2.6:.8)+Math.sin(now/60)*.3});
     // objectifs
@@ -683,8 +704,155 @@
     saveT-=dt;if(saveT<=0){saveT=20;save()}
     stepFx(dt);placeGrass();ghostUpdate();prompt();hudBars();
   }
-  function walk(e,dt,mv){var p=e.m.userData.parts;e.anim=(e.anim||0)+dt*(mv?(e.kind==='wolf'?13:8):0);var s=Math.sin(e.anim)*.55*(mv?1:0);p.legs.forEach(function(l,i){l.rotation.x=(i%2?s:-s)*(i>1?-1:1)})}
+  function walk(e,dt,mv){if(!e.m)return;var p=e.m.userData.parts;e.anim=(e.anim||0)+dt*(mv?(e.kind==='wolf'?13:8):0);var s=Math.sin(e.anim)*.55*(mv?1:0);p.legs.forEach(function(l,i){l.rotation.x=(i%2?s:-s)*(i>1?-1:1)})}
 
+  /* ---------- Créatures (calculées par l'hôte en ligne) ---------- */
+  function playersList(){var l=[];if(P&&P.hp>0)l.push({x:P.x,z:P.z,me:1,torch:tool==='torch'});Object.keys(remotes).forEach(function(k){var r=remotes[k];if(r.hp>0&&r.ready)l.push({x:r.x,z:r.z,id:k,torch:r.tool==='torch'})});return l}
+  function nearestP(x,z,pl){var b=null,bd=1e9;(pl||playersList()).forEach(function(p){var d=Math.hypot(p.x-x,p.z-z);if(d<bd){bd=d;b=p}});if(b)b.d=bd;return b}
+  function hurtP(p,d){if(p.me)hurt(d);else net.to(p.id,{t:'sv-dmg',d:d})}
+  function stepEnts(dt,now){
+    var pl=playersList();
+    if(isNight()){spawnT-=dt;var cap=Math.min(44,(4+day*3)*Math.max(1,pl.length*.75))*(bloodNight()?1.6:1);if(spawnT<=0&&pl.length&&zombies.filter(function(z){return z.alive}).length<cap){spawnT=Math.max(1,(6-day*.4)*(bloodNight()?.5:1)/Math.max(1,pl.length*.8));var tp=PP.pick(pl);addZombie(tp.x,tp.z)}}
+    else if(dayT>.3&&dayT<.7){zombies.forEach(function(z){if(z.alive&&Math.random()<dt*.15)z.hp=0})}
+    zombies.forEach(function(z){
+      if(!z.alive){if(z.dieT>0){z.dieT-=dt;z.m.rotation.x=Math.min(1.5,(1-z.dieT)*3);if(z.dieT<=0)scene.remove(z.m)}return}
+      if(z.hp<=0){z.alive=false;z.dieT=1;return}
+      var t=nearestP(z.x,z.z,pl);if(!t){walk(z,dt,false);return}
+      var dx=t.x-z.x,dz=t.z-z.z,d=t.d,a=Math.atan2(dx,dz);z.yaw=a;
+      var fear=structs.some(function(s){return !s.dead&&s.type==='fire'&&Math.hypot(s.x-z.x,s.z-z.z)<4})||(t.torch&&d<3.5);if(fear)a+=Math.PI*.6;
+      z.mv=d>1.2;
+      if(d>1.2){var hit=moveCirc(z,Math.sin(a)*z.sp*dt,Math.cos(a)*z.sp*dt,z.r,'z');
+        if(hit&&hit.box){z.cd-=dt;if(z.cd<=0){z.cd=1;hit.hp-=z.dmg;if(Math.hypot(hit.x-P.x,hit.z-P.z)<20)sfx.play('hit');if(hit.hp<=0){destroyStruct(hit);if(online)net.relay({g:'sve',e:'sdel',ty:hit.type,x:hit.x,z:hit.z});msg('Un zombie a cassé : '+BUILD[hit.type].n.toLowerCase())}}if(hit.type==='spike')z.hp-=dt*25}}
+      else{z.cd-=dt;if(z.cd<=0){z.cd=1.1;hurtP(t,z.dmg)}}
+      z.m.position.set(z.x,height(z.x,z.z),z.z);z.m.rotation.y=z.yaw+Math.PI;walk(z,dt,d>1.2);
+      if(d>150){z.alive=false;scene.remove(z.m)}
+    });
+    zombies=zombies.filter(function(z){return z.alive||z.dieT>0});
+    animals.forEach(function(a){
+      if(!a.alive){if(a.dieT>0){a.dieT-=dt;a.m.rotation.z=Math.min(1.5,(1-a.dieT)*3);if(a.dieT<=0)scene.remove(a.m)}return}
+      var t=nearestP(a.x,a.z,pl);if(!t||t.d>140)return;var d=t.d;
+      var sp3=0;
+      if(a.kind==='wolf'){
+        if(d<16||a.angry>0){a.angry=Math.max(0,(a.angry||0)-dt);a.yaw=Math.atan2(t.x-a.x,t.z-a.z);if(t.torch&&d<5){a.yaw+=Math.PI;sp3=5}else if(d>1.6)sp3=6.2;else{a.cd-=dt;if(a.cd<=0){a.cd=1.1;hurtP(t,6+day*.5)}}}
+        else{a.t-=dt;if(a.t<=0){a.t=2+Math.random()*4;a.yaw+=(Math.random()-.5)*2;a.walk=Math.random()<.6}sp3=a.walk?1.8:0}
+      }else{
+        if(d<9&&((t.me&&keys.SH)||d<5))a.flee=Math.max(a.flee,4);
+        if(a.flee>0){a.flee-=dt;a.yaw=Math.atan2(a.x-t.x,a.z-t.z);sp3=7}else{a.t-=dt;if(a.t<=0){a.t=2+Math.random()*4;a.yaw+=(Math.random()-.5)*2;a.walk=Math.random()<.5}sp3=a.walk?1.3:0}
+      }
+      if(sp3){var hb=moveCirc(a,Math.sin(a.yaw)*sp3*dt,Math.cos(a.yaw)*sp3*dt,a.r,'a');if(hb)a.yaw+=1}
+      a.mv=sp3>0;a.m.position.set(a.x,height(a.x,a.z),a.z);a.m.rotation.y=a.yaw+Math.PI;walk(a,dt,sp3>0);animalPose(a,dt,sp3);
+    });
+    animals=animals.filter(function(a){return a.alive||a.dieT>0});
+    if(animals.filter(function(a){return a.kind==='deer'}).length<24&&Math.random()<dt*.05)addAnimal('deer',Math.random);
+  }
+  /* Invité : les créatures suivent l'état envoyé par l'hôte */
+  function stepGuestEnts(dt){
+    [zombies,animals].forEach(function(list){list.forEach(function(e){
+      if(!e.alive){if(e.dieT>0){e.dieT-=dt;if(e.kind==='z')e.m.rotation.x=Math.min(1.5,(1-e.dieT)*3);else e.m.rotation.z=Math.min(1.5,(1-e.dieT)*3);if(e.dieT<=0)scene.remove(e.m)}return}
+      var dx=e.tx-e.x,dz=e.tz-e.z;e.x+=dx*Math.min(1,dt*9);e.z+=dz*Math.min(1,dt*9);var dy=((e.tyaw-e.yaw+Math.PI*3)%(Math.PI*2))-Math.PI;e.yaw+=dy*Math.min(1,dt*10);
+      e.m.position.set(e.x,height(e.x,e.z),e.z);e.m.rotation.y=e.yaw+Math.PI;walk(e,dt,!!e.mv);if(e.kind!=='z')animalPose(e,dt,e.mv?2:0);
+    })});
+    zombies=zombies.filter(function(z){return z.alive||z.dieT>0});animals=animals.filter(function(a){return a.alive||a.dieT>0});
+  }
+  function animalPose(a,dt,sp){
+    var p=a.m.userData.parts;if(!p.neck)return;
+    a.graze=(a.graze||0)+dt;var down=a.kind==='deer'&&!sp&&Math.sin(a.graze*.7+(a.id||0))>.2;
+    p.neck.rotation.x+=((down?1:0)-p.neck.rotation.x)*Math.min(1,dt*3);
+    if(p.tail)p.tail.rotation.y=Math.sin(a.graze*(sp?14:3))*(sp?.5:.15);
+  }
+  function killDrops(kind,x,z){
+    st.kills++;
+    if(kind==='deer'){dropItem(x+.4,z,'viande',3);dropItem(x-.4,z+.3,'cuir',2);st.deer++}
+    else if(kind==='wolf'){dropItem(x,z,'viande',1);dropItem(x+.4,z,'cuir',3)}
+    else{var r=Math.random();if(r<.35)dropItem(x,z,'munitions',6);else if(r<.6)dropItem(x,z,'tissu',2);else if(r<.8)dropItem(x,z,'conserve',1);else dropItem(x,z,'fer',1)}
+  }
+  function entById(id){var l=zombies.concat(animals);for(var i=0;i<l.length;i++)if(l[i].id===id)return l[i];return null}
+
+  /* ---------- En ligne : joueurs, monde partagé ---------- */
+  var net=PP.net,online=false,auth=true,remotes={},netAcc=0,eid=0,stateAcc=0,seenJoin={};
+  var PCOL=[0x2f6fb5,0xb5452f,0x3f8f3a,0x8a3fb5,0xc29a1a,0x2fa3a3,0xd06090,0x5a5a5a];
+  function nameTag(t){var c=document.createElement('canvas');c.width=256;c.height=64;var g=c.getContext('2d');g.fillStyle='rgba(20,18,16,.8)';g.font='bold 30px IBM Plex Mono, monospace';var w=Math.min(250,g.measureText(t).width+24);g.fillRect((256-w)/2,10,w,44);g.fillStyle='#f1ece2';g.textAlign='center';g.textBaseline='middle';g.fillText(t,128,33);var s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false,transparent:true}));s.scale.set(2.4,.6,1);s.position.y=2.55;s.renderOrder=5;return s}
+  function remoteModel(r){if(r.m)scene.remove(r.m);var slot=Math.max(0,net.slot(r.id));r.m=humanoid(PCOL[slot%PCOL.length],0xd9a77c,false);r.m.add(nameTag(r.n||'?'));r.m.userData.ent=null;scene.add(r.m);r.shown=r.n}
+  function stepRemotes(dt){Object.keys(remotes).forEach(function(k){var r=remotes[k];if(!r.ready)return;if(!r.m||r.shown!==r.n)remoteModel(r);r.x+=(r.tx-r.x)*Math.min(1,dt*10);r.z+=(r.tz-r.z)*Math.min(1,dt*10);r.m.visible=r.hp>0;r.m.position.set(r.x,height(r.x,r.z),r.z);r.m.rotation.y=r.yaw;walk(r,dt,Math.hypot(r.tx-r.x,r.tz-r.z)>.04)})}
+  function snapshot(){
+    return {seed:SEED,day:day,t:dayT,
+      sts:structs.filter(function(o){return !o.dead}).map(function(o){return [o.type,+o.x.toFixed(2),+o.z.toFixed(2),o.rot,Math.round(o.hp),o.store||null]}),
+      ch:chests.filter(function(c){return c.open}).map(function(c){return c.id}),
+      tr:trees.list.filter(function(o){return o.hp<=0}).map(function(o){return trees.list.indexOf(o)}),
+      rk:rocks.userData.list.filter(function(o){return o.hp<=0}).map(function(o){return o.i}),
+      or:ores.userData.list.filter(function(o){return o.hp<=0}).map(function(o){return o.i})};
+  }
+  function applyWorld(s){
+    (s.sts||[]).forEach(function(o){var x=build(o[0],o[1],o[2],o[3],true);if(x){x.hp=o[4];if(o[5])x.store=o[5]}});
+    (s.ch||[]).forEach(function(id){var c=chests[id];if(c){c.open=true;c.m.userData.lid.rotation.x=-1.9;if(c.m.userData.spark)c.m.userData.spark.visible=false}});
+    (s.tr||[]).forEach(function(i){var o=trees.list[i];if(o)fell(o,'tree',true)});
+    (s.rk||[]).forEach(function(i){var o=rocks.userData.list[i];if(o)fell(o,'rock',true)});
+    (s.or||[]).forEach(function(i){var o=ores.userData.list[i];if(o)fell(o,'ore',true)});
+  }
+  function worldMsg(){var w=snapshot();w.t='sv-world';w.dt=dayT;w.hx=P.x;w.hz=P.z;return w}
+  function sendNet(dt){
+    netAcc-=dt;if(netAcc>0)return;netAcc=.1;
+    net.relay({g:'svp',x:+P.x.toFixed(2),z:+P.z.toFixed(2),yw:+P.yaw.toFixed(2),hp:Math.ceil(P.hp),tool:tool,n:net.me.name});
+    if(auth){net.broadcast({t:'sv-s',dt:+dayT.toFixed(5),day:day,
+      z:zombies.filter(function(z){return z.alive}).map(function(z){return [z.id,+z.x.toFixed(2),+z.z.toFixed(2),+z.yaw.toFixed(2),z.big?1:0,z.mv?1:0]}),
+      a:animals.filter(function(a){return a.alive}).map(function(a){return [a.id,a.kind==='wolf'?1:0,+a.x.toFixed(2),+a.z.toFixed(2),+a.yaw.toFixed(2),a.mv?1:0,a.ant?1:0]})})}
+  }
+  function guestJoinWorld(m){
+    if(!init())return;running=false;cancelAnimationFrame(raf);
+    buildWorld(m.seed,true);day=m.day;dayT=m.dt;won=false;rescueT=-1;goalI=0;
+    var gs=null;try{gs=JSON.parse(localStorage.getItem('pp-survie-g'))}catch(e){}
+    if(gs&&gs.seed===m.seed){inv=Object.assign(freshInv(),gs.inv);st=gs.st;goalI=gs.goal||0;P={x:gs.p.x,z:gs.p.z,y:0,vy:0,yaw:0,pitch:0,hp:Math.max(30,gs.p.hp),food:gs.p.food,water:gs.p.water,stam:100,bob:0,spawn:gs.p.spawn}}
+    else{inv=freshInv();st={bois:0,fer:0,deer:0,kills:0};var a=Math.random()*6.28;P={x:m.hx+Math.cos(a)*3,z:m.hz+Math.sin(a)*3,y:0,vy:0,yaw:0,pitch:0,hp:100,food:80,water:80,stam:100,bob:0,spawn:null}}
+    P.y=height(P.x,P.z);applyWorld(m);
+    viewModel();hudInv();$('sv-ov').hidden=true;$('sv-build').hidden=true;$('sv-craft').hidden=true;$('sv-invp').hidden=true;buildMode=null;running=true;paused=false;last=0;raf=requestAnimationFrame(loop);lock();sfx.play('go');
+    msg('Tu as rejoint l\'île de l\'hôte');
+  }
+  net.on(function(m,from){
+    if(!online||PP.cur()!=='surv')return;
+    if(m.t==='rel'&&m.d){var d=m.d,id=m.from;
+      if(d.g==='svp'){var r=remotes[id];if(!r){r=remotes[id]={id:id,x:d.x,z:d.z,tx:d.x,tz:d.z,yaw:0,hp:100,n:d.n,m:null}}r.tx=d.x;r.tz=d.z;r.yaw=d.yw;r.hp=d.hp;r.tool=d.tool;r.n=d.n;r.ready=!!scene;return}
+      if(d.g==='sve'&&scene){netEvent(d);return}
+      return}
+    if(m.t==='sv-world'&&!net.isHost){guestJoinWorld(m);return}
+    if(m.t==='sv-dmg'&&running){hurt(m.d);return}
+    if(m.t==='sv-kill'&&running){sfx.play('kill');killDrops(m.k,m.x,m.z);return}
+    if(m.t==='sv-s'&&!net.isHost&&running){
+      dayT=m.dt;if(m.day!==day){day=m.day;PP.toast('Jour '+day,'ok')}
+      var seenZ={},seenA={};
+      m.z.forEach(function(s){seenZ[s[0]]=1;var e=entById(s[0]);if(!e){var mm=humanoid([0x4d5a3a,0x5a4a3a,0x3a4a5a,0x5a3a3a][s[0]%4],s[4]?0x6f8a5a:0x86a070,true);if(s[4])mm.scale.setScalar(1.45);scene.add(mm);e={id:s[0],kind:'z',x:s[1],z:s[2],yaw:s[3],m:mm,alive:true,r:.4};mm.userData.ent=e;zombies.push(e)}e.tx=s[1];e.tz=s[2];e.tyaw=s[3];e.mv=s[5]});
+      m.a.forEach(function(s){seenA[s[0]]=1;var e=entById(s[0]);if(!e){var mm=animalMesh(s[1]?'wolf':'deer',s[6]);scene.add(mm);e={id:s[0],kind:s[1]?'wolf':'deer',x:s[2],z:s[3],yaw:s[4],m:mm,alive:true,r:.6};mm.userData.ent=e;animals.push(e)}e.tx=s[2];e.tz=s[3];e.tyaw=s[4];e.mv=s[5]});
+      zombies.forEach(function(e){if(e.alive&&!seenZ[e.id]){e.alive=false;e.dieT=1}});animals.forEach(function(e){if(e.alive&&!seenA[e.id]){e.alive=false;e.dieT=1}});
+      return}
+    if(net.isHost){
+      if(m.t==='sv-hello'&&running){net.to(from,worldMsg());return}
+      if(m.t==='sv-hit'&&running){var e=entById(m.id);if(e&&e.alive){e.hp-=m.d;flashEnt(e);if(e.kind==='deer')e.flee=6;if(e.kind==='wolf')e.angry=20;if(e.hp<=0){e.alive=false;e.dieT=1;net.to(from,{t:'sv-kill',k:e.kind,x:e.x,z:e.z})}}return}
+    }
+    if(m.t==='players'){var ids=m.players.map(function(p){return p.id});Object.keys(remotes).forEach(function(k){if(ids.indexOf(k)<0){if(remotes[k].m)scene.remove(remotes[k].m);delete remotes[k]}});
+      if(net.isHost&&running)m.players.forEach(function(p){if(p.id!=='host'&&!seenJoin[p.id]){seenJoin[p.id]=1;PP.toast(p.name+' arrive sur ton île','ok');net.to(p.id,{t:'launch',game:'surv'})}});return}
+    if(m.t==='closed'){online=false;msg('L\'hôte a quitté : tu continues seul sur ta propre île');running=false;cancelAnimationFrame(raf);PP.games.surv.open()}
+  });
+  function netEvent(d){
+    if(d.e==='fell'){var o=d.ty==='tree'?trees.list[d.i]:(d.ty==='rock'?rocks:ores).userData.list[d.i];if(o&&o.hp>0){if(d.ty==='tree'&&running&&Math.hypot(o.x-P.x,o.z-P.z)<120){o.hp=0;fallTree(o,true);if(!ZERO)ZERO=new THREE.Matrix4().makeScale(0,0,0);o.ms.forEach(function(im){im.setMatrixAt(o.i,ZERO);im.instanceMatrix.needsUpdate=true});near(o.x,o.z,2).forEach(function(c){if(c.ref===o)remCol(c)})}else fell(o,d.ty,true);if(d.ty!=='tree'){var gy=height(o.x,o.z)+.6;burst(o.x,gy,o.z,d.ty==='ore'?0x8a5a3c:0x8c8a84,18,6)}}}
+    if(d.e==='chest'){var c=chests[d.id];if(c&&!c.open){c.open=true;c.anim=0;if(c.m.userData.spark)c.m.userData.spark.visible=false}}
+    if(d.e==='build')build(d.ty,d.x,d.z,d.r,true);
+    if(d.e==='sdel'){structs.forEach(function(s){if(!s.dead&&s.type===d.ty&&Math.abs(s.x-d.x)<.05&&Math.abs(s.z-d.z)<.05)destroyStruct(s)})}
+    if(d.e==='door'){structs.forEach(function(s){if(!s.dead&&s.type==='door'&&Math.abs(s.x-d.x)<.05&&Math.abs(s.z-d.z)<.05&&!!s.openD!==!!d.o)toggleDoor(s,true)})}
+    if(d.e==='bush'){var b=bushes[d.i];if(b){b.full=false;b.t=DAY*.8;b.b.visible=false}}
+  }
+  function relayEv(o){if(online){o.g='sve';net.relay(o)}}
+  function toggleDoor(dd,silent){dd.openD=!dd.openD;dd.m.rotation.y=dd.rot*Math.PI/2+(dd.openD?Math.PI/2:0);var gl=grid[dd.k]||[];if(dd.openD){var gi=gl.indexOf(dd);if(gi>=0)gl.splice(gi,1)}else if(gl.indexOf(dd)<0)gl.push(dd);sfx.play('ui');if(!silent)relayEv({e:'door',x:dd.x,z:dd.z,o:dd.openD?1:0})}
+  function goOnline(){
+    var name=PP.myName()||('Joueur'+(100+Math.random()*900|0));PP.setName(name);
+    var btn=$('sv-online');btn.disabled=true;btn.textContent='Recherche d\'une île…';if(PP.lobby)PP.lobby.refresh();
+    setTimeout(function(){
+      function done(){btn.disabled=false;btn.textContent='Jouer à plusieurs'}
+      if(net.inRoom()&&net.isHost){done();if(PP.setRoomGame)PP.setRoomGame('surv');online=true;auth=true;start(false);return}
+      var l=(PP.lobby?PP.lobby.list():[]).filter(function(r){return r.game==='surv'&&r.code!==net.code});
+      function hostIt(){net.host(name,function(err,code){done();if(err){PP.toast(err,'warn');return}if(PP.setRoomGame)PP.setRoomGame('surv');online=true;auth=true;PP.toast('Île ouverte (salon '+code+') : tes potes la verront dans « Jouer à plusieurs »','ok');start(false)})}
+      if(l.length)net.join(l[0].code,name,function(err){done();if(err){hostIt();return}online=true;auth=false;PP.toast('Tu rejoins l\'île de '+l[0].host,'ok');$('sv-title').textContent='Connexion';$('sv-msg').textContent='Chargement de l\'île de '+l[0].host+'…';net.send({t:'sv-hello'})});
+      else hostIt();
+    },1600);
+  }
   /* ---------- Rendu ---------- */
   var vm=null;
   function viewModel(){
@@ -800,13 +968,19 @@
     if(!init())return;
     if(fresh||!hasSave())newGame();else load();
     viewModel();hudInv();$('sv-ov').hidden=true;$('sv-build').hidden=true;$('sv-craft').hidden=true;$('sv-invp').hidden=true;buildMode=null;running=true;paused=false;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);lock();sfx.play('go');
+    if(online&&auth){remotes={};net.broadcast(worldMsg());msg('Ton île est ouverte : salon '+net.code)}
   }
   $('sv-start').addEventListener('click',function(){if(hasSave()&&!confirm('Recommencer une nouvelle île ? Ta partie en cours sera effacée.'))return;start(true)});
   $('sv-cont').addEventListener('click',function(){start(false)});
-  PP._sv=function(){return {trees:trees,drops:drops,invPanel:invPanel,P:P,inv:inv,st:st,zombies:zombies,animals:animals,structs:structs,chests:chests,setT:function(t){dayT=t},attack:attack,interact:interact,build:build,setTool:setTool,craft:craft,goal:function(){return goalI},render:render}};
+  $('sv-online').addEventListener('click',goOnline);
+  PP._sv=function(){return {remotes:remotes,online:function(){return online},trees:trees,drops:drops,invPanel:invPanel,P:P,inv:inv,st:st,zombies:zombies,animals:animals,structs:structs,chests:chests,setT:function(t){dayT=t},attack:attack,interact:interact,build:build,setTool:setTool,craft:craft,goal:function(){return goalI},render:render}};
   PP.games.surv={
-    open:function(){$('sv-lockhint').hidden=true;var s=hasSave();$('sv-cont').hidden=!s;$('sv-start').textContent=s?'Nouvelle île':'Commencer';$('sv-title').textContent='Survie';
-      $('sv-msg').textContent='Une grande île sauvage. Récolte, chasse, fabrique tes outils, construis ta base, mine le fer et trouve les pièces d\'une radio pour appeler les secours. La nuit, les zombies sortent. 14 objectifs à remplir.';$('sv-ov').hidden=false;$('sv-best').textContent=PP.store('sv-best')},
+    open:function(){$('sv-lockhint').hidden=true;
+      if(net.inRoom()){if(online&&P&&scene&&!running&&!$('sv-ov').hidden===false){}if(online&&P&&scene&&$('sv-ov').hidden){running=true;last=0;raf=requestAnimationFrame(loop);return}online=true;auth=net.isHost;$('sv-online').hidden=true;
+        if(!auth){$('sv-title').textContent='Survie à plusieurs';$('sv-msg').textContent='Connexion à l\'île de l\'hôte… Si rien ne se passe, l\'hôte doit lancer sa partie.';$('sv-start').hidden=true;$('sv-cont').hidden=true;$('sv-ov').hidden=false;net.send({t:'sv-hello'});return}}
+      else{online=false;auth=true;$('sv-online').hidden=false}
+      $('sv-start').hidden=false;var s=hasSave();$('sv-cont').hidden=!s;$('sv-start').textContent=s?'Nouvelle île':'Commencer';$('sv-title').textContent='Survie';
+      $('sv-msg').textContent='Une grande île sauvage. Récolte, chasse, fabrique tes outils, construis ta base, mine le fer et trouve les pièces d\'une radio pour appeler les secours. La nuit, les zombies sortent. 14 objectifs à remplir.';$('sv-ov').hidden=false;if(online&&auth)$('sv-msg').textContent+=' Tu es l\'hôte : tes potes arrivent sur ton île dès que tu lances.';$('sv-best').textContent=PP.store('sv-best')},
     close:function(){if(running){save();running=false;cancelAnimationFrame(raf)}unlock();exitFull();keys={};mouseDown=false}
   };
 })();
