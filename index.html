@@ -5,17 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pixel Pause — jeux solo et entre potes</title>
 <meta name="description" content="Pixel Pause : des jeux dans le navigateur. FPS 3 modes, kart en écran partagé, sumo 3D, foot 2v2, snake multijoueur, Mot imposteur, Devine où en 3D… Invite tes potes avec un code à 3 chiffres.">
-<meta name="theme-color" content="#0b0d12">
+<meta name="theme-color" content="#f1ece2">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235b8cff'/%3E%3Cpath d='M10 9h5a4 4 0 010 8h-2v6h-3z' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:wght@400;600&family=Inter+Tight:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
-<link rel="stylesheet" href="style.css?v=3.3">
+<link rel="stylesheet" href="style.css?v=3.4">
 </head>
 <body>
 <header><div class="wrap">
-  <a class="logo" href="#" data-go="menu"><span class="logo-mark">P</span><span>Pixel Pause</span></a>
+  <a class="logo" href="#" data-go="menu">Pixel Pause<span>.</span></a>
   <div class="roombar" id="roombar" hidden><span class="dot"></span><span id="roombar-txt"></span><button class="mini" id="roombar-leave" type="button">Quitter</button></div>
   <nav><button type="button" data-go="menu">Jeux</button><button type="button" data-go="room">Salon</button><button type="button" data-mute>Son : on</button></nav>
 </div></header>
@@ -24,19 +24,23 @@
 
 <!-- ================= MENU ================= -->
 <section class="view on" id="v-menu">
-  <div class="topbar">
-    <div class="chips" id="chips" role="tablist">
-      <button type="button" class="chip on" data-f="all">Tous les jeux</button>
-      <button type="button" class="chip" data-f="pc">À plusieurs sur un PC</button>
-      <button type="button" class="chip" data-f="tel">Chacun son téléphone</button>
-      <button type="button" class="chip" data-f="solo">Solo</button>
-      <button type="button" class="chip" data-f="3d">3D</button>
+  <div class="mast">
+    <h1 class="mast-title">Pixel<br>Pause<span>.</span></h1>
+    <div class="mast-side">
+      <p>Neuf petits jeux à lancer dans le navigateur. Seul, sur un même clavier, ou chacun sur son téléphone avec un code.</p>
+      <div class="mast-cta"><button type="button" class="ink" data-go="room">Créer un salon →</button><button type="button" class="line" data-go="join">J’ai un code</button></div>
     </div>
-    <div class="room-cta"><button type="button" class="primary" data-go="room">Créer un salon</button><button type="button" data-go="join">Rejoindre</button></div>
   </div>
-  <div class="tiles" id="tiles">
-<button type="button" class="tile big" data-go="fps" data-cat="solo 3d"><img src="thumb-fps.jpg?v=3.3" alt="" loading="lazy"><span class="tile-badges"><span>1 joueur</span><span class="b3">FPS</span></span><span class="tile-info"><b>Bunker 3D</b><small>Deathmatch, zombies, battle royale</small></span><span class="tile-play">Jouer</span></button><button type="button" class="tile big" data-go="sumo" data-cat="pc 3d"><img src="thumb-sumo.jpg?v=3.3" alt="" loading="lazy"><span class="tile-badges"><span>1-4 joueurs</span><span class="b3">3D</span></span><span class="tile-info"><b>Sumo Arena</b><small>Pousse-les tous dans le vide</small></span><span class="tile-play">Jouer</span></button><button type="button" class="tile" data-go="foot" data-cat="pc 3d"><img src="thumb-foot.jpg?v=3.3" alt="" loading="lazy"><span class="tile-badges"><span>1-4 joueurs</span><span class="b3">3D</span></span><span class="tile-info"><b>Foot 2v2</b><small>Bleus contre rouges, 2 minutes</small></span><span class="tile-play">Jouer</span></button><button type="button" class="tile" data-go="kart" data-cat="pc solo"><img src="thumb-kart.jpg?v=3.3" alt="" loading="lazy"><span class="tile-badges"><span>1-2 joueurs</span></span><span class="tile-info"><b>Pixel Kart</b><small>Course, boosts, écran partagé</small></span><span class="tile-play">Jouer</span></button><button type="button" class="tile" data-go="imp" data-cat="tel pc"><img src="thumb-imp.jpg?v=3.3" alt="" loading="lazy"><span class="tile-badges"><span>3-12 joueurs</span></span><span class="tile-info"><b>Mot imposteur</b><small>Démasque l'imposteur et Mr White</small></span><span class="tile-play">Jouer</span></button><button type="button" class="tile" data-go="geo" data-cat="tel solo 3d"><img src="thumb-geo.jpg?v=3.3" alt="" loading="lazy"><span class="tile-badges"><span>1-12 joueurs</span><span class="b3">3D</span></span><span class="tile-info"><b>Devine où</b><small>Ville en 3D, devine où tu es</small></span><span class="tile-play">Jouer</span></button><button type="button" class="tile" data-go="prob" data-cat="tel"><img src="thumb-prob.jpg?v=3.3" alt="" loading="lazy"><span class="tile-badges"><span>3-12 joueurs</span></span><span class="tile-info"><b>Le plus probable</b><small>Votes entre potes, ça pique</small></span><span class="tile-play">Jouer</span></button><button type="button" class="tile" data-go="snake" data-cat="pc tel solo"><img src="thumb-snake.jpg?v=3.3" alt="" loading="lazy"><span class="tile-badges"><span>1-4 joueurs</span></span><span class="tile-info"><b>Paquet Snake</b><small>Duel sur un clavier ou en ligne</small></span><span class="tile-play">Jouer</span></button><button type="button" class="tile wide" data-go="run" data-cat="solo"><img src="thumb-run.jpg?v=3.3" alt="" loading="lazy"><span class="tile-badges"><span>1 joueur</span></span><span class="tile-info"><b>Néon Rush</b><small>Course sans fin dans la ville</small></span><span class="tile-play">Jouer</span></button>
+  <div class="filters" id="chips">
+    <span>Filtrer :</span>
+    <button type="button" class="chip on" data-f="all">tout</button>
+    <button type="button" class="chip" data-f="pc">même PC</button>
+    <button type="button" class="chip" data-f="tel">en ligne</button>
+    <button type="button" class="chip" data-f="solo">solo</button>
+    <button type="button" class="chip" data-f="3d">3D</button>
   </div>
+  <div class="glist" id="tiles"><button type="button" class="row-game" data-go="fps" data-cat="pc tel solo 3d"><span class="rg-n">01</span><span class="rg-name">Bunker 3D</span><span class="rg-sub">FPS · deathmatch, zombies, battle royale</span><span class="rg-pl">1–12<small>joueurs</small></span><img class="rg-img" src="thumb-fps.jpg?v=3.4" alt="" loading="lazy"></button><button type="button" class="row-game" data-go="sumo" data-cat="pc tel 3d"><span class="rg-n">02</span><span class="rg-name">Sumo Arena</span><span class="rg-sub">3D · pousse-les dans le vide</span><span class="rg-pl">1–4<small>joueurs</small></span><img class="rg-img" src="thumb-sumo.jpg?v=3.4" alt="" loading="lazy"></button><button type="button" class="row-game" data-go="foot" data-cat="pc tel 3d"><span class="rg-n">03</span><span class="rg-name">Foot 2v2</span><span class="rg-sub">3D · deux minutes, une balle</span><span class="rg-pl">1–4<small>joueurs</small></span><img class="rg-img" src="thumb-foot.jpg?v=3.4" alt="" loading="lazy"></button><button type="button" class="row-game" data-go="kart" data-cat="pc tel solo"><span class="rg-n">04</span><span class="rg-name">Pixel Kart</span><span class="rg-sub">Course · trois tours</span><span class="rg-pl">1–8<small>joueurs</small></span><img class="rg-img" src="thumb-kart.jpg?v=3.4" alt="" loading="lazy"></button><button type="button" class="row-game" data-go="imp" data-cat="tel pc"><span class="rg-n">05</span><span class="rg-name">Mot imposteur</span><span class="rg-sub">Party · qui n’a pas le bon mot ?</span><span class="rg-pl">3–12<small>joueurs</small></span><img class="rg-img" src="thumb-imp.jpg?v=3.4" alt="" loading="lazy"></button><button type="button" class="row-game" data-go="geo" data-cat="tel solo 3d"><span class="rg-n">06</span><span class="rg-name">Devine où</span><span class="rg-sub">3D · ville sans nom, devine où tu es</span><span class="rg-pl">1–12<small>joueurs</small></span><img class="rg-img" src="thumb-geo.jpg?v=3.4" alt="" loading="lazy"></button><button type="button" class="row-game" data-go="prob" data-cat="tel"><span class="rg-n">07</span><span class="rg-name">Le plus probable</span><span class="rg-sub">Party · votes entre potes</span><span class="rg-pl">3–12<small>joueurs</small></span><img class="rg-img" src="thumb-prob.jpg?v=3.4" alt="" loading="lazy"></button><button type="button" class="row-game" data-go="snake" data-cat="pc tel solo"><span class="rg-n">08</span><span class="rg-name">Paquet Snake</span><span class="rg-sub">Arcade · duel ou en ligne</span><span class="rg-pl">1–4<small>joueurs</small></span><img class="rg-img" src="thumb-snake.jpg?v=3.4" alt="" loading="lazy"></button><button type="button" class="row-game" data-go="run" data-cat="solo tel"><span class="rg-n">09</span><span class="rg-name">Néon Rush</span><span class="rg-sub">Arcade · course sans fin</span><span class="rg-pl">1–8<small>joueurs</small></span><img class="rg-img" src="thumb-run.jpg?v=3.4" alt="" loading="lazy"></button></div>
+  <div class="cursor-img" id="cursor-img" aria-hidden="true"><img alt=""></div>
 </section>
 
 <!-- ================= SALON ================= -->
@@ -189,26 +193,26 @@
 
 </main>
 
-<footer><div class="wrap">Pixel Pause · les records restent dans ton navigateur · cartes © OpenStreetMap / OpenFreeMap</div></footer>
+<footer><div class="wrap"><span>Pixel Pause — fait à Arcueil, 2026.</span><span>Les records restent dans ton navigateur · cartes © OpenStreetMap / OpenFreeMap</span></div></footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
-<script src="core.js?v=3.3"></script>
-<script src="sfx.js?v=3.3"></script>
-<script src="net.js?v=3.3"></script>
-<script src="mp.js?v=3.3"></script>
-<script src="room.js?v=3.3"></script>
-<script src="imposteur.js?v=3.3"></script>
-<script src="probable.js?v=3.3"></script>
-<script src="snake.js?v=3.3"></script>
-<script src="fps.js?v=3.3"></script>
-<script src="sumo.js?v=3.3"></script>
-<script src="foot.js?v=3.3"></script>
-<script src="kart.js?v=3.3"></script>
-<script src="rush.js?v=3.3"></script>
-<script src="geo-data.js?v=3.3"></script>
-<script src="geo.js?v=3.3"></script>
-<script src="boot.js?v=3.3"></script>
+<script src="core.js?v=3.4"></script>
+<script src="sfx.js?v=3.4"></script>
+<script src="net.js?v=3.4"></script>
+<script src="mp.js?v=3.4"></script>
+<script src="room.js?v=3.4"></script>
+<script src="imposteur.js?v=3.4"></script>
+<script src="probable.js?v=3.4"></script>
+<script src="snake.js?v=3.4"></script>
+<script src="fps.js?v=3.4"></script>
+<script src="sumo.js?v=3.4"></script>
+<script src="foot.js?v=3.4"></script>
+<script src="kart.js?v=3.4"></script>
+<script src="rush.js?v=3.4"></script>
+<script src="geo-data.js?v=3.4"></script>
+<script src="geo.js?v=3.4"></script>
+<script src="boot.js?v=3.4"></script>
 </body>
 </html>
