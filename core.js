@@ -1,4 +1,5 @@
 /* Pixel Pause — noyau : navigation, stockage, icônes, utilitaires */
+var PP_pause=null;
 window.PP=(function(){
   'use strict';
   var $=function(id){return document.getElementById(id)};
@@ -17,6 +18,7 @@ window.PP=(function(){
   /* ---------- Navigation entre les vues ---------- */
   var games={},current='menu';
   function go(v){
+    if(typeof PP_pause==='function')PP_pause(false);
     if(games[current]&&games[current].close)games[current].close();
     document.querySelectorAll('.view').forEach(function(s){s.classList.toggle('on',s.id==='v-'+v)});
     current=v;window.scrollTo(0,0);
@@ -102,15 +104,34 @@ window.PP=(function(){
 
 
 
-  /* ---------- Plein écran pour les jeux (bouton sur chaque grande scène) ---------- */
+  /* ---------- Barre sous chaque jeu : plein écran et pause (solo) ---------- */
   function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement}
+  var paused=false,rafQ=[],RAF=window.requestAnimationFrame.bind(window);
+  /* Pause globale : tant que c'est en pause, les boucles des jeux attendent (requestAnimationFrame gelé) */
+  window.requestAnimationFrame=function(cb){if(paused){rafQ.push(cb);return -1}return RAF(cb)};
+  function setPause(on){
+    if(on===paused)return;
+    if(on&&PP.net&&PP.net.inRoom()){toast('Pas de pause en salon : les autres jouent encore','warn');return}
+    paused=on;
+    document.querySelectorAll('.pause-ov').forEach(function(o){o.hidden=!paused||!o.closest('.view.on')});
+    document.querySelectorAll('[data-pause]').forEach(function(b){b.textContent=paused?'Reprendre':'Pause';b.classList.toggle('on',paused)});
+    if(paused){if(document.pointerLockElement&&document.exitPointerLock)document.exitPointerLock()}
+    else{var q=rafQ;rafQ=[];q.forEach(function(cb){RAF(cb)})}
+  }
   document.querySelectorAll('.stage.wide').forEach(function(st){
-    var b=document.createElement('button');b.type='button';b.className='fs-btn';b.textContent='Plein écran';
-    b.addEventListener('click',function(e){e.stopPropagation();if(fsEl()===st){(document.exitFullscreen||document.webkitExitFullscreen).call(document);return}var r=st.requestFullscreen||st.webkitRequestFullscreen;if(r)try{var p=r.call(st);if(p&&p.catch)p.catch(function(){})}catch(x){}});
-    st.appendChild(b);
+    var bar=document.createElement('div');bar.className='stage-bar';
+    bar.innerHTML='<button type="button" class="ghost" data-pause>Pause</button><button type="button" class="ghost" data-fs>Plein écran</button>';
+    st.parentNode.insertBefore(bar,st.nextSibling);
+    var ov=document.createElement('div');ov.className='pause-ov';ov.hidden=true;ov.innerHTML='<b>PAUSE</b><button type="button" class="primary" data-resume>Reprendre</button>';st.appendChild(ov);
+    ov.querySelector('[data-resume]').addEventListener('click',function(e){e.stopPropagation();setPause(false)});
+    bar.querySelector('[data-fs]').addEventListener('click',function(){if(fsEl()===st){(document.exitFullscreen||document.webkitExitFullscreen).call(document);return}var r=st.requestFullscreen||st.webkitRequestFullscreen;if(!r){toast('Le plein écran n\'est pas possible sur cet appareil','warn');return}try{var p=r.call(st);if(p&&p.catch)p.catch(function(){toast('Le navigateur a refusé le plein écran','warn')})}catch(x){}});
+    bar.querySelector('[data-pause]').addEventListener('click',function(){setPause(!paused)});
   });
-  function fsLabel(){document.querySelectorAll('.fs-btn').forEach(function(b){b.textContent=fsEl()===b.parentNode?'Quitter le plein écran':'Plein écran'})}
+  /* en plein écran, la touche P met en pause (sauf dans la Survie où P sert déjà) */
+  document.addEventListener('keydown',function(e){if(e.key==='Pause'||(e.key.toLowerCase()==='p'&&current!=='surv'&&current!=='menu'&&!/INPUT|TEXTAREA/.test((e.target&&e.target.tagName)||''))){if(document.querySelector('.view.on .stage.wide'))setPause(!paused)}});
+  function fsLabel(){document.querySelectorAll('.stage-bar [data-fs]').forEach(function(b){b.textContent=fsEl()===b.parentNode.previousSibling?'Quitter le plein écran':'Plein écran'})}
   document.addEventListener('fullscreenchange',fsLabel);document.addEventListener('webkitfullscreenchange',fsLabel);
+  PP_pause=setPause;
   /* ---------- Toasts ---------- */
   var toastBox=document.createElement('div');toastBox.className='toasts';document.body.appendChild(toastBox);
   function toast(msg,kind){var t=document.createElement('div');t.className='toast '+(kind||'');t.textContent=msg;toastBox.appendChild(t);setTimeout(function(){t.classList.add('out');setTimeout(function(){t.remove()},400)},2600)}

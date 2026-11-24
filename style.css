@@ -587,3 +587,11 @@ footer .wrap{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .ro-card.on{transform:scale(1.12);box-shadow:0 0 0 4px #d4a32a,0 0 40px #d4a32a}
 .ro-mark{position:absolute;left:50%;top:0;bottom:0;width:4px;margin-left:-2px;background:#e2361b;box-shadow:0 0 0 2px #141210}
 .ro-d{margin:0;font:500 14px 'Inter Tight',sans-serif;min-height:20px}.ro-d b{color:#d4a32a;font:400 20px 'Anton',sans-serif;letter-spacing:.02em}
+/* v5.0 barre sous les jeux : pause + plein écran */
+.fs-btn{display:none}
+.stage-bar{display:flex;justify-content:flex-end;gap:8px;max-width:960px;margin:10px auto 0}
+.stage-bar button{padding:7px 14px;font:700 12px 'IBM Plex Mono',monospace}
+.stage-bar button.on{background:#e2361b;color:#f1ece2;border-color:#e2361b}
+.pause-ov{position:absolute;inset:0;z-index:8;background:rgba(20,18,16,.72);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.pause-ov[hidden]{display:none}
+.pause-ov b{font:400 clamp(44px,9vw,96px)/1 'Anton',sans-serif;color:#f1ece2;letter-spacing:.04em}
