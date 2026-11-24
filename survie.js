@@ -282,6 +282,41 @@
     }
     grass.count=n;flowers.count=f;grass.instanceMatrix.needsUpdate=true;flowers.instanceMatrix.needsUpdate=true;if(grass.instanceColor)grass.instanceColor.needsUpdate=true;if(flowers.instanceColor)flowers.instanceColor.needsUpdate=true;
   }
+  /* ---------- Zombies : modèle et animations ---------- */
+  function zombieModel(type){
+    var T={walker:{shirt:0x5a6a4a,skin:0x8fa877,pants:0x3a3a48,sc:1},runner:{shirt:0x7a3a30,skin:0xa0b088,pants:0x2f2f3a,sc:.92},tank:{shirt:0x3a4030,skin:0x6f8a5a,pants:0x2a2a30,sc:1.55},spitter:{shirt:0x5a3a6a,skin:0x9a9ab0,pants:0x33303a,sc:1}}[type]||{shirt:0x5a6a4a,skin:0x8fa877,pants:0x3a3a48,sc:1};
+    var shc=new THREE.Color(T.shirt);shc.offsetHSL((Math.random()-.5)*.06,(Math.random()-.5)*.15,(Math.random()-.5)*.1);var sh=shc.getHex();
+    var g=new THREE.Group(),root=new THREE.Group();g.add(root);
+    var L=function(c){return new THREE.MeshLambertMaterial({color:c})},shirt=L(sh),skin=L(T.skin),pants=L(T.pants),dark=L(0x1a1412),blood=L(0x5a1010);
+    function mesh(geo,mat,x,y,z,par){var m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;(par||root).add(m);return m}
+    var legs=[-.14,.14].map(function(x){var l=new THREE.Group();l.position.set(x,.95,0);root.add(l);mesh(new THREE.CapsuleGeometry(.11,.38,3,8),pants,0,-.25,0,l);mesh(new THREE.CapsuleGeometry(.09,.32,3,8),x<0?pants:skin,0,-.62,0,l);mesh(new THREE.BoxGeometry(.16,.1,.28),dark,0,-.88,-.05,l);return l});
+    var torso=new THREE.Group();torso.position.y=1;root.add(torso);
+    var body=mesh(new THREE.CapsuleGeometry(.25,.42,4,12),shirt,0,.38,0,torso);body.scale.set(type==='tank'?1.5:1.15,1,type==='tank'?1.1:.78);
+    mesh(new THREE.BoxGeometry(.22,.16,.03),blood,.08,.32,-.2,torso);mesh(new THREE.BoxGeometry(.12,.22,.03),skin,-.1,.5,-.2,torso);
+    if(type==='spitter'){var belly=mesh(new THREE.SphereGeometry(.34,16,12),L(0x7a5a9a),0,.25,-.12,torso);belly.scale.set(1,.9,.9);mesh(new THREE.SphereGeometry(.08,8,6),new THREE.MeshBasicMaterial({color:0xb05cff}),0,.3,-.43,torso)}
+    if(type==='tank'){[-1,1].forEach(function(s){mesh(new THREE.SphereGeometry(.24,12,10),shirt,s*.42,.72,0,torso)})}
+    var head=new THREE.Group();head.position.set(0,.88,-.02);torso.add(head);
+    var skull=mesh(new THREE.SphereGeometry(.2,16,12),skin,0,.1,0,head);skull.scale.set(.95,1.05,1);skull.userData.head=true;
+    var jaw=new THREE.Group();jaw.position.set(0,0,-.06);head.add(jaw);mesh(new THREE.BoxGeometry(.2,.07,.16),skin,0,-.04,-.06,jaw);mesh(new THREE.BoxGeometry(.16,.03,.12),dark,0,0,-.08,jaw);
+    var eyeM=new THREE.MeshBasicMaterial({color:type==='spitter'?0xc070ff:0xff3010});[-1,1].forEach(function(s){mesh(new THREE.SphereGeometry(.035,8,6),eyeM,s*.075,.13,-.17,head)});
+    for(var i=0;i<5;i++){var hr=mesh(new THREE.ConeGeometry(.04,.12,4),L(0x2a2420),(Math.random()-.5)*.25,.28,(Math.random()-.5)*.2,head);hr.rotation.set(Math.random()-.5,0,Math.random()-.5)}
+    var arms=[-1,1].map(function(s){var a=new THREE.Group();a.position.set(s*(type==='tank'?.52:.36),.68,0);torso.add(a);var up=mesh(new THREE.CapsuleGeometry(type==='tank'?.12:.075,.3,3,8),type==='runner'?skin:shirt,0,-.2,0,a);var lo=mesh(new THREE.CapsuleGeometry(type==='tank'?.11:.065,.26,3,8),skin,0,-.52,0,a);var hd=mesh(new THREE.SphereGeometry(type==='tank'?.13:.08,8,6),skin,0,-.74,0,a);for(var c=0;c<3;c++){var cl=mesh(new THREE.ConeGeometry(.015,.08,4),L(0xd8d0b8),(c-1)*.035,-.82,-.03,a);cl.rotation.x=Math.PI}return a});
+    g.scale.setScalar(T.sc*(.95+Math.random()*.1));
+    g.userData.parts={legs:legs,arms:arms,torso:torso,head:head,jaw:jaw,root:root,body:body};g.userData.zt=type;
+    return g;
+  }
+  function zAnim(e,dt,mv){
+    var p=e.m.userData.parts,ty=e.type||'walker',fast=ty==='runner'?1.8:ty==='tank'?.7:1;
+    e.anim=(e.anim||Math.random()*6)+dt*(mv?7*fast:1.5);var s=Math.sin(e.anim),now=performance.now()/1000;
+    p.legs[0].rotation.x=mv?s*.75:0;p.legs[1].rotation.x=mv?-s*.75:0;
+    var atk=e.atk>0?1-e.atk/.45:0;e.atk=Math.max(0,(e.atk||0)-dt);
+    var reach=ty==='runner'?-1.1:-1.45;
+    p.arms[0].rotation.x=atk?-2.6+atk*2.4:reach+s*.25;p.arms[1].rotation.x=atk?-2.6+atk*2.2:reach-s*.25;p.arms[0].rotation.z=-.1+Math.sin(now*2+1)*.08;p.arms[1].rotation.z=.1-Math.sin(now*2)*.08;
+    e.flinch=Math.max(0,(e.flinch||0)-dt);
+    p.root.rotation.x=(ty==='runner'?.4:ty==='tank'?.25:.12)-e.flinch*1.6;p.root.rotation.z=Math.sin(e.anim*.5)*(ty==='tank'?.05:.1);
+    p.head.rotation.z=Math.sin(now*1.3+(e.x||0))*.3;p.head.rotation.x=atk?.3:-.1;p.jaw.rotation.x=.15+Math.abs(Math.sin(now*7+(e.z||0)))*.35;
+    if(e.rise!==undefined&&e.rise<1){e.rise=Math.min(1,e.rise+dt*.8);e.m.position.y+=-1.9*(1-e.rise);p.arms[0].rotation.x=p.arms[1].rotation.x=-2.8}
+  }
   function addAnimal(kind,R){
     var x,z,t=0;do{x=(R()-.5)*SIZE*.8;z=(R()-.5)*SIZE*.8;t++}while((height(x,z)<2||(P&&Math.hypot(x-P.x,z-P.z)<60))&&t<30);
     var wolf=kind==='wolf',ant=!wolf&&R()<.45,m=animalMesh(kind,ant);scene.add(m);
@@ -290,11 +325,11 @@
   function addZombie(px,pz){
     if(px===undefined){px=P.x;pz=P.z}var x,z,n=0;do{var a=Math.random()*6.28,d=40+Math.random()*25;x=px+Math.cos(a)*d;z=pz+Math.sin(a)*d;n++}while(height(x,z)<.5&&n<12);if(height(x,z)<.5)return;
     var blood=bloodNight(),big=Math.random()<(blood?.2:.06)+day*.01;
-    var m=humanoid([0x4d5a3a,0x5a4a3a,0x3a4a5a,0x5a3a3a][Math.random()*4|0],big?0x6f8a5a:0x86a070,true);if(big)m.scale.setScalar(1.45);scene.add(m);
-    var e={id:++eid,big:big,kind:'z',x:x,z:z,yaw:0,hp:(70+day*12)*(big?3.5:1),dmg:(9+day*1.5)*(big?2:1),sp:(2.2+Math.random()*.9+Math.min(1.4,day*.1))*(big?.75:1)*(blood?1.15:1),m:m,alive:true,cd:0,r:big?.6:.4,anim:0};m.userData.ent=e;zombies.push(e);
+    var ztype=big?'tank':(Math.random()<.3?'runner':'walker'),m=zombieModel(ztype);scene.add(m);
+    var e={type:ztype,rise:0,id:++eid,big:big,kind:'z',x:x,z:z,yaw:0,hp:(70+day*12)*(big?3.5:1),dmg:(9+day*1.5)*(big?2:1),sp:(2.2+Math.random()*.9+Math.min(1.4,day*.1))*(big?.75:1)*(blood?1.15:1),m:m,alive:true,cd:0,r:big?.6:.4,anim:0};m.userData.ent=e;zombies.push(e);
   }
 
-  function addZombieAt(x,z,big){var m=humanoid([0x4d5a3a,0x5a4a3a,0x3a4a5a,0x5a3a3a][Math.random()*4|0],big?0x6f8a5a:0x86a070,true);if(big)m.scale.setScalar(1.45);scene.add(m);var e={id:++eid,big:big,kind:'z',x:x,z:z,yaw:0,hp:(80+day*12)*(big?3.5:1),dmg:(10+day*1.5)*(big?2:1),sp:(2.4+Math.min(1.4,day*.1))*(big?.75:1),m:m,alive:true,cd:0,r:big?.6:.4,anim:0,guard:1};m.userData.ent=e;zombies.push(e);return e}
+  function addZombieAt(x,z,big){var ztype=big?'tank':(Math.random()<.3?'runner':'walker'),m=zombieModel(ztype);scene.add(m);var e={type:ztype,rise:0,id:++eid,big:big,kind:'z',x:x,z:z,yaw:0,hp:(80+day*12)*(big?3.5:1),dmg:(10+day*1.5)*(big?2:1),sp:(2.4+Math.min(1.4,day*.1))*(big?.75:1),m:m,alive:true,cd:0,r:big?.6:.4,anim:0,guard:1};m.userData.ent=e;zombies.push(e);return e}
   /* ---------- Joueur et sauvegarde ---------- */
   function freshInv(){return {bois:0,pierre:0,fer:0,baies:2,viande:0,cuite:0,conserve:1,eau:1,bandage:1,munitions:0,fleches:0,tissu:0,cuir:0,radio:0,pick:0,sword:0,bow:0,pistol:0,rifle:0,torch:0,iaxe:0,armure:0,call:0}}
   function newGame(){
@@ -450,7 +485,7 @@
     drops=drops.filter(function(d){return !d.gone});
     shakeT=Math.max(0,shakeT-dt);
   }
-  function flashEnt(e,pt){
+  function flashEnt(e,pt){e.flinch=.22;
     e.m.traverse(function(o){if(o.isMesh&&o.material.emissive){o.material.emissive.setHex(0x7a1010)}});
     setTimeout(function(){if(e.m)e.m.traverse(function(o){if(o.isMesh&&o.material.emissive)o.material.emissive.setHex(0)})},130);
     if(pt)burst(pt.x,pt.y,pt.z,e.kind==='z'?0x4a6a2a:0x9a1a1a,8,3);
@@ -905,16 +940,17 @@
     else if(dayT>.3&&dayT<.7){zombies.forEach(function(z){if(z.alive&&!z.guard&&Math.random()<dt*.15)z.hp=0})}
     castles.forEach(function(c){if(c.spawnedDay===day)return;var t=nearestP(c.x,c.z,pl);if(t&&t.d<55){c.spawnedDay=day;for(var i=0;i<4+Math.min(4,day>>1);i++)addZombieAt(c.x+(Math.random()-.5)*(c.S-8),c.z+(Math.random()-.2)*(c.S/2-4),i===0)}});
     zombies.forEach(function(z){
-      if(!z.alive){if(z.dieT>0){z.dieT-=dt;z.m.rotation.x=Math.min(1.5,(1-z.dieT)*3);if(z.dieT<=0)scene.remove(z.m)}return}
+      if(!z.alive){if(z.dieT>0){z.dieT-=dt;var tt=1-z.dieT;z.m.rotation.x=-Math.min(1.5,tt*3.2);var zp=z.m.userData.parts;if(zp&&zp.jaw){zp.arms[0].rotation.x=-2.8+Math.sin(tt*12)*.4;zp.arms[1].rotation.x=-2.5;zp.jaw.rotation.x=.6}if(!z.dusted&&tt>.4){z.dusted=1;burst(z.x,groundAt(z.x,z.z)+.3,z.z,0x6b5a3c,10,4)}if(tt>.7)z.m.position.y-=dt*1.2;if(z.dieT<=0)scene.remove(z.m)}return}
       if(z.hp<=0){z.alive=false;z.dieT=1;return}
-      var t=nearestP(z.x,z.z,pl);if(!t){walk(z,dt,false);return}
+      if(z.rise<1){z.m.position.set(z.x,groundAt(z.x,z.z),z.z);zAnim(z,dt,false);if(z.rise===0||Math.random()<dt*3)burst(z.x,groundAt(z.x,z.z)+.2,z.z,0x6b5a3c,3,3);return}
+      var t=nearestP(z.x,z.z,pl);if(!t){zAnim(z,dt,false);return}
       var dx=t.x-z.x,dz=t.z-z.z,d=t.d,a=Math.atan2(dx,dz);z.yaw=a;
       var fear=structs.some(function(s){return !s.dead&&s.type==='fire'&&Math.hypot(s.x-z.x,s.z-z.z)<4})||(t.torch&&d<3.5);if(fear)a+=Math.PI*.6;
       z.mv=d>1.2;
       if(d>1.2){var hit=moveCirc(z,Math.sin(a)*z.sp*dt,Math.cos(a)*z.sp*dt,z.r,'z');
         if(hit&&hit.box&&hit.max){z.cd-=dt;if(z.cd<=0){z.cd=1;hit.hp-=z.dmg;if(Math.hypot(hit.x-P.x,hit.z-P.z)<20)sfx.play('hit');if(hit.hp<=0){destroyStruct(hit);if(online)net.relay({g:'sve',e:'sdel',ty:hit.type,x:hit.x,z:hit.z});msg('Un zombie a cassé : '+BUILD[hit.type].n.toLowerCase())}}if(hit.type==='spike')z.hp-=dt*25}}
-      else{z.cd-=dt;if(z.cd<=0){z.cd=1.1;hurtP(t,z.dmg)}}
-      z.m.position.set(z.x,groundAt(z.x,z.z),z.z);z.m.rotation.y=z.yaw+Math.PI;walk(z,dt,d>1.2);
+      else{z.cd-=dt;if(z.cd<.45&&!z.atk)z.atk=.45;if(z.cd<=0){z.cd=1.1;hurtP(t,z.dmg)}}
+      z.m.position.set(z.x,groundAt(z.x,z.z),z.z);z.m.rotation.y=z.yaw+Math.PI;zAnim(z,dt,d>1.2);
       if(d>150){z.alive=false;scene.remove(z.m)}
     });
     zombies=zombies.filter(function(z){return z.alive||z.dieT>0});
@@ -938,9 +974,9 @@
   /* Invité : les créatures suivent l'état envoyé par l'hôte */
   function stepGuestEnts(dt){
     [zombies,animals].forEach(function(list){list.forEach(function(e){
-      if(!e.alive){if(e.dieT>0){e.dieT-=dt;if(e.kind==='z')e.m.rotation.x=Math.min(1.5,(1-e.dieT)*3);else e.m.rotation.z=Math.min(1.5,(1-e.dieT)*3);if(e.dieT<=0)scene.remove(e.m)}return}
+      if(!e.alive){if(e.dieT>0){e.dieT-=dt;if(e.kind==='z')e.m.rotation.x=-Math.min(1.5,(1-e.dieT)*3);else e.m.rotation.z=Math.min(1.5,(1-e.dieT)*3);if(e.dieT<=0)scene.remove(e.m)}return}
       var dx=e.tx-e.x,dz=e.tz-e.z;e.x+=dx*Math.min(1,dt*9);e.z+=dz*Math.min(1,dt*9);var dy=((e.tyaw-e.yaw+Math.PI*3)%(Math.PI*2))-Math.PI;e.yaw+=dy*Math.min(1,dt*10);
-      e.m.position.set(e.x,groundAt(e.x,e.z),e.z);e.m.rotation.y=e.yaw+Math.PI;walk(e,dt,!!e.mv);if(e.kind!=='z')animalPose(e,dt,e.mv?2:0);
+      e.m.position.set(e.x,groundAt(e.x,e.z),e.z);e.m.rotation.y=e.yaw+Math.PI;if(e.kind==='z')zAnim(e,dt,!!e.mv);else walk(e,dt,!!e.mv);if(e.kind!=='z')animalPose(e,dt,e.mv?2:0);
     })});
     zombies=zombies.filter(function(z){return z.alive||z.dieT>0});animals=animals.filter(function(a){return a.alive||a.dieT>0});
   }
@@ -1009,7 +1045,7 @@
     if(m.t==='sv-s'&&!net.isHost&&running){
       dayT=m.dt;if(m.day!==day){day=m.day;PP.toast('Jour '+day,'ok')}
       var seenZ={},seenA={};
-      m.z.forEach(function(s){seenZ[s[0]]=1;var e=entById(s[0]);if(!e){var mm=humanoid([0x4d5a3a,0x5a4a3a,0x3a4a5a,0x5a3a3a][s[0]%4],s[4]?0x6f8a5a:0x86a070,true);if(s[4])mm.scale.setScalar(1.45);scene.add(mm);e={id:s[0],kind:'z',x:s[1],z:s[2],yaw:s[3],m:mm,alive:true,r:.4};mm.userData.ent=e;zombies.push(e)}e.tx=s[1];e.tz=s[2];e.tyaw=s[3];e.mv=s[5]});
+      m.z.forEach(function(s){seenZ[s[0]]=1;var e=entById(s[0]);if(!e){var gzt=s[4]?'tank':(s[0]%3===0?'runner':'walker'),mm=zombieModel(gzt);scene.add(mm);e={type:gzt,rise:0,id:s[0],kind:'z',x:s[1],z:s[2],yaw:s[3],m:mm,alive:true,r:.4};mm.userData.ent=e;zombies.push(e)}e.tx=s[1];e.tz=s[2];e.tyaw=s[3];e.mv=s[5]});
       m.a.forEach(function(s){seenA[s[0]]=1;var e=entById(s[0]);if(!e){var mm=animalMesh(s[1]?'wolf':'deer',s[6]);scene.add(mm);e={id:s[0],kind:s[1]?'wolf':'deer',x:s[2],z:s[3],yaw:s[4],m:mm,alive:true,r:.6};mm.userData.ent=e;animals.push(e)}e.tx=s[2];e.tz=s[3];e.tyaw=s[4];e.mv=s[5]});
       zombies.forEach(function(e){if(e.alive&&!seenZ[e.id]){e.alive=false;e.dieT=1}});animals.forEach(function(e){if(e.alive&&!seenA[e.id]){e.alive=false;e.dieT=1}});
       return}
