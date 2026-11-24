@@ -44,7 +44,7 @@
   function lineTo(a,b,color){lines.push({type:'Feature',properties:{color:color},geometry:{type:'LineString',coordinates:[[a[1],a[0]],[b[1],b[0]]]}});if(mapReady)map.getSource('lines').setData({type:'FeatureCollection',features:lines})}
   function fitAll(pts){var bb=new maplibregl.LngLatBounds();pts.forEach(function(q){bb.extend([q[1],q[0]])});map.resize();map.fitBounds(bb,{padding:60,maxZoom:7,duration:500})}
   /* ---------- Vue de rue à 360° (photos libres Panoramax), on avance de photo en photo ---------- */
-  var API='https://api.panoramax.xyz/api',V={ready:false},keys3={},walkRaf=0,cache={};
+  var API='https://api.panoramax.xyz/api',HOST='',V={ready:false},keys3={},walkRaf=0,cache={};
   function bearing(a,b){var r=Math.PI/180,y=Math.sin((b[1]-a[1])*r)*Math.cos(b[0]*r),x=Math.cos(a[0]*r)*Math.sin(b[0]*r)-Math.sin(a[0]*r)*Math.cos(b[0]*r)*Math.cos((b[1]-a[1])*r);return (Math.atan2(y,x)/r+360)%360}
   function angDiff(a,b){var d=Math.abs(a-b)%360;return d>180?360-d:d}
   function init3d(){
@@ -85,9 +85,10 @@
     V.nb.forEach(function(n){var d=angDiff(n.b,want);if(d<bd){bd=d;best=n}});
     if(best)go(best);else $('geo-status').textContent='Pas de chemin par là : tourne-toi vers une flèche.';
   }
-  function go(n){V.steps++;load({id:n.id,c:n.c},false)}
-  function getJSON(u){return fetch(u).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()})}
-  function item(id,c){var k=c+'/'+id;if(!cache[k])cache[k]=getJSON(API+'/collections/'+c+'/items/'+id).catch(function(e){delete cache[k];throw e});return cache[k]}
+  function go(n){V.steps++;load({id:n.id,c:n.c,h:n.h},false)}
+  function getJSON(u,ms){var ac=window.AbortController?new AbortController():null,t=setTimeout(function(){if(ac)ac.abort()},ms||7000);return fetch(u,ac?{signal:ac.signal}:{}).then(function(r){clearTimeout(t);if(!r.ok)throw new Error(r.status);return r.json()},function(e){clearTimeout(t);throw e})}
+  function apiFor(h){return h?'https://'+h+'/api':API}
+  function item(id,c,h){var k=c+'/'+id;if(!cache[k])cache[k]=getJSON(apiFor(h)+'/collections/'+c+'/items/'+id).catch(function(){return getJSON(API+'/collections/'+c+'/items/'+id,5000)}).catch(function(e){delete cache[k];throw e});return cache[k]}
   function chevron(){
     var s=new THREE.Shape();s.moveTo(0,.55);s.lineTo(.55,-.05);s.lineTo(.3,-.05);s.lineTo(0,.28);s.lineTo(-.3,-.05);s.lineTo(-.55,-.05);s.lineTo(0,.55);
     var g=new THREE.Group(),m=new THREE.Mesh(new THREE.ShapeGeometry(s),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.92,side:THREE.DoubleSide,depthTest:false}));
@@ -101,12 +102,12 @@
   }
   function neighbours(f,c){
     var me=[f.geometry.coordinates[1],f.geometry.coordinates[0]],out=[];
-    f.links.forEach(function(l){if((l.rel==='prev'||l.rel==='next')&&l.geometry&&l.id){var ll=[l.geometry.coordinates[1],l.geometry.coordinates[0]];out.push({id:l.id,c:c,ll:ll,b:bearing(me,ll),d:dist(me,ll)*1000})}});
+    f.links.forEach(function(l){if((l.rel==='prev'||l.rel==='next')&&l.geometry&&l.id){var ll=[l.geometry.coordinates[1],l.geometry.coordinates[0]];out.push({id:l.id,c:c,h:HOST,ll:ll,b:bearing(me,ll),d:dist(me,ll)*1000})}});
     var d=.00035;
-    return getJSON(API+'/search?limit=20&bbox='+[me[1]-d,me[0]-d*.7,me[1]+d,me[0]+d*.7].join(',')+'&filter='+encodeURIComponent('"field_of_view"=360')).then(function(r){
+    return getJSON(apiFor(HOST)+'/search?limit=20&bbox='+[me[1]-d,me[0]-d*.7,me[1]+d,me[0]+d*.7].join(',')+'&filter='+encodeURIComponent('"field_of_view"=360')).then(function(r){
       (r.features||[]).forEach(function(g){
         if(g.id===f.id||g.collection===c)return;var ll=[g.geometry.coordinates[1],g.geometry.coordinates[0]],dd=dist(me,ll)*1000;if(dd<3||dd>40)return;
-        var b=bearing(me,ll);if(out.some(function(o){return angDiff(o.b,b)<35}))return;out.push({id:g.id,c:g.collection,ll:ll,b:b,d:dd});
+        var b=bearing(me,ll);if(out.some(function(o){return angDiff(o.b,b)<35}))return;out.push({id:g.id,c:g.collection,h:HOST,ll:ll,b:b,d:dd});
       });return out;
     },function(){return out});
   }
@@ -114,20 +115,21 @@
     if(!init3d())return;V.busy=true;
     var tok=V.tok=(V.tok||0)+1;
     $('geo-loading').hidden=false;$('geo-loading').textContent=first?'Chargement de la rue':'On avance';
-    item(p.id,p.c).then(function(f){
+    HOST=p.h||HOST;
+    item(p.id,p.c,p.h).then(function(f){
       if(tok!==V.tok)return;
       var url=(f.assets.sd||f.assets.hd).href,az=f.properties['view:azimuth']||0;
-      return Promise.all([new Promise(function(ok,ko){var l=new THREE.TextureLoader();l.setCrossOrigin('anonymous');l.load(url,ok,undefined,ko)}),neighbours(f,p.c)]).then(function(res){
+      return Promise.all([new Promise(function(ok,ko){var l=new THREE.TextureLoader();l.setCrossOrigin('anonymous');var tt=setTimeout(function(){ko(new Error('timeout'))},12000);l.load(url,function(t){clearTimeout(tt);ok(t)},undefined,function(e){clearTimeout(tt);ko(e)})}),neighbours(f,p.c)]).then(function(res){
         if(tok!==V.tok)return;
         var t=res[0];t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;
         var old=V.sph.material;V.sph.material=new THREE.MeshBasicMaterial({map:t});if(old.map)old.map.dispose();old.dispose();
         V.sph.rotation.y=(270-az)*Math.PI/180;
-        V.cur={id:p.id,c:p.c,ll:[f.geometry.coordinates[1],f.geometry.coordinates[0]]};V.nb=res[1];
-        if(first){V.start={id:p.id,c:p.c};V.H=Math.random()*360;V.P=-.06;V.fov=75;V.cam.fov=75;V.cam.updateProjectionMatrix();V.steps=0}
+        V.cur={id:p.id,c:p.c,h:p.h,ll:[f.geometry.coordinates[1],f.geometry.coordinates[0]]};V.nb=res[1];
+        if(first){V.start={id:p.id,c:p.c,h:p.h};V.H=Math.random()*360;V.P=-.06;V.fov=75;V.cam.fov=75;V.cam.updateProjectionMatrix();V.steps=0}
         setArrows();V.busy=false;$('geo-loading').hidden=true;
         if(!locked)$('geo-status').textContent=V.nb.length?'Avance avec les flèches au sol, ou Z / flèche haut. Clique sur la carte pour poser ton point.':'Pas de chemin ici : regarde autour de toi puis pose ton point sur la carte.';
         // précharge les voisins
-        V.nb.forEach(function(n){item(n.id,n.c).then(function(g){var i=new Image();i.crossOrigin='anonymous';i.src=(g.assets.sd||g.assets.hd).href}).catch(function(){})});
+        V.nb.forEach(function(n){item(n.id,n.c,n.h).then(function(g){var i=new Image();i.crossOrigin='anonymous';i.src=(g.assets.sd||g.assets.hd).href}).catch(function(){})});
       });
     }).catch(function(){
       if(tok!==V.tok)return;V.busy=false;
@@ -181,7 +183,7 @@
   }
   function hostRound(){
     var p=H.rounds[H.ri];H.guesses={};H.open=true;
-    net.broadcast({t:'geo-r',r:H.ri+1,ll:p.ll,id:p.id,c:p.c});
+    net.broadcast({t:'geo-r',r:H.ri+1,ll:p.ll,id:p.id,c:p.c,h:p.h});
     $('geo-round').textContent='Manche '+(H.ri+1)+' / 5';$('geo-score').textContent=scoreLine();
     newRound(p);hostStatus();
   }
@@ -211,7 +213,7 @@
 
   /* ---------- Salon : invité ---------- */
   function guestWait(){$('geo-round').textContent='Salon '+net.code;$('geo-score').textContent='';$('geo-ok').disabled=true;$('geo-status').textContent='';$('geo-res').innerHTML='<div class="result"><p class="wait">L\'hôte lance la partie</p></div>'}
-  function guestRound(m){sfx.play('join');G.round=m.r;$('geo-round').textContent='Manche '+m.r+' / 5';newRound({ll:m.ll,id:m.id,c:m.c})}
+  function guestRound(m){sfx.play('join');G.round=m.r;$('geo-round').textContent='Manche '+m.r+' / 5';newRound({ll:m.ll,id:m.id,c:m.c,h:m.h})}
 
   /* ---------- Résultats communs ---------- */
   var COLS=['#3cff6e','#3fa9ff','#ff5fd2','#ff8a3d','#ffd23f','#36d6c3','#f2efe6','#ff3b3b'];
