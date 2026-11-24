@@ -14,12 +14,15 @@
     {id:'snake',name:'Paquet Snake',desc:'2 à 4 serpents',min:2,max:4}
   ];
 
+  var GN={fps:'Bunker 3D',sumo:'Sumo Arena',foot:'Foot 2v2',kart:'Pixel Kart',run:'Néon Rush',geo:'Devine où',imp:'Mot imposteur',prob:'Le plus probable',snake:'Paquet Snake'},curGame=null,lobby=PP.lobby;
+  function beat(){if(net.inRoom()&&net.isHost&&lobby)lobby.register({code:net.code,host:net.me.name,n:net.players.length,game:curGame})}
+  setInterval(beat,8000);
   function bar(){
     var rb=$('roombar');
     if(net.inRoom()){rb.hidden=false;$('roombar-txt').textContent='Salon '+net.code+' · '+net.players.length+' joueur'+(net.players.length>1?'s':'')}
     else rb.hidden=true;
   }
-  $('roombar-leave').addEventListener('click',function(){net.leave();bar();PP.go('menu')});
+  $('roombar-leave').addEventListener('click',function(){if(net.isHost&&lobby)lobby.unregister(net.code);net.leave();bar();PP.go('menu')});
 
   function render(){
     bar();
@@ -41,19 +44,33 @@
     h+='<p style="margin:18px 0 0"><button type="button" class="red" id="room-leave">Quitter le salon</button></p></div>';
     box.innerHTML=h;
     var cp=$('room-copy');if(cp)cp.onclick=function(){var i=$('room-link');i.select();try{navigator.clipboard.writeText(i.value);cp.textContent='Copié !'}catch(e){document.execCommand('copy');cp.textContent='Copié !'}};
-    $('room-leave').onclick=function(){net.leave();render()};
-    box.querySelectorAll('[data-launch]').forEach(function(b){b.onclick=function(){net.all({t:'launch',game:b.dataset.launch});}});
+    $('room-leave').onclick=function(){if(net.isHost&&lobby)lobby.unregister(net.code);net.leave();render()};
+    box.querySelectorAll('[data-launch]').forEach(function(b){b.onclick=function(){curGame=b.dataset.launch;beat();net.all({t:'launch',game:b.dataset.launch});}});
   }
 
+  function roomsHtml(l){
+    if(!l.length)return '<p class="muted rooms-empty">Aucun salon ouvert pour l\'instant. Crée le tien, tes potes le verront ici.</p>';
+    return l.map(function(r){return '<div class="room-row"><span class="rr-code">'+esc(r.code)+'</span><span class="rr-info"><b>Salon de '+esc(r.host)+'</b><small>'+r.n+' joueur'+(r.n>1?'s':'')+(r.game?' · en train de jouer à '+esc(GN[r.game]||r.game):' · dans le salon')+'</small></span><button type="button" class="ink" data-join="'+esc(r.code)+'">Rejoindre →</button></div>'}).join('');
+  }
+  function bindRooms(){
+    box.querySelectorAll('[data-join]').forEach(function(b){b.onclick=function(){
+      var n=($('room-name')&&$('room-name').value.trim())||PP.myName()||'Joueur';PP.setName(n);b.disabled=true;b.textContent='Connexion…';
+      net.join(b.dataset.join,n,function(err){if(err){b.disabled=false;b.textContent='Rejoindre →';PP.toast(err,'warn');return}sfx.play('win');render()});
+    }});
+  }
+  if(lobby)lobby.on(function(l){var el=$('room-list');if(el&&!net.inRoom()){el.innerHTML=roomsHtml(l);bindRooms()}});
+  setInterval(function(){if(PP.cur()==='room'&&!net.inRoom()&&lobby)lobby.refresh()},4000);
   function setup(){
-    box.innerHTML='<div class="panel narrow"><label class="lbl" for="room-name">Ton pseudo</label><input id="room-name" maxlength="14" placeholder="Pseudo" value="'+esc(PP.myName())+'">'+
+    box.innerHTML='<div class="rooms-open"><h3 class="t">Salons ouverts</h3><div id="room-list">'+roomsHtml(lobby?lobby.list():[])+'</div></div><div class="panel narrow"><label class="lbl" for="room-name">Ton pseudo</label><input id="room-name" maxlength="14" placeholder="Pseudo" value="'+esc(PP.myName())+'">'+
       '<p class="err" id="room-err"></p><div class="row" style="margin-top:16px"><button type="button" id="room-create">Créer le salon</button><button type="button" class="ghost" data-go="join">J\'ai un code</button></div>'+
       '<p class="muted" style="margin-top:14px">Le salon marche entre téléphones et PC, même sur des réseaux différents. L\'hôte doit rester sur la page.</p></div>';
+    bindRooms();if(lobby)lobby.refresh();
     $('room-create').onclick=function(){
       var n=$('room-name').value.trim()||'Hôte';PP.setName(n);
       $('room-create').disabled=true;$('room-err').textContent='';
       net.host(n,function(err,code){
         if(err){$('room-err').textContent=err;$('room-create').disabled=false;return}
+        curGame=null;setTimeout(beat,300);
         sfx.play('win');PP.toast('Salon '+code+' créé','ok');render();
       });
     };
