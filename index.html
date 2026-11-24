@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pixel Pause — jeux solo et entre potes</title>
+<meta name="description" content="Pixel Pause : des jeux dans le navigateur. FPS 3 modes, kart en écran partagé, sumo 3D, foot 2v2, snake multijoueur, Mot imposteur, Devine où en 3D… Invite tes potes avec un code à 3 chiffres.">
+<meta name="theme-color" content="#0b0d12">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235b8cff'/%3E%3Cpath d='M10 9h5a4 4 0 010 8h-2v6h-3z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
+<link rel="stylesheet" href="style.css?v=3.1">
+</head>
+<body>
+<header><div class="wrap">
+  <a class="logo" href="#" data-go="menu"><span class="logo-mark">P</span><span>Pixel Pause</span></a>
+  <div class="roombar" id="roombar" hidden><span class="dot"></span><span id="roombar-txt"></span><button class="mini" id="roombar-leave" type="button">Quitter</button></div>
+  <nav><button type="button" data-go="menu">Jeux</button><button type="button" data-go="room">Salon</button><button type="button" data-mute>Son : on</button></nav>
+</div></header>
+
+<main class="wrap">
+
+<!-- ================= MENU ================= -->
+<section class="view on" id="v-menu">
+  <div class="hero">
+    <div class="hero-txt">
+      <span class="eyebrow">Gratuit · sans compte · dans le navigateur</span>
+      <h1>Des jeux pour la pause,<br>seul ou entre potes.</h1>
+      <p class="lead">Sur un seul clavier à plusieurs, ou chacun sur son téléphone avec un code à 3 chiffres. Aucune installation.</p>
+      <div class="row"><button type="button" class="primary" data-go="room">Créer un salon</button><button type="button" class="ghost" data-go="join">J'ai un code</button></div>
+    </div>
+    <button type="button" class="hero-card" data-go="fps" style="--c1:#1f2a44;--c2:#5b8cff"><span class="tag">Nouveau</span><span class="hc-icon" data-svg="gun"></span><b>Bunker 3D</b><span>Deathmatch, zombies ou battle royale</span></button>
+  </div>
+
+  <h2 class="sub">Sur un même PC</h2>
+  <div class="games">
+    <button type="button" class="gcard" data-go="sumo" style="--c1:#2a1f44;--c2:#a36bff"><span class="g-icon" data-svg="sumo"></span><div class="txt"><h3>Sumo Arena <em>3D</em></h3><p>Pousse les autres hors de la plateforme. Jusqu'à 4 sur un clavier, bots pour compléter.</p><small>1 à 4 joueurs · 3e personne</small></div></button>
+    <button type="button" class="gcard" data-go="foot" style="--c1:#143322;--c2:#35d07f"><span class="g-icon" data-svg="ball"></span><div class="txt"><h3>Foot 2v2 <em>3D</em></h3><p>Deux équipes, une balle, deux minutes. Fonce dans la balle, frappe fort, marque.</p><small>1 à 4 joueurs · 3e personne</small></div></button>
+    <button type="button" class="gcard" data-go="kart" style="--c1:#3a1f14;--c2:#ff8a3d"><span class="g-icon" data-svg="kart"></span><div class="txt"><h3>Pixel Kart</h3><p>Course en vue arrière contre 5 karts. Solo ou à 2 en écran partagé.</p><small>1 à 2 joueurs · 3e personne</small></div></button>
+    <button type="button" class="gcard" data-go="snake" style="--c1:#113322;--c2:#3cff6e"><span class="g-icon" data-svg="snake"></span><div class="txt"><h3>Paquet Snake</h3><p>Solo, duel sur le même clavier, ou jusqu'à 4 en ligne dans un salon.</p><small>1 à 4 joueurs</small></div></button>
+  </div>
+
+  <h2 class="sub">Chacun sur son téléphone</h2>
+  <div class="games">
+    <button type="button" class="gcard" data-go="imp" style="--c1:#3a1420;--c2:#ff3b6b"><span class="g-icon" data-svg="spy"></span><div class="txt"><h3>Mot imposteur</h3><p>Tout le monde a le même mot… sauf l'imposteur. Et Mr White n'en a aucun.</p><small>3 à 12 joueurs · 1 PC ou en ligne</small></div></button>
+    <button type="button" class="gcard" data-go="prob" style="--c1:#3a1440;--c2:#ff5fd2"><span class="g-icon" data-svg="hand"></span><div class="txt"><h3>Le plus probable</h3><p>« Qui est le plus susceptible de… » Tout le monde vote, les résultats piquent.</p><small>3 à 12 joueurs · en ligne</small></div></button>
+    <button type="button" class="gcard" data-go="geo" style="--c1:#0f2a3a;--c2:#36d6c3"><span class="g-icon" data-svg="globe"></span><div class="txt"><h3>Devine où <em>3D</em></h3><p>Lâché dans une ville en 3D sans aucun nom. Explore, puis pose ton point. Le plus proche gagne.</p><small>1 à 12 joueurs</small></div></button>
+  </div>
+
+  <h2 class="sub">En solo</h2>
+  <div class="games">
+    <button type="button" class="gcard" data-go="fps" style="--c1:#1f2a44;--c2:#5b8cff"><span class="g-icon" data-svg="gun"></span><div class="txt"><h3>Bunker 3D</h3><p>FPS : deathmatch, vagues de zombies ou battle royale avec zone qui rétrécit.</p><small>1 joueur · 3 modes</small></div></button>
+    <button type="button" class="gcard" data-go="run" style="--c1:#1a1f3a;--c2:#7c8cff"><span class="g-icon" data-svg="run"></span><div class="txt"><h3>Néon Rush</h3><p>Fonce dans la ville de nuit : change de couloir, saute et glisse sous les obstacles.</p><small>1 joueur · 3e personne</small></div></button>
+  </div>
+</section>
+
+<!-- ================= SALON ================= -->
+<section class="view" id="v-room">
+  <h2>Salon en ligne</h2>
+  <p class="lead">Un salon relie les téléphones et les PC entre eux, sans compte ni serveur : tout passe directement entre les navigateurs. La personne qui crée le salon garde sa page ouverte.</p>
+  <div id="room-box"></div>
+  <p class="back"><button type="button" class="ghost" data-go="menu">← Retour aux jeux</button></p>
+</section>
+
+<section class="view" id="v-join">
+  <h2>Rejoindre un salon</h2>
+  <div class="panel narrow">
+    <label class="lbl" for="join-code">Code à 3 chiffres</label>
+    <input id="join-code" inputmode="numeric" pattern="[0-9]*" maxlength="3" placeholder="000" autocomplete="off" class="code">
+    <label class="lbl" for="join-name" style="margin-top:16px">Ton pseudo</label>
+    <input id="join-name" maxlength="14" placeholder="Pseudo" autocomplete="off">
+    <p class="err" id="join-err"></p>
+    <div class="row" style="margin-top:16px"><button type="button" class="primary" id="join-go">Rejoindre</button><button type="button" class="ghost" data-go="menu">Annuler</button></div>
+  </div>
+</section>
+
+<!-- ================= MOT IMPOSTEUR ================= -->
+<section class="view" id="v-imp">
+  <h2>Mot imposteur</h2>
+  <div id="imp-box"></div>
+  <p class="back"><button type="button" class="ghost" data-go="menu">← Retour aux jeux</button></p>
+</section>
+
+<!-- ================= LE PLUS PROBABLE ================= -->
+<section class="view" id="v-prob">
+  <h2>Le plus probable</h2>
+  <div id="prob-box"></div>
+  <p class="back"><button type="button" class="ghost" data-go="menu">← Retour aux jeux</button></p>
+</section>
+
+<!-- ================= SNAKE ================= -->
+<section class="view" id="v-snake">
+  <h2>Paquet Snake</h2>
+  <div id="sn-mode" class="modes">
+    <button type="button" class="mode" data-m="solo"><b>Solo</b><span>Bats ton record</span></button>
+    <button type="button" class="mode" data-m="duel"><b>Duel</b><span>2 joueurs, même clavier</span></button>
+    <button type="button" class="mode" data-m="online"><b>En ligne</b><span>2 à 4 dans le salon</span></button>
+  </div>
+  <div id="sn-game" hidden>
+    <div class="hud" id="sn-hud"></div>
+    <div class="stage"><canvas id="sn-cv" width="600" height="600" aria-label="Plateau du snake"></canvas>
+      <div class="overlay" id="sn-ov"><h3 id="sn-title">Paquet Snake</h3><p id="sn-msg"></p><button type="button" class="primary" id="sn-start">Jouer</button></div></div>
+    <div class="pad" id="sn-pad"><button type="button" data-d="L">←</button><button type="button" data-d="U">↑</button><button type="button" data-d="D">↓</button><button type="button" data-d="R">→</button></div>
+    <p class="keys" id="sn-keys"></p>
+    <p><button type="button" class="ghost" id="sn-back">← Changer de mode</button></p>
+  </div>
+  <p class="back"><button type="button" class="ghost" data-go="menu">← Retour aux jeux</button></p>
+</section>
+
+<!-- ================= BUNKER 3D ================= -->
+<section class="view" id="v-fps">
+  <h2>Bunker 3D</h2>
+  <div class="modes" id="fps-modes">
+    <button type="button" class="mode on" data-m="dm"><b>Deathmatch</b><span>3 minutes, un max de frags contre 6 bots</span></button>
+    <button type="button" class="mode" data-m="zombie"><b>Zombies</b><span>Des vagues de plus en plus grosses. Tiens le plus longtemps possible</span></button>
+    <button type="button" class="mode" data-m="br"><b>Battle royale</b><span>10 au départ, la zone rétrécit, dernier debout</span></button>
+  </div>
+  <div class="hud"><span>Vie <b id="fps-hp">100</b></span><span id="fps-l1">Frags <b id="fps-kills">0</b></span><span id="fps-l2">Temps <b id="fps-time">3:00</b></span><span>Record <b id="fps-best">0</b></span></div>
+  <div class="stage wide"><canvas id="fps-cv" width="800" height="450" aria-label="Vue à la première personne"></canvas><div class="lockhint" id="fps-lockhint" hidden>Clique dans l'image pour reprendre la souris</div>
+    <div class="overlay" id="fps-ov"><h3 id="fps-title">Bunker 3D</h3><p id="fps-msg">Choisis un mode au-dessus. Souris pour viser (haut, bas, côtés), ZQSD pour bouger, clic pour tirer.</p><button type="button" class="primary" id="fps-start">Entrer dans le bunker</button></div></div>
+  <div class="pad" id="fps-pad"><button type="button" data-k="L">↺</button><button type="button" data-k="F">▲</button><button type="button" data-k="B">▼</button><button type="button" data-k="R">↻</button><button type="button" data-k="S" class="fire">TIR</button></div>
+  <p class="keys"><kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> bouger · <kbd>souris</kbd> viser · <kbd>clic</kbd> tirer · <kbd>Échap</kbd> relâcher la souris · sur téléphone, glisse le doigt sur l'image pour viser</p>
+  <p class="back"><button type="button" class="ghost" data-go="menu">← Retour aux jeux</button></p>
+</section>
+
+<!-- ================= SUMO ARENA ================= -->
+<section class="view" id="v-sumo">
+  <h2>Sumo Arena</h2>
+  <div class="modes" id="sumo-modes">
+    <button type="button" class="mode on" data-n="1"><b>1 joueur</b><span>Toi contre 3 bots</span></button>
+    <button type="button" class="mode" data-n="2"><b>2 joueurs</b><span>ZQSD contre flèches, + 2 bots</span></button>
+    <button type="button" class="mode" data-n="3"><b>3 joueurs</b><span>+ IJKL, 1 bot</span></button>
+    <button type="button" class="mode" data-n="4"><b>4 joueurs</b><span>+ pavé numérique 8456</span></button>
+  </div>
+  <div class="hud" id="sumo-hud"></div>
+  <div class="stage wide"><canvas id="sumo-cv" width="960" height="540" aria-label="Arène sumo en 3D"></canvas>
+    <div class="overlay" id="sumo-ov"><h3 id="sumo-title">Sumo Arena</h3><p id="sumo-msg">Pousse les autres hors de la plateforme. Elle rétrécit avec le temps. Premier à 3 manches gagnées.</p><button type="button" class="primary" id="sumo-start">Jouer</button></div></div>
+  <div class="pad" id="sumo-pad"><button type="button" data-k="1L">←</button><button type="button" data-k="1U">↑</button><button type="button" data-k="1D">↓</button><button type="button" data-k="1R">→</button><button type="button" data-k="1X" class="fire">DASH</button></div>
+  <p class="keys">J1 <kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> + <kbd>Espace</kbd> · J2 <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> + <kbd>Entrée</kbd> · J3 <kbd>I</kbd><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd> + <kbd>O</kbd> · J4 <kbd>8</kbd><kbd>4</kbd><kbd>5</kbd><kbd>6</kbd> + <kbd>0</kbd> (pavé numérique) · le dash pousse fort mais te fait glisser</p>
+  <p class="back"><button type="button" class="ghost" data-go="menu">← Retour aux jeux</button></p>
+</section>
+
+<!-- ================= FOOT 2V2 ================= -->
+<section class="view" id="v-foot">
+  <h2>Foot 2v2</h2>
+  <div class="modes" id="foot-modes">
+    <button type="button" class="mode on" data-n="1"><b>1 joueur</b><span>Toi + un bot contre 2 bots</span></button>
+    <button type="button" class="mode" data-n="2"><b>2 joueurs</b><span>ZQSD contre flèches, chacun avec un bot</span></button>
+    <button type="button" class="mode" data-n="3"><b>3 joueurs</b><span>2 contre 1 + bot</span></button>
+    <button type="button" class="mode" data-n="4"><b>4 joueurs</b><span>2 contre 2, tous humains</span></button>
+  </div>
+  <div class="hud" id="foot-hud"></div>
+  <div class="stage wide"><canvas id="foot-cv" width="960" height="540" aria-label="Terrain de foot en 3D"></canvas>
+    <div class="overlay" id="foot-ov"><h3 id="foot-title">Foot 2v2</h3><p id="foot-msg">Bleus (J1, J3) contre Rouges (J2, J4). 2 minutes. Fonce dans la balle pour la pousser, touche d'action pour frapper fort.</p><button type="button" class="primary" id="foot-start">Coup d'envoi</button></div></div>
+  <div class="pad" id="foot-pad"><button type="button" data-k="1L">←</button><button type="button" data-k="1U">↑</button><button type="button" data-k="1D">↓</button><button type="button" data-k="1R">→</button><button type="button" data-k="1X" class="fire">TIR</button></div>
+  <p class="keys">J1 <kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> + <kbd>Espace</kbd> · J2 <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> + <kbd>Entrée</kbd> · J3 <kbd>I</kbd><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd> + <kbd>O</kbd> · J4 <kbd>8</kbd><kbd>4</kbd><kbd>5</kbd><kbd>6</kbd> + <kbd>0</kbd></p>
+  <p class="back"><button type="button" class="ghost" data-go="menu">← Retour aux jeux</button></p>
+</section>
+
+<!-- ================= PIXEL KART ================= -->
+<section class="view" id="v-kart">
+  <h2>Pixel Kart</h2>
+  <div class="modes" id="kt-modes">
+    <button type="button" class="mode on" data-n="1"><b>Solo</b><span>Toi contre 5 karts</span></button>
+    <button type="button" class="mode" data-n="2"><b>2 joueurs</b><span>Écran partagé : J1 ZQSD, J2 flèches</span></button>
+  </div>
+  <div class="hud"><span>Position <b id="kt-pos">6/6</b></span><span>Tour <b id="kt-lap">1/3</b></span><span>Temps <b id="kt-time">0:00</b></span><span>Record <b id="kt-best">—</b></span></div>
+  <div class="stage wide"><canvas id="kt-cv" width="800" height="450" aria-label="Course de kart"></canvas>
+    <div class="overlay" id="kt-ov"><h3 id="kt-title">Pixel Kart</h3><p id="kt-msg">← → pour tourner, ↑ pour accélérer, ↓ pour freiner. Prends les flèches vertes pour un boost, évite les flaques d'huile. 3 tours.</p><button type="button" class="primary" id="kt-start">Démarrer</button></div></div>
+  <div class="pad" id="kt-pad"><button type="button" data-k="L">←</button><button type="button" data-k="U">GAZ</button><button type="button" data-k="D">FREIN</button><button type="button" data-k="R">→</button></div>
+  <p class="keys">J1 <kbd>Z</kbd> gaz <kbd>S</kbd> frein <kbd>Q</kbd><kbd>D</kbd> tourner · J2 <kbd>↑</kbd> gaz <kbd>↓</kbd> frein <kbd>←</kbd><kbd>→</kbd> tourner · sur téléphone, maintiens les boutons</p>
+  <p class="back"><button type="button" class="ghost" data-go="menu">← Retour aux jeux</button></p>
+</section>
+
+<!-- ================= NÉON RUSH ================= -->
+<section class="view" id="v-run">
+  <h2>Néon Rush</h2>
+  <div class="hud"><span>Distance <b id="rn-score">0</b> m</span><span>Pièces <b id="rn-coins">0</b></span><span>Record <b id="rn-best">0</b></span></div>
+  <div class="stage"><canvas id="rn-cv" width="560" height="640" aria-label="Jeu de course"></canvas>
+    <div class="overlay" id="rn-ov"><h3 id="rn-title">Néon Rush</h3><p id="rn-msg">← → pour changer de couloir · ↑ pour sauter les blocs bas · ↓ pour glisser sous les barrières.</p><button type="button" class="primary" id="rn-start">Courir</button></div></div>
+  <div class="pad" id="rn-pad"><button type="button" data-k="L">←</button><button type="button" data-k="U">↑</button><button type="button" data-k="D">↓</button><button type="button" data-k="R">→</button></div>
+  <p class="keys"><kbd>←</kbd><kbd>→</kbd> couloir · <kbd>↑</kbd> sauter · <kbd>↓</kbd> glisser · sur téléphone, glisse le doigt</p>
+  <p class="back"><button type="button" class="ghost" data-go="menu">← Retour aux jeux</button></p>
+</section>
+
+<!-- ================= DEVINE OÙ ================= -->
+<section class="view" id="v-geo">
+  <h2>Devine où</h2>
+  <div class="geo-stage" id="geo-stage">
+    <div id="geo-3d" aria-label="Vue 3D du lieu : déplace-toi pour trouver des indices"></div>
+    <div class="geo-hud"><span id="geo-round">Manche 1 / 5</span><span id="geo-score"></span></div>
+    <div class="geo-loading" id="geo-loading">Chargement de la 3D</div>
+    <div class="geo-map" id="geo-mini">
+      <div id="map" role="application" aria-label="Carte : clique pour poser ton point"></div>
+      <div class="geo-mapbar"><button type="button" class="ghost" id="geo-expand" aria-label="Agrandir la carte">⤢</button><button type="button" class="primary" id="geo-ok" disabled>Valider</button></div>
+    </div>
+    <div class="geo-status" id="geo-status"></div>
+    <div class="geo-res" id="geo-res"></div>
+  </div>
+  <div class="pad" id="geo-pad"><button type="button" data-k="L">↺</button><button type="button" data-k="F">▲</button><button type="button" data-k="B">▼</button><button type="button" data-k="R">↻</button></div>
+  <p class="keys"><kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> ou glisser : se déplacer · <kbd>clic droit</kbd> ou <kbd>A</kbd><kbd>E</kbd> : tourner · <kbd>molette</kbd> : zoom · aucun nom n'est affiché. Pose ton point sur la mini-carte et valide.</p>
+  <p class="back"><button type="button" class="ghost" data-go="menu">← Retour aux jeux</button></p>
+</section>
+
+</main>
+
+<footer><div class="wrap">Pixel Pause · les records restent dans ton navigateur · cartes © OpenStreetMap / OpenFreeMap</div></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+<script src="core.js?v=3.1"></script>
+<script src="sfx.js?v=3.1"></script>
+<script src="net.js?v=3.1"></script>
+<script src="room.js?v=3.1"></script>
+<script src="imposteur.js?v=3.1"></script>
+<script src="probable.js?v=3.1"></script>
+<script src="snake.js?v=3.1"></script>
+<script src="fps.js?v=3.1"></script>
+<script src="sumo.js?v=3.1"></script>
+<script src="foot.js?v=3.1"></script>
+<script src="kart.js?v=3.1"></script>
+<script src="rush.js?v=3.1"></script>
+<script src="geo-data.js?v=3.1"></script>
+<script src="geo.js?v=3.1"></script>
+<script src="boot.js?v=3.1"></script>
+</body>
+</html>
