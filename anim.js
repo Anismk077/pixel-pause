@@ -39,20 +39,6 @@
     if(tl&&'MutationObserver' in window)new MutationObserver(watch).observe(tl,{childList:true});
   }
 
-  /* ---------- Rideau entre les pages ---------- */
-  var cur=d.createElement('div');cur.className='pp-curtain';cur.setAttribute('aria-hidden','true');cur.innerHTML='<b></b>';
-  d.body.appendChild(cur);
-  var last=location.hash.slice(1)||'menu',ready=false;
-  setTimeout(function(){ready=true},400);
-  d.addEventListener('pp-go',function(e){
-    var v=e.detail;if(v===last)return;last=v;
-    if(!ready)return;
-    var h2=d.querySelector('#v-'+v+' h2');
-    cur.firstChild.textContent=v==='menu'?'Pixel Pause.':(h2?h2.textContent:'');
-    cur.classList.remove('go');void cur.offsetWidth;cur.classList.add('go');
-  });
-  cur.addEventListener('animationend',function(e){if(e.target===cur)cur.classList.remove('go')});
-
   /* ---------- En-tête : ombre et barre de progression ---------- */
   var hd=d.querySelector('header'),bar=null;
   if(hd){bar=d.createElement('div');bar.className='pp-prog';hd.appendChild(bar)}
