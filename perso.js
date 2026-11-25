@@ -175,8 +175,14 @@ PP.perso=(function(){
     p.arms[0].rotation.z=-.07-Math.sin(s*2.2)*.02;p.arms[0].rotation.x=Math.sin(s*1.1)*.04;
     var up=wv*2.55;p.arms[1].rotation.z=.07+Math.sin(s*2.2)*.02+up;p.arms[1].rotation.x=-wv*.25;
     p.elbows[1].rotation.z=wv*(.35+Math.sin(s*14)*.45);p.elbows[0].rotation.z=0;
-    var j=st.jump>0?Math.sin((1-st.jump)*Math.PI):0;p.root.position.y=j*.32;
-    p.knees.forEach(function(k){k.rotation.x=j*.5});p.legs.forEach(function(l){l.rotation.x=-j*.35});
+    /* saut : il plie les genoux, décolle en repliant les jambes, puis amortit à l'atterrissage */
+    var ry=0,th=0,kn=0,au=0;st.air=0;
+    if(st.jump>0){var u=1-st.jump;
+      if(u<.18){var c=u/.18;ry=-.07*c;th=.45*c;kn=-.95*c;au=-.35*c}
+      else if(u<.8){var k=(u-.18)/.62,h=Math.sin(k*Math.PI);ry=h*.24;th=.4*h+.1;kn=-.8*h-.2;au=-1.5*h;st.air=h}
+      else{var c2=1-(u-.8)/.2;ry=-.06*c2;th=.4*c2;kn=-.85*c2;au=-.2*c2}}
+    p.root.position.y=ry;p.legs.forEach(function(l){l.rotation.x=th});p.knees.forEach(function(k){k.rotation.x=kn});
+    if(st.jump>0){p.arms[0].rotation.x=au;if(!(wv>0))p.arms[1].rotation.x=au;p.elbows.forEach(function(e){e.rotation.x=au*.35})}else p.elbows.forEach(function(e){e.rotation.x=0})
     if(st.walk){var w=Math.sin(s*7);p.legs[0].rotation.x=w*.45;p.legs[1].rotation.x=-w*.45;p.knees[0].rotation.x=Math.max(0,-w)*.6;p.knees[1].rotation.x=Math.max(0,w)*.6;p.arms[0].rotation.x=-w*.4;if(!(wv>0))p.arms[1].rotation.x=w*.4;p.root.position.y=Math.abs(Math.cos(s*7))*.03}
   }
   function stage(cv,opt){
@@ -189,13 +195,13 @@ PP.perso=(function(){
     function setA(a){if(md){scene.remove(md)}md=build(a||get());scene.add(md);md.rotation.y=yaw}
     setA(opt.perso);
     function size(){var w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return false;if(w!==w0||h!==h0){w0=w;h0=h;R.setPixelRatio(Math.min(2,window.devicePixelRatio||1));R.setSize(w,h,false);cam.aspect=w/h;
-      var fit=opt.bust?{y:1.75,z:2.2,l:1.72}:{y:1.12,z:5.0,l:1.02};if(cam.aspect<.6)fit.z*=1.15;cam.position.set(0,fit.y+.12,fit.z);cam.lookAt(0,fit.l,0);cam.updateProjectionMatrix()}return true}
+      var fit=opt.bust?{y:1.75,z:2.2,l:1.72}:{y:1.16,z:5.6,l:1.08};if(cam.aspect<.6)fit.z*=1.15;cam.position.set(0,fit.y+.12,fit.z);cam.lookAt(0,fit.l,0);cam.updateProjectionMatrix()}return true}
     function loop(t){if(!alive)return;if(!cv.isConnected){dispose();return}raf=requestAnimationFrame(loop);
       if(!cv.getClientRects().length||document.hidden)return;var dt=Math.min(.05,(t-last)/1000||0);last=t;if(!size())return;
       if(!drag){if(opt.spin)yaw+=dt*.35;else yaw+=((opt.yaw==null?Math.PI+.35:opt.yaw)+Math.sin(t/4000)*.25-yaw)*Math.min(1,dt*1.5)}
       if(opt.autoWave){nextWave-=dt;if(nextWave<=0){st.wave=st.waveT;nextWave=7+Math.random()*5}}
-      if(st.wave>0)st.wave=Math.max(0,st.wave-dt);if(st.jump>0)st.jump=Math.max(0,st.jump-dt*2.2);
-      st.walk=!!opt.walk;md.rotation.y=yaw;animate(md,t,st);R.render(scene,cam)}
+      if(st.wave>0)st.wave=Math.max(0,st.wave-dt);if(st.jump>0)st.jump=Math.max(0,st.jump-dt*1.6);
+      st.walk=!!opt.walk;md.rotation.y=yaw;animate(md,t,st);var ai=st.air||0;sh.scale.setScalar(1-ai*.35);sh.material.opacity=1-ai*.45;R.render(scene,cam)}
     raf=requestAnimationFrame(loop);
     cv.style.touchAction='pan-y';
     cv.addEventListener('pointerdown',function(e){drag={x:e.clientX,y:yaw,moved:false}});
