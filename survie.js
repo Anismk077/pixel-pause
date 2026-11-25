@@ -1298,7 +1298,12 @@
   var net=PP.net,online=false,auth=true,remotes={},netAcc=0,eid=0,stateAcc=0,seenJoin={};
   var PCOL=[0x2f6fb5,0xb5452f,0x3f8f3a,0x8a3fb5,0xc29a1a,0x2fa3a3,0xd06090,0x5a5a5a];
   function nameTag(t){var c=document.createElement('canvas');c.width=256;c.height=64;var g=c.getContext('2d');g.fillStyle='rgba(20,18,16,.8)';g.font='bold 30px IBM Plex Mono, monospace';var w=Math.min(250,g.measureText(t).width+24);g.fillRect((256-w)/2,10,w,44);g.fillStyle='#f1ece2';g.textAlign='center';g.textBaseline='middle';g.fillText(t,128,33);var s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false,transparent:true}));s.scale.set(2.4,.6,1);s.position.y=2.55;s.renderOrder=5;return s}
-  function remoteModel(r){if(r.m)scene.remove(r.m);var slot=Math.max(0,net.slot(r.id));r.m=humanoid(PCOL[slot%PCOL.length],0xd9a77c,false);r.m.add(nameTag(r.n||'?'));r.m.userData.ent=null;scene.add(r.m);r.shown=r.n}
+  function avOf(id){var pl=net.players.filter(function(q){return q.id===id})[0];return pl&&pl.av||null}
+  /* les autres joueurs apparaissent avec leur perso (celui de « Mon perso ») */
+  function remoteModel(r){if(r.m){scene.remove(r.m);r.toolM=null;r.toolShown=null}var av=avOf(r.id),m=null;r.avJ=JSON.stringify(av);
+    if(av&&PP.perso&&PP.perso.build){try{m=PP.perso.build(av);m.userData.parts.swing=true;m.traverse(function(o){if(o.isMesh)o.castShadow=true})}catch(e){m=null}}
+    if(!m){var slot=Math.max(0,net.slot(r.id));m=humanoid(PCOL[slot%PCOL.length],0xd9a77c,false)}
+    r.m=m;r.m.add(nameTag(r.n||'?'));r.m.userData.ent=null;scene.add(r.m);r.shown=r.n}
   /* outil tenu en main par les autres joueurs */
   function handTool(t){var g=new THREE.Group(),wood=lam({color:0x7a5230}),steel=lam({color:0xb8bcc4}),dark=lam({color:0x2b2b30});
     function b(w,h,d,x,y,z,m){var o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);g.add(o);return o}
@@ -1308,7 +1313,7 @@
     else if(t==='bow'){var bw=new THREE.Mesh(new THREE.TorusGeometry(.3,.015,6,16,Math.PI),wood);bw.rotation.y=Math.PI/2;g.add(bw)}
     else if(t==='pistol'||t==='rifle'){b(.05,.08,t==='rifle'?.7:.28,0,.05,-.12,dark);b(.04,.14,.05,0,-.04,0,dark)}
     g.rotation.x=Math.PI/2.6;g.scale.setScalar(1.5);return g}
-  function stepRemotes(dt){var tn=performance.now()/1000;Object.keys(remotes).forEach(function(k){var r=remotes[k];if(!r.ready)return;if(!r.m||r.shown!==r.n)remoteModel(r);r.x+=(r.tx-r.x)*Math.min(1,dt*10);r.z+=(r.tz-r.z)*Math.min(1,dt*10);r.m.visible=r.hp>0;
+  function stepRemotes(dt){var tn=performance.now()/1000;Object.keys(remotes).forEach(function(k){var r=remotes[k];if(!r.ready)return;if(!r.m||r.shown!==r.n||(r.avT=(r.avT||0)-dt)<0&&(r.avT=2,JSON.stringify(avOf(r.id))!==r.avJ))remoteModel(r);r.x+=(r.tx-r.x)*Math.min(1,dt*10);r.z+=(r.tz-r.z)*Math.min(1,dt*10);r.m.visible=r.hp>0;
     r.yy=(r.yy||0)+((r.ty||0)-(r.yy||0))*Math.min(1,dt*14);var gy=groundAt(r.x,r.z);if(r.swim)gy=-.25-1.15;if(r.boat)gy=-.55;r.m.position.set(r.x,gy+(r.swim||r.boat?0:Math.max(0,r.yy)),r.z);r.m.rotation.y=r.yaw;
     var moving=Math.hypot(r.tx-r.x,r.tz-r.z)>.04;walk(r,dt,moving&&!r.boat);var p=r.m.userData.parts;if(!p)return;var ra=p.arms[1],la=p.arms[0];
     if(r.toolShown!==r.tool){if(r.toolM)r.toolM.parent.remove(r.toolM);r.toolM=r.tool?handTool(r.tool):null;if(r.toolM){r.toolM.position.set(0,-.7,-.05);ra.add(r.toolM)}r.toolShown=r.tool}
@@ -1513,7 +1518,7 @@
     }
     drawMap();
   }
-  function loop(t){var dt=last?Math.min(.05,(t-last)/1000):0;last=t;if(running){if(!paused)step(dt);if(running){render();if(dt>0)autoQ(dt)}raf=requestAnimationFrame(loop)}}
+  function loop(t){var dt=last?Math.min(.05,(t-last)/1000):0;last=t;if(running){if(!paused||online)step(dt);if(running){render();if(dt>0)autoQ(dt)}raf=requestAnimationFrame(loop)}}
 
   /* ---------- Interface ---------- */
   function hudBars(){
@@ -1723,7 +1728,7 @@
   cv.addEventListener('contextmenu',function(e){e.preventDefault()});
   cv.addEventListener('wheel',function(e){if(!running||buildMode)return;e.preventDefault();var own=TORDER.filter(function(t){return t==='axe'||inv[t]}),i=own.indexOf(tool);setTool(own[(i+(e.deltaY>0?1:-1)+own.length)%own.length])},{passive:false});
   document.addEventListener('mousemove',function(e){if(document.pointerLockElement!==cv||!P)return;var ss=.0025*PP.settings.sens/100;P.yaw-=e.movementX*ss;P.pitch=Math.max(-1.45,Math.min(1.45,P.pitch-e.movementY*ss*(PP.settings.invY?-1:1)))});
-  document.addEventListener('pointerlockchange',function(){if(PP.cur()!=='surv'||!running)return;var l=document.pointerLockElement===cv;$('sv-lockhint').hidden=l||menusOpen();if(!l&&!menusOpen()){paused=true;save();if(!online)PP.pause(true)}else paused=false});
+  document.addEventListener('pointerlockchange',function(){if(PP.cur()!=='surv'||!running)return;var l=document.pointerLockElement===cv;$('sv-lockhint').textContent=online?'Clique dans l\'image pour reprendre la main · la partie continue en ligne':'Pause · clique dans l\'image pour reprendre';$('sv-lockhint').hidden=l||menusOpen();if(!l&&!menusOpen()){paused=true;save();if(!online)PP.pause(true)}else paused=false});
   PP.pauseGuard('surv',function(){return running&&!menusOpen()});
   document.addEventListener('pp-resume',function(){if(PP.cur()!=='surv'||!running)return;lock();paused=false;$('sv-lockhint').hidden=true});
   document.addEventListener('pp-settings',function(){if(!cam)return;cam.fov=PP.settings.fov-3;cam.updateProjectionMatrix();applyQ()});
