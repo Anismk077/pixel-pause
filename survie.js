@@ -113,11 +113,11 @@
     cam=new THREE.PerspectiveCamera(72,cv.width/cv.height,.1,900);cam.rotation.order='YXZ';
     vscene=new THREE.Scene();vcam=new THREE.PerspectiveCamera(60,cv.width/cv.height,.01,10);
     vscene.add(new THREE.HemisphereLight(0xffffff,0x555555,1.3));var dl=new THREE.DirectionalLight(0xffffff,1.1);dl.position.set(1,2,1);vscene.add(dl);
-    document.addEventListener('fullscreenchange',fit);document.addEventListener('webkitfullscreenchange',fit);window.addEventListener('resize',fit);
+    document.addEventListener('pp-fs',function(){setTimeout(fit,30)});window.addEventListener('resize',fit);
     return true;
   }
   /* Plein écran : le rendu prend toute la taille de l'écran */
-  function isFull(){return (document.fullscreenElement||document.webkitFullscreenElement)===stage}
+  function isFull(){var f=PP.fs();return !!(f&&f.isOn(stage))}
   function fit(){
     if(!R3)return;var w=960,h=540;
     if(isFull()){w=window.innerWidth;h=window.innerHeight}
@@ -1230,8 +1230,8 @@
   }
 
   /* ---------- Plein écran ---------- */
-  function goFull(){var r=stage.requestFullscreen||stage.webkitRequestFullscreen;if(!r)return PP.toast('Le plein écran n\'est pas possible ici','warn');if(isFull())return exitFull();try{var p=r.call(stage);if(p&&p.then)p.then(function(){lock()}).catch(function(){})}catch(e){}}
-  function exitFull(){if(isFull()){var x=document.exitFullscreen||document.webkitExitFullscreen;if(x)try{x.call(document)}catch(e){}}}
+  function goFull(){var f=PP.fs();if(f)f.toggle(stage)}
+  function exitFull(){var f=PP.fs();if(f&&f.isOn(stage))f.exit()}
 
   /* ---------- Entrées ---------- */
   var KM={z:'F',w:'F',ArrowUp:'F',s:'B',ArrowDown:'B',q:'L',a:'L',ArrowLeft:'L',d:'R',ArrowRight:'R'};

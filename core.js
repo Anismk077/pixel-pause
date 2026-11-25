@@ -1,5 +1,5 @@
 /* Pixel Pause — noyau : navigation, stockage, icônes, utilitaires */
-var PP_pause=null;
+var PP_pause=null,PP_fs=null;
 window.PP=(function(){
   'use strict';
   var $=function(id){return document.getElementById(id)};
@@ -19,6 +19,7 @@ window.PP=(function(){
   var games={},current='menu';
   function go(v){
     if(typeof PP_pause==='function')PP_pause(false);
+    if(PP_fs)PP_fs.exit();
     if(games[current]&&games[current].close)games[current].close();
     document.querySelectorAll('.view').forEach(function(s){s.classList.toggle('on',s.id==='v-'+v)});
     current=v;window.scrollTo(0,0);
@@ -124,13 +125,33 @@ window.PP=(function(){
     st.parentNode.insertBefore(bar,st.nextSibling);
     var ov=document.createElement('div');ov.className='pause-ov';ov.hidden=true;ov.innerHTML='<b>PAUSE</b><button type="button" class="primary" data-resume>Reprendre</button>';st.appendChild(ov);
     ov.querySelector('[data-resume]').addEventListener('click',function(e){e.stopPropagation();setPause(false)});
-    bar.querySelector('[data-fs]').addEventListener('click',function(){if(fsEl()===st){(document.exitFullscreen||document.webkitExitFullscreen).call(document);return}var r=st.requestFullscreen||st.webkitRequestFullscreen;if(!r){toast('Le plein écran n\'est pas possible sur cet appareil','warn');return}try{var p=r.call(st);if(p&&p.catch)p.catch(function(){toast('Le navigateur a refusé le plein écran','warn')})}catch(x){}});
+    bar.querySelector('[data-fs]').addEventListener('click',function(){toggleFs(st)});
+    var tb=document.createElement('div');tb.className='fs-tools';tb.innerHTML='<button type="button" data-pause>Pause</button><button type="button" data-fsx>Quitter le plein écran</button>';st.appendChild(tb);
+    tb.querySelector('[data-pause]').addEventListener('click',function(e){e.stopPropagation();setPause(!paused)});tb.querySelector('[data-fsx]').addEventListener('click',function(e){e.stopPropagation();exitFs()});
     bar.querySelector('[data-pause]').addEventListener('click',function(){setPause(!paused)});
   });
   /* en plein écran, la touche P met en pause (sauf dans la Survie où P sert déjà) */
   document.addEventListener('keydown',function(e){if(e.key==='Pause'||(e.key.toLowerCase()==='p'&&current!=='surv'&&current!=='menu'&&!/INPUT|TEXTAREA/.test((e.target&&e.target.tagName)||''))){if(document.querySelector('.view.on .stage.wide'))setPause(!paused)}});
-  function fsLabel(){document.querySelectorAll('.stage-bar [data-fs]').forEach(function(b){b.textContent=fsEl()===b.parentNode.previousSibling?'Quitter le plein écran':'Plein écran'})}
-  document.addEventListener('fullscreenchange',fsLabel);document.addEventListener('webkitfullscreenchange',fsLabel);
+  /* Plein écran fiable : la scène passe en position fixe par-dessus tout (marche aussi sur iPhone),
+     et on demande en plus le vrai plein écran du navigateur quand il est disponible. */
+  var fsStage=null,fsReal=false;
+  function fsChanged(){document.querySelectorAll('.stage-bar [data-fs]').forEach(function(b){b.textContent=fsStage===b.parentNode.previousSibling?'Quitter le plein écran':'Plein écran'});window.dispatchEvent(new Event('resize'));document.dispatchEvent(new CustomEvent('pp-fs',{detail:fsStage}))}
+  function enterFs(st){
+    if(fsStage)exitFs(true);fsStage=st;st.classList.add('fs-on');document.body.classList.add('fs-mode');
+    var el=document.documentElement,r=el.requestFullscreen||el.webkitRequestFullscreen;fsReal=false;
+    if(r){try{var p=r.call(el);fsReal=true;if(p&&p.catch)p.catch(function(){fsReal=false})}catch(x){fsReal=false}}
+    setTimeout(fsChanged,60);fsChanged();
+  }
+  function exitFs(keepReal){
+    if(!fsStage)return;fsStage.classList.remove('fs-on');document.body.classList.remove('fs-mode');fsStage=null;
+    if(!keepReal&&fsEl()){var x=document.exitFullscreen||document.webkitExitFullscreen;if(x)try{var p=x.call(document);if(p&&p.catch)p.catch(function(){})}catch(e){}}
+    fsChanged();
+  }
+  function toggleFs(st){if(fsStage===st)exitFs();else enterFs(st)}
+  function onRealFs(){if(!fsEl()&&fsStage&&fsReal){fsReal=false;exitFs(true)}else fsChanged()}
+  document.addEventListener('fullscreenchange',onRealFs);document.addEventListener('webkitfullscreenchange',onRealFs);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&fsStage&&!fsEl()&&!document.pointerLockElement)exitFs()});
+  PP_fs={toggle:toggleFs,exit:exitFs,isOn:function(st){return fsStage===st}};
   PP_pause=setPause;
   /* ---------- Toasts ---------- */
   var toastBox=document.createElement('div');toastBox.className='toasts';document.body.appendChild(toastBox);
@@ -148,5 +169,5 @@ window.PP=(function(){
   }
 
 
-  return {key:key,stat:stat,profile:function(){return PROF},toast:toast,avatar:avatar,$:$,esc:esc,store:store,text:text,shuffle:shuffle,pick:pick,pad6:pad6,fmtTime:fmtTime,go:go,games:games,icon:icon,refreshHi:refreshHi,myName:myName,setName:setName,held:held,cur:function(){return current}};
+  return {fs:function(){return PP_fs},key:key,stat:stat,profile:function(){return PROF},toast:toast,avatar:avatar,$:$,esc:esc,store:store,text:text,shuffle:shuffle,pick:pick,pad6:pad6,fmtTime:fmtTime,go:go,games:games,icon:icon,refreshHi:refreshHi,myName:myName,setName:setName,held:held,cur:function(){return current}};
 })();
