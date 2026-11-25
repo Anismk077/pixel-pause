@@ -117,3 +117,21 @@
 .ft-use{right:4%;bottom:calc(12% + min(40vmin,190px))}
 .ft-sw{right:calc(5% + min(38vmin,180px));bottom:12%}
 .ft-slide{left:calc(4% + min(30vmin,150px) + 10px);bottom:8%}
+
+/* légendaire (minigun, pistolet à rayons) */
+#v-fps .fx-slot.t4{--t:#ff7a1a}#v-fps .sh-card.t4{--t:#ff7a1a}
+#v-fps .sh-card.t4 svg{fill:#c24a00}
+
+/* début de partie : roulette de la carte, puis difficulté */
+#v-fps .fps-roll{font:400 clamp(40px,7vw,72px)/1 Anton,Impact,sans-serif!important;text-transform:uppercase;letter-spacing:.02em;margin:6px 0 4px!important;animation:rollTick .12s ease-out}
+#v-fps .fps-roll.done{color:#e2361b;animation:rollDone .5s cubic-bezier(.2,.9,.3,1.4)}
+@keyframes rollTick{from{transform:translateY(-8px);opacity:.4}to{transform:none;opacity:1}}
+@keyframes rollDone{0%{transform:scale(.7)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+#v-fps .fps-diff{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:min(680px,92%);margin-top:6px}
+#v-fps .fps-diff[hidden]{display:none}
+#v-fps .fps-diff .mode{flex:none;text-align:left;animation:ppRiseD .35s cubic-bezier(.2,.8,.2,1) backwards}
+#v-fps .fps-diff .mode:nth-child(2){animation-delay:.05s}#v-fps .fps-diff .mode:nth-child(3){animation-delay:.1s}#v-fps .fps-diff .mode:nth-child(4){animation-delay:.15s}
+#v-fps .fps-diff .mode:last-child b{color:#e2361b}
+@keyframes ppRiseD{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media (max-width:700px){#v-fps .fps-diff{grid-template-columns:repeat(2,minmax(0,1fr))}}
+#v-fps .fps-diff .mode{background:#fbf8f2;color:#141210;border:2px solid #141210}#v-fps .fps-diff .mode b{color:#141210}#v-fps .fps-diff .mode span{color:#6b645a}#v-fps .fps-diff .mode.on{background:#141210;color:#f1ece2}#v-fps .fps-diff .mode.on b{color:#f1ece2}#v-fps .fps-diff .mode.on span{color:#c9c1b2}#v-fps .fps-diff .mode:last-child b{color:#e2361b}#v-fps .fps-diff .mode:hover{background:#e2361b;border-color:#e2361b}#v-fps .fps-diff .mode:hover b,#v-fps .fps-diff .mode:hover span{color:#fff}
