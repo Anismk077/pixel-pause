@@ -430,7 +430,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .sv-ui{position:absolute;inset:0;pointer-events:none;font-family:'IBM Plex Mono',monospace;color:#f1ece2}
 .sv-cross{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#f1ece2;box-shadow:0 0 0 1.5px rgba(0,0,0,.6)}
 .stage .sv-map{position:absolute;right:12px;top:12px;width:150px;height:150px;border-radius:50%;box-shadow:3px 3px 0 rgba(20,18,16,.6)}
-.stage .sv-map.big{width:min(50%,90vh);height:auto;aspect-ratio:1;right:50%;top:50%;transform:translate(50%,-50%);border-radius:0;border:2px solid #141210;box-shadow:6px 6px 0 #141210;z-index:4}
+.stage .sv-map.big{width:auto;height:92%;aspect-ratio:1;right:50%;top:50%;transform:translate(50%,-50%);border-radius:0;border:2px solid #141210;box-shadow:6px 6px 0 #141210;z-index:4;pointer-events:auto;cursor:grab}.stage .sv-map.big.drag{cursor:grabbing}
 .sv-clock{position:absolute;left:12px;top:12px;background:#141210;padding:6px 10px;font-size:12px;font-weight:600;letter-spacing:.06em}.sv-clock b{color:#3fa9ff}
 .sv-bars{position:absolute;left:12px;bottom:12px;background:rgba(20,18,16,.85);padding:8px 10px;width:190px;display:grid;gap:5px}
 .sv-bars label{display:grid;grid-template-columns:78px 1fr;align-items:center;font-size:10px;letter-spacing:.06em;text-transform:uppercase}
