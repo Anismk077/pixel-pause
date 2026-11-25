@@ -607,3 +607,6 @@ body.fs-mode::after{content:"";position:fixed;inset:0;background:#000;z-index:99
 .fs-tools button{background:rgba(20,18,16,.85);color:#f1ece2;border:1px solid rgba(241,236,226,.5);font:700 11px 'IBM Plex Mono',monospace;padding:6px 10px;cursor:pointer}
 .fs-tools button:hover{background:#e2361b;border-color:#e2361b}
 .fs-tools button.on{background:#e2361b}
+/* v5.6 nage */
+.sv-water{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(40,120,170,0) 0%,rgba(40,120,170,0) 55%,rgba(30,100,150,.35) 100%);opacity:0;transition:opacity .4s}
+.sv-water.on{opacity:1}
