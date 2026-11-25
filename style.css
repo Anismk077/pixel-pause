@@ -657,3 +657,12 @@ body.fs-mode::after{content:"";position:fixed;inset:0;background:#000;z-index:99
 .ag-shake{animation:agShake .32s linear}
 @keyframes agShake{0%,100%{transform:translate(0,0)}20%{transform:translate(var(--sh),calc(var(--sh)*-.6))}40%{transform:translate(calc(var(--sh)*-.8),calc(var(--sh)*.5))}60%{transform:translate(calc(var(--sh)*.5),calc(var(--sh)*.7))}80%{transform:translate(calc(var(--sh)*-.4),calc(var(--sh)*-.3))}}
 .maze-mini{position:absolute!important;left:auto!important;right:10px;top:10px!important;width:150px!important;height:150px!important;aspect-ratio:auto!important;z-index:3;border:2px solid #141210;pointer-events:none}
+
+.stage canvas.nocur,#sumo-cv,#foot-cv,#kt-cv,#rn-cv,#sn-cv,#pa-cv{cursor:none}
+.ag-cur{position:absolute;z-index:5;pointer-events:none;transform:translate(-50%,-50%)}
+.ag-cur.dot{width:18px;height:18px;border-radius:50%;background:#f3c623;border:3px solid #141210;box-shadow:0 0 0 2px rgba(241,236,226,.7)}
+.ag-cur.brush{width:14px;height:14px;border-radius:50%;border:2px solid #141210;background:rgba(255,255,255,.4)}
+.ag-cur.aim,.ag-cur.center{width:34px;height:34px}
+.ag-cur.aim::before,.ag-cur.aim::after,.ag-cur.center::before,.ag-cur.center::after{content:"";position:absolute;left:50%;top:50%;background:#f1ece2;box-shadow:0 0 0 1.5px #141210;transform:translate(-50%,-50%)}
+.ag-cur.aim::before,.ag-cur.center::before{width:30px;height:2px}.ag-cur.aim::after,.ag-cur.center::after{width:2px;height:30px}
+.ag-cur.center{width:40px;height:40px;border:2px solid rgba(241,236,226,.8);border-radius:50%;box-shadow:0 0 0 1.5px rgba(20,18,16,.6)}

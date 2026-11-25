@@ -18,7 +18,7 @@ window.ARCADE_LIST=[
   {id:'pong',n:'Pong néon',sub:'Arcade · duel de raquettes',pl:'1–2',cat:'pc solo',modes:[['solo','Solo','Contre l\'ordinateur'],['duel','2 joueurs','Même clavier']]},
   {id:'plane',n:'Avion 3D',sub:'3D · vole dans les anneaux',pl:'1',cat:'solo 3d',modes:[['solo','Solo','Le plus loin possible']]},
   {id:'maze',n:'Labyrinthe 3D',sub:'3D · trouve la sortie',pl:'1',cat:'solo 3d',modes:[['solo','Solo','Un nouveau labyrinthe à chaque fois']]},
-  {id:'hoops',n:'Basket 3D',sub:'3D · paniers à 2 et 3 points',pl:'1–2',cat:'pc solo 3d',modes:[['solo','Solo','15 tirs'],['duel','2 joueurs','Chacun son tour']]},
+  {id:'hoops',n:'Basket 3D',sub:'3D · paniers à 2 et 3 points',pl:'1–2',cat:'pc solo 3d',modes:[['solo','Solo','60 secondes chrono'],['duel','2 joueurs','60 s chacun']]},
   {id:'draw',n:'Dessine et devine',sub:'Party · un dessine, les autres devinent',pl:'2–12',cat:'tel',modes:[['online','En ligne','Tout le salon']]},
   {id:'pool',n:'Billard',sub:'Adresse · pleines contre rayées',pl:'1–2',cat:'pc solo',modes:[['solo','Solo','Nettoie la table'],['duel','2 joueurs','Chacun son tour']]}
 ];
@@ -27,7 +27,7 @@ window.ARCADE_LIST=[
   var n=tiles.querySelectorAll('.row-game').length;
   ARCADE_LIST.forEach(function(g){
     n++;var b=document.createElement('button');b.type='button';b.className='row-game';b.dataset.go=g.id;b.dataset.cat=g.cat;
-    b.innerHTML='<span class="rg-n">'+(n<10?'0':'')+n+'</span><span class="rg-name">'+g.n+'</span><span class="rg-sub">'+g.sub+'</span><span class="rg-pl">'+g.pl+'<small>joueur'+(g.pl==='1'?'':'s')+'</small></span><img class="rg-img" src="thumb-'+g.id+'.jpg?v=7.6" alt="" loading="lazy">';
+    b.innerHTML='<span class="rg-n">'+(n<10?'0':'')+n+'</span><span class="rg-name">'+g.n+'</span><span class="rg-sub">'+g.sub+'</span><span class="rg-pl">'+g.pl+'<small>joueur'+(g.pl==='1'?'':'s')+'</small></span><img class="rg-img" src="thumb-'+g.id+'.jpg?v=7.7" alt="" loading="lazy">';
     tiles.appendChild(b);
     var s=document.createElement('section');s.className='view';s.id='v-'+g.id;
     s.innerHTML='<h2>'+g.n+'</h2><div class="modes ag-modes">'+g.modes.map(function(m,i){return '<button type="button" class="mode'+(i?'':' on')+'" data-m="'+m[0]+'"><b>'+m[1]+'</b><span>'+m[2]+'</span></button>'}).join('')+'</div>'+
