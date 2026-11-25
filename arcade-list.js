@@ -20,7 +20,8 @@ window.ARCADE_LIST=[
   {id:'maze',n:'Labyrinthe 3D',sub:'3D · trouve la sortie',pl:'1',cat:'solo 3d',modes:[['solo','Solo','Un nouveau labyrinthe à chaque fois']]},
   {id:'hoops',n:'Basket 3D',sub:'3D · paniers à 2 et 3 points',pl:'1–2',cat:'pc solo 3d',modes:[['solo','Solo','60 secondes chrono'],['duel','2 joueurs','60 s chacun']]},
   {id:'draw',n:'Dessine et devine',sub:'Party · un dessine, les autres devinent',pl:'2–12',cat:'tel',modes:[['online','En ligne','Tout le salon']]},
-  {id:'pool',n:'Billard',sub:'Adresse · pleines contre rayées',pl:'1–2',cat:'pc solo',modes:[['solo','Solo','Nettoie la table'],['duel','2 joueurs','Chacun son tour']]}
+  {id:'pool',n:'Billard',sub:'Adresse · pleines contre rayées',pl:'1–2',cat:'pc solo',modes:[['solo','Solo','Nettoie la table'],['duel','2 joueurs','Chacun son tour']]},
+  {id:'marz',n:'Marzouker',sub:'Fun · gave-le de burgers jusqu\'à la ruine',pl:'1',cat:'pc tel solo',modes:[['solo','Solo','Le plus de kilos avant d\'être pauvre']]}
 ];
 (function(){
   var tiles=document.getElementById('tiles'),anchor=document.getElementById('v-geo');if(!tiles||!anchor)return;
