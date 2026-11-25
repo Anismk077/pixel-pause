@@ -1066,7 +1066,7 @@
     if(t.k==='ladder')goUp();
     if(t.k==='bush'){relayEv({e:'bush',i:bushes.indexOf(t.o)});t.o.full=false;t.o.t=DAY*.8;t.o.b.visible=false;inv.baies+=3;msg('+3 baies');sfx.play('eat')}
     if(t.k==='drop'){collect(t.o);drops=drops.filter(function(x){return !x.gone})}
-    if(t.k==='water'){P.water=Math.min(100,P.water+35);msg('Tu bois');sfx.play('ui')}
+    if(t.k==='water'){P.water=Math.min(100,P.water+35);msg('Tu bois');sfx.play('ui');P.actN=(P.actN||0)+1;P.actK='drink'}
     if(t.k==='fire'){if(inv.viande>0){inv.cuite+=inv.viande;msg(inv.viande+' viande cuite');inv.viande=0;sfx.play('pickup')}else msg('Pas de viande crue')}
     if(t.k==='bed'&&online&&!auth){P.spawn={x:t.o.x,z:t.o.z+1.6};msg('Point de réapparition enregistré. Seul l\'hôte peut faire passer la nuit.')}else if(t.k==='bed'){P.spawn={x:t.o.x,z:t.o.z+1.6};if(isNight()){if(zombies.some(function(z){return z.alive&&Math.hypot(z.x-P.x,z.z-P.z)<25}))msg('Impossible : des zombies sont tout près');else{dayT=.26;newDay();zombies.forEach(function(z){z.alive=false;scene.remove(z.m)});zombies=[];P.food=Math.max(0,P.food-15);P.water=Math.max(0,P.water-15);msg('Tu dors jusqu\'au matin');sfx.play('win');save()}}else msg('Tu ne peux dormir que la nuit')}
     if(t.k==='box'){t.o.base=true;chestPanel(t.o)}
@@ -1084,6 +1084,7 @@
   var impactT=0,hitStop=0,_pv=null,_pq=null,_pe=null;
   function attack(){
     if(cd>0||buildMode)return;var T=TOOLS[tool];
+    P.atkN=(P.atkN||0)+1;
     if(T.melee){cd=T.rate;swing=1;impactT=.16;sfx.play('ui');return}
     attackHit();
   }
@@ -1110,10 +1111,10 @@
   }
   function setTool(t){if(t!=='axe'&&!inv[t]){msg((TOOLS[t]?TOOLS[t].n:t)+' : pas encore fabriqué');return}tool=t;buildMode=null;viewModel();hudInv()}
   function eat(){
-    var order=[['cuite',35],['conserve',25],['baies',8],['viande',10]];for(var i=0;i<order.length;i++){var k=order[i][0];if(inv[k]>0){inv[k]--;P.food=Math.min(100,P.food+order[i][1]);if(k==='conserve')P.water=Math.min(100,P.water+5);if(k==='viande'&&Math.random()<.3){P.hp-=8;msg('La viande crue te rend malade')}else msg('Tu manges : '+NAMES[k].toLowerCase());sfx.play('eat');hudInv();return}}
+    var order=[['cuite',35],['conserve',25],['baies',8],['viande',10]];for(var i=0;i<order.length;i++){var k=order[i][0];if(inv[k]>0){inv[k]--;P.actN=(P.actN||0)+1;P.actK='eat';P.food=Math.min(100,P.food+order[i][1]);if(k==='conserve')P.water=Math.min(100,P.water+5);if(k==='viande'&&Math.random()<.3){P.hp-=8;msg('La viande crue te rend malade')}else msg('Tu manges : '+NAMES[k].toLowerCase());sfx.play('eat');hudInv();return}}
     msg('Rien à manger');
   }
-  function heal(){if(inv.bandage>0&&P.hp<100){inv.bandage--;P.hp=Math.min(100,P.hp+35);msg('Bandage : +35 vie');sfx.play('pickup')}else if(inv.eau>0){inv.eau--;P.water=Math.min(100,P.water+40);msg('Tu bois une bouteille');sfx.play('ui')}else msg('Ni bandage ni eau');hudInv()}
+  function heal(){if(inv.bandage>0&&P.hp<100){inv.bandage--;P.hp=Math.min(100,P.hp+35);msg('Bandage : +35 vie');sfx.play('pickup')}else if(inv.eau>0){inv.eau--;P.water=Math.min(100,P.water+40);msg('Tu bois une bouteille');sfx.play('ui');P.actN=(P.actN||0)+1;P.actK='drink'}else msg('Ni bandage ni eau');hudInv()}
   function hurt(d){d*=[1,.7,.45][inv.armure||0];P.hp-=d;lastHurt=performance.now();var h=$('sv-hurt');h.classList.remove('on');void h.offsetWidth;h.classList.add('on');sfx.play('hurt');if(P.hp<=0)die()}
   function die(){
     if(P.dying)return;P.dying=true;setTimeout(function(){P.dying=false},500);
@@ -1288,7 +1289,31 @@
   var PCOL=[0x2f6fb5,0xb5452f,0x3f8f3a,0x8a3fb5,0xc29a1a,0x2fa3a3,0xd06090,0x5a5a5a];
   function nameTag(t){var c=document.createElement('canvas');c.width=256;c.height=64;var g=c.getContext('2d');g.fillStyle='rgba(20,18,16,.8)';g.font='bold 30px IBM Plex Mono, monospace';var w=Math.min(250,g.measureText(t).width+24);g.fillRect((256-w)/2,10,w,44);g.fillStyle='#f1ece2';g.textAlign='center';g.textBaseline='middle';g.fillText(t,128,33);var s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false,transparent:true}));s.scale.set(2.4,.6,1);s.position.y=2.55;s.renderOrder=5;return s}
   function remoteModel(r){if(r.m)scene.remove(r.m);var slot=Math.max(0,net.slot(r.id));r.m=humanoid(PCOL[slot%PCOL.length],0xd9a77c,false);r.m.add(nameTag(r.n||'?'));r.m.userData.ent=null;scene.add(r.m);r.shown=r.n}
-  function stepRemotes(dt){Object.keys(remotes).forEach(function(k){var r=remotes[k];if(!r.ready)return;if(!r.m||r.shown!==r.n)remoteModel(r);r.x+=(r.tx-r.x)*Math.min(1,dt*10);r.z+=(r.tz-r.z)*Math.min(1,dt*10);r.m.visible=r.hp>0;r.m.position.set(r.x,groundAt(r.x,r.z),r.z);r.m.rotation.y=r.yaw;walk(r,dt,Math.hypot(r.tx-r.x,r.tz-r.z)>.04)})}
+  /* outil tenu en main par les autres joueurs */
+  function handTool(t){var g=new THREE.Group(),wood=lam({color:0x7a5230}),steel=lam({color:0xb8bcc4}),dark=lam({color:0x2b2b30});
+    function b(w,h,d,x,y,z,m){var o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);g.add(o);return o}
+    if(t==='axe'||t==='pick'){b(.04,.62,.04,0,-.05,0,wood);if(t==='axe')b(.03,.16,.2,0,.22,-.1,steel);else b(.03,.05,.46,0,.24,0,steel)}
+    else if(t==='sword'){b(.03,.16,.04,0,-.2,0,dark);b(.16,.03,.05,0,-.1,0,dark);b(.02,.62,.07,0,.22,0,steel)}
+    else if(t==='torch'){b(.05,.5,.05,0,0,0,wood);var f=new THREE.Mesh(new THREE.ConeGeometry(.07,.2,7),new THREE.MeshBasicMaterial({color:0xffa040}));f.position.y=.33;g.add(f);g.userData.flame=f}
+    else if(t==='bow'){var bw=new THREE.Mesh(new THREE.TorusGeometry(.3,.015,6,16,Math.PI),wood);bw.rotation.y=Math.PI/2;g.add(bw)}
+    else if(t==='pistol'||t==='rifle'){b(.05,.08,t==='rifle'?.7:.28,0,.05,-.12,dark);b(.04,.14,.05,0,-.04,0,dark)}
+    g.rotation.x=Math.PI/2.6;g.scale.setScalar(1.5);return g}
+  function stepRemotes(dt){var tn=performance.now()/1000;Object.keys(remotes).forEach(function(k){var r=remotes[k];if(!r.ready)return;if(!r.m||r.shown!==r.n)remoteModel(r);r.x+=(r.tx-r.x)*Math.min(1,dt*10);r.z+=(r.tz-r.z)*Math.min(1,dt*10);r.m.visible=r.hp>0;
+    r.yy=(r.yy||0)+((r.ty||0)-(r.yy||0))*Math.min(1,dt*14);var gy=groundAt(r.x,r.z);if(r.swim)gy=-.25-1.15;if(r.boat)gy=-.55;r.m.position.set(r.x,gy+(r.swim||r.boat?0:Math.max(0,r.yy)),r.z);r.m.rotation.y=r.yaw;
+    var moving=Math.hypot(r.tx-r.x,r.tz-r.z)>.04;walk(r,dt,moving&&!r.boat);var p=r.m.userData.parts;if(!p)return;var ra=p.arms[1],la=p.arms[0];
+    if(r.toolShown!==r.tool){if(r.toolM)r.toolM.parent.remove(r.toolM);r.toolM=r.tool?handTool(r.tool):null;if(r.toolM){r.toolM.position.set(0,-.7,-.05);ra.add(r.toolM)}r.toolShown=r.tool}
+    if(r.toolM&&r.toolM.userData.flame)r.toolM.userData.flame.scale.y=1+Math.sin(tn*14)*.2;
+    /* saut : jambes repliées en l'air */
+    if((r.yy||0)>.25&&!r.swim){p.legs[0].rotation.x=-.6;p.legs[1].rotation.x=.3}
+    /* nage : bras qui brassent ; barque : assis et rame */
+    if(r.swim){la.rotation.x=-2.4+Math.sin(tn*5)*1.2;ra.rotation.x=-2.4-Math.sin(tn*5)*1.2}
+    else if(r.boat){p.legs[0].rotation.x=p.legs[1].rotation.x=-1.4;la.rotation.x=ra.rotation.x=-1+Math.sin(tn*4)*.5}
+    /* coup : on arme puis on frappe */
+    if(r.atkT>0){r.atkT-=dt;var u=1-r.atkT/.42;ra.rotation.x=u<.35?-(u/.35)*2.8:-2.8+((u-.35)/.65)*2.6;ra.rotation.z=u<.35?-.2:0}
+    /* boire / manger : main à la bouche */
+    else if(r.actT>0){r.actT-=dt;ra.rotation.x=-2.2+Math.sin(tn*10)*.15;ra.rotation.z=.5;if(r.m.userData.cup==null){var cup=new THREE.Mesh(new THREE.CylinderGeometry(.05,.04,.12,8),lam({color:r.actK==='drink'?0x3fa9ff:0xc0663a}));cup.position.set(0,-.72,0);ra.add(cup);r.m.userData.cup=cup}r.m.userData.cup.visible=true;if(r.toolM)r.toolM.visible=false}
+    else{if(r.m.userData.cup)r.m.userData.cup.visible=false;if(r.toolM)r.toolM.visible=true;if(!r.swim&&!r.boat&&!moving){ra.rotation.x+=(-.5-ra.rotation.x)*Math.min(1,dt*8);ra.rotation.z=0}}
+  })}
   function snapshot(){
     return {seed:SEED,day:day,t:dayT,
       sts:structs.filter(function(o){return !o.dead}).map(function(o){return [o.type,+o.x.toFixed(2),+o.z.toFixed(2),o.rot,Math.round(o.hp),o.store||null]}),
@@ -1308,7 +1333,7 @@
   function worldMsg(){var w=snapshot();w.t='sv-world';w.dt=dayT;w.hx=P.x;w.hz=P.z;return w}
   function sendNet(dt){
     netAcc-=dt;if(netAcc>0)return;netAcc=.1;
-    net.relay({g:'svp',x:+P.x.toFixed(2),z:+P.z.toFixed(2),yw:+P.yaw.toFixed(2),hp:Math.ceil(P.hp),tool:tool,n:net.me.name});
+    net.relay({g:'svp',x:+P.x.toFixed(2),z:+P.z.toFixed(2),yw:+P.yaw.toFixed(2),hp:Math.ceil(P.hp),tool:tool,n:net.me.name,y:+(P.y-groundAt(P.x,P.z)).toFixed(2),pt:+P.pitch.toFixed(2),a:P.atkN||0,ac:P.actN||0,ak:P.actK||'',sw:P.swim?1:0,bt:P.boat?1:0,ud:P.under?1:0});
     if(auth){net.broadcast({t:'sv-s',dt:+dayT.toFixed(5),day:day,
       z:zombies.filter(function(z){return z.alive}).map(function(z){return [z.id,+z.x.toFixed(2),+z.z.toFixed(2),+z.yaw.toFixed(2),z.big?1:0,z.mv?1:0]}),
       a:animals.filter(function(a){return a.alive}).map(function(a){return [a.id,a.kind==='wolf'?1:0,+a.x.toFixed(2),+a.z.toFixed(2),+a.yaw.toFixed(2),a.mv?1:0,a.ant?1:0]})})}
@@ -1328,7 +1353,7 @@
   net.on(function(m,from){
     if(!online||PP.cur()!=='surv')return;
     if(m.t==='rel'&&m.d){var d=m.d,id=m.from;
-      if(d.g==='svp'){var r=remotes[id];if(!r){r=remotes[id]={id:id,x:d.x,z:d.z,tx:d.x,tz:d.z,yaw:0,hp:100,n:d.n,m:null}}r.tx=d.x;r.tz=d.z;r.yaw=d.yw;r.hp=d.hp;r.tool=d.tool;r.n=d.n;r.ready=!!scene;return}
+      if(d.g==='svp'){var r=remotes[id];if(!r){r=remotes[id]={id:id,x:d.x,z:d.z,tx:d.x,tz:d.z,yaw:0,hp:100,n:d.n,m:null}}r.tx=d.x;r.tz=d.z;r.yaw=d.yw;r.hp=d.hp;r.tool=d.tool;r.n=d.n;r.ty=d.y||0;r.pt=d.pt||0;r.swim=d.sw;r.boat=d.bt;if(d.a!==r.a0){if(r.a0!=null)r.atkT=.42;r.a0=d.a}if(d.ac!==r.c0){if(r.c0!=null){r.actT=1.4;r.actK=d.ak}r.c0=d.ac}r.ready=!!scene;return}
       if(d.g==='sve'&&scene){netEvent(d);return}
       return}
     if(m.t==='sv-world'&&!net.isHost){if(joinedCode===net.code&&running)return;try{guestJoinWorld(m)}catch(e){console.error('sv-world',e);window.__svErr=String(e&&e.stack||e)}return}
