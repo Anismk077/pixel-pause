@@ -481,7 +481,7 @@
   function save(){
     if(!P||won)return;
     if(online&&!auth){try{localStorage.setItem(PP.key('survie-g'),JSON.stringify({seed:SEED,p:{x:P.x,z:P.z,hp:P.hp,food:P.food,water:P.water,spawn:P.spawn},inv:inv,st:st,goal:goalI}))}catch(e){}return}
-    var s={v:2,seed:SEED,day:day,t:dayT,p:{x:P.x,z:P.z,hp:P.hp,food:P.food,water:P.water,spawn:P.spawn},inv:inv,st:st,goal:goalI,rescue:rescueT,
+    var s={v:2,seed:SEED,day:day,t:dayT,p:{x:P.x,z:P.z,hp:P.hp,food:P.food,water:P.water,spawn:P.spawn,ur:P.under?rooms.indexOf(P.under):-1,back:P.back||null},inv:inv,st:st,goal:goalI,rescue:rescueT,
       sts:structs.filter(function(o){return !o.dead}).map(function(o){return [o.type,+o.x.toFixed(2),+o.z.toFixed(2),o.rot,Math.round(o.hp),o.store||null]}),
       bt:boats.filter(function(b){return b.built}).map(function(b){return [+b.x.toFixed(1),+b.z.toFixed(1),+b.yaw.toFixed(2)]}),ch:chests.filter(function(c){return c.open}).map(function(c){return c.id}),ci:(function(){var o={};chests.forEach(function(c){if(c.items)o[c.id]=c.items});return o})(),
       tr:trees.list.filter(function(o){return o.hp<=0}).map(function(o){return trees.list.indexOf(o)}),
@@ -495,6 +495,7 @@
     if(!s)return newGame();
     buildWorld(s.seed);day=s.day;dayT=s.t;inv=Object.assign(freshInv(),s.inv);st=s.st||{bois:0,fer:0,deer:0,kills:0};goalI=s.goal||0;rescueT=s.rescue==null?-1:s.rescue;won=false;
     P={x:s.p.x,z:s.p.z,y:height(s.p.x,s.p.z),vy:0,yaw:0,pitch:0,hp:s.p.hp,food:s.p.food,water:s.p.water,stam:100,bob:0,spawn:s.p.spawn};
+    if(s.p.ur>=0&&rooms[s.p.ur]){P.under=rooms[s.p.ur];P.back=s.p.back;P.y=P.under.y}else if(s.p.back)P.back=s.p.back;
     (s.sts||[]).forEach(function(o){var x=build(o[0],o[1],o[2],o[3],true);if(x){x.hp=o[4];if(o[5])x.store=o[5]}});P.spawn=s.p.spawn;
     (s.ch||[]).forEach(function(id){var c=chests[id];if(c){c.open=true;c.m.userData.lid.rotation.x=-1.9;if(c.m.userData.spark)c.m.userData.spark.visible=false}});Object.keys(s.ci||{}).forEach(function(id){if(chests[id])chests[id].items=s.ci[id]});
     (s.tr||[]).forEach(function(i){var o=trees.list[i];if(o)fell(o,'tree',true)});
@@ -1002,7 +1003,10 @@
     if(type==='ore'){burst(o.x,gy,o.z,0x8a5a3c,24,7);burst(o.x,gy+.3,o.z,0xffb060,12,6);for(var k2=0;k2<2;k2++)dropItem(o.x+(Math.random()-.5)*1.5,o.z+(Math.random()-.5)*1.5,'fer',2,true);sfx.play('kill');shakeT=.15}
   }
   function isInFront(x,z,lim){var dx=x-P.x,dz=z-P.z,l=Math.hypot(dx,dz)||1;return (-Math.sin(P.yaw)*dx-Math.cos(P.yaw)*dz)/l>(lim||.5)}
+  /* si on est dans une salle souterraine (même après avoir rechargé la partie), on sait où est l'échelle */
+  function fixUnder(){if(P.under||P.y>-30)return;for(var i=0;i<rooms.length;i++){var r=rooms[i];if(Math.abs(P.x-r.x)<r.w/2+2&&Math.abs(P.z-r.z)<r.d/2+2){P.under=r;if(!P.back){var t=traps.filter(function(q){return q.room===r})[0];P.back=t?{x:t.x,z:t.z+1.4}:(P.spawn?{x:P.spawn.x,z:P.spawn.z}:{x:0,z:0})}return}}}
   function interactTarget(){
+    fixUnder();
     var best=null,bd=3.3;
     function cand(o,d,kind){if(d<bd){bd=d;best={o:o,k:kind}}}
     if(P.boat)return {o:P.boat,k:'unboat'};
@@ -1014,7 +1018,7 @@
     bushes.forEach(function(b){if(b.full){var d=Math.hypot(b.x-P.x,b.z-P.z);if(d<3&&isInFront(b.x,b.z))cand(b,d,'bush')}});
     drops.forEach(function(dr){if(dr.auto)return;var d=Math.hypot(dr.x-P.x,dr.z-P.z);if(d<2.6)cand(dr,d-.5,'drop')});
     structs.forEach(function(s){if(s.dead)return;var d=Math.hypot(s.x-P.x,s.z-P.z);if(d<3.2&&isInFront(s.x,s.z,.3)&&['fire','bed','box','door','bench','forge'].indexOf(s.type)>=0)cand(s,d,s.type)});
-    if(!best){var fx=P.x-Math.sin(P.yaw)*2.5,fz=P.z-Math.cos(P.yaw)*2.5;if(height(fx,fz)<-.1||height(P.x,P.z)<.3)best={k:'water'}}
+    if(!best&&!P.under&&P.y>-20){var fx=P.x-Math.sin(P.yaw)*2.5,fz=P.z-Math.cos(P.yaw)*2.5;if(height(fx,fz)<-.1||height(P.x,P.z)<.3)best={k:'water'}}
     return best;
   }
   function prompt(){
@@ -1136,7 +1140,7 @@
     var lightDir=k>0.02?sv:sv.clone().negate();
     sun.position.set(P.x+lightDir.x*160,Math.max(20,lightDir.y*160),P.z+lightDir.z*160);sun.target.position.set(P.x,P.y,P.z);
     sun.intensity=k>0.02?.15+1.6*k:.25;sun.color.setRGB(1,.82+.18*k-dusk*.15,.65+.35*k-dusk*.2);if(k<=0.02)sun.color.setHex(blood?0xff5a4a:0x8aa6ff);
-    amb.intensity=.22+.7*k;amb.color.setRGB(.6+.4*k,.65+.35*k,.85+.15*k);
+    amb.intensity=.22+.7*k;amb.color.setRGB(.6+.4*k,.65+.35*k,.85+.15*k);if(P.under){amb.intensity=.75;amb.color.setRGB(1,.82,.62)}
     skyMesh.position.copy(cam.position);stars.position.copy(cam.position);stars.material.opacity=Math.max(0,1-k*2.5)*(blood?.5:1);
     sunDisk.position.copy(cam.position).addScaledVector(sv,1350);sunDisk.lookAt(cam.position);sunDisk.visible=sv.y>-.05;
     moonDisk.position.copy(cam.position).addScaledVector(sv,-1350);moonDisk.lookAt(cam.position);moonDisk.visible=sv.y<.05;moonDisk.material.color.setHex(blood?0xff5040:0xdfe6f2);
@@ -1146,6 +1150,7 @@
 
   /* ---------- Boucle ---------- */
   function step(dt){
+    if(P&&!P.under&&P.y<-30)fixUnder();
     var now=performance.now();
     dayT+=dt/DAY;if(dayT>=1){dayT-=1;if(!online||auth){newDay();if(won)return}}
     lightCycle(dt);
@@ -1262,6 +1267,7 @@
       or:ores.userData.list.filter(function(o){return o.hp<=0}).map(function(o){return o.i})};
   }
   function applyWorld(s){
+    if(s.p.ur>=0&&rooms[s.p.ur]){P.under=rooms[s.p.ur];P.back=s.p.back;P.y=P.under.y}else if(s.p.back)P.back=s.p.back;
     (s.sts||[]).forEach(function(o){var x=build(o[0],o[1],o[2],o[3],true);if(x){x.hp=o[4];if(o[5])x.store=o[5]}});
     (s.ch||[]).forEach(function(id){var c=chests[id];if(c){c.open=true;c.m.userData.lid.rotation.x=-1.9;if(c.m.userData.spark)c.m.userData.spark.visible=false}});Object.keys(s.ci||{}).forEach(function(id){if(chests[id])chests[id].items=s.ci[id]});
     (s.tr||[]).forEach(function(i){var o=trees.list[i];if(o)fell(o,'tree',true)});
@@ -1402,6 +1408,7 @@
   function render(){
     if(!R3||!P)return;
     var sh=shakeT>0?shakeT*.25:0;cam.position.set(P.x+(Math.random()-.5)*sh,P.y+EYE+Math.sin(P.bob)*.04+(Math.random()-.5)*sh,P.z);cam.rotation.set(P.pitch,P.yaw,Math.sin(P.bob*.5)*.008*Math.min(1,P.spd||0));
+    if(P.under){R3.toneMappingExposure=1.25;scene.fog.near=200;scene.fog.far=700}
     updLights();cullT-=1;if(cullT<=0){cullT=20;cullFar()}
     R3.clear();R3.render(scene,cam);
     if(vm&&!buildMode){
