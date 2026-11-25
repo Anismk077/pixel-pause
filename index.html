@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:wght@400;600&family=Inter+Tight:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
-<link rel="stylesheet" href="style.css?v=8.8">
+<link rel="stylesheet" href="style.css?v=9.4">
 </head>
 <body>
 <header><div class="wrap">
@@ -117,7 +117,7 @@
   <div class="hud"><span>Vie <b id="fps-hp">100</b></span><span id="fps-l1">Zombies <b>0</b></span><span id="fps-l2">Vague <b>0</b></span><span>Record <b id="fps-best">0</b></span></div>
   <div class="stage wide"><canvas id="fps-cv" width="960" height="540" aria-label="Vue à la première personne"></canvas><div class="lockhint" id="fps-lockhint" hidden>Pause · clique dans l'image pour reprendre</div>
     <div class="overlay" id="fps-ov"><h3 id="fps-title">Bunker 3D</h3><p id="fps-msg">Choisis un mode et une carte au-dessus.</p><div class="row"><button type="button" class="primary" id="fps-start">Entrer dans le bunker</button><button type="button" class="ink" id="fps-online" hidden>Partie en ligne</button><button type="button" class="ghost" id="fps-skins-btn">Skins</button></div><div class="fps-skins" id="fps-skins" hidden></div></div></div>
-  <div class="pad" id="fps-pad"><button type="button" data-k="L">◀</button><button type="button" data-k="F">▲</button><button type="button" data-k="B">▼</button><button type="button" data-k="R">▶</button><button type="button" data-k="A">VISER</button><button type="button" data-k="W">R</button><button type="button" data-k="S" class="fire">TIR</button></div>
+  <div class="pad" id="fps-pad" hidden><button type="button" data-k="L">◀</button><button type="button" data-k="F">▲</button><button type="button" data-k="B">▼</button><button type="button" data-k="R">▶</button><button type="button" data-k="A">VISER</button><button type="button" data-k="W">R</button><button type="button" data-k="S" class="fire">TIR</button></div>
   <p class="keys"><kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> bouger · <kbd>Maj</kbd> courir · <kbd>Espace</kbd> sauter · <kbd>clic</kbd> tirer · <kbd>clic droit</kbd> viser · <kbd>R</kbd> recharger · <kbd>1</kbd>–<kbd>4</kbd> ou molette : armes · <kbd>M</kbd> grande carte · <kbd>T</kbd> chat en ligne · <kbd>Échap</kbd> pause</p>
   <p class="back"><button type="button" class="ghost" data-go="menu">← Retour aux jeux</button></p>
 </section>
@@ -257,7 +257,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
-<script src="arcade-list.js?v=7.7"></script>
+<script src="arcade-list.js?v=9.5"></script>
 <script src="core.js?v=8.1"></script>
 <script src="sfx.js?v=7.0"></script>
 <script src="net.js?v=8.8"></script>
@@ -269,7 +269,7 @@
 <script src="imposteur.js?v=7.0"></script>
 <script src="probable.js?v=7.0"></script>
 <script src="snake.js?v=7.0"></script>
-<script src="fps.js?v=9.0"></script>
+<script src="fps.js?v=9.3"></script>
 <script src="party.js?v=8.4"></script>
 <script src="sumo.js?v=8.4"></script>
 <script src="foot.js?v=9.1"></script>
@@ -285,6 +285,7 @@
 <script src="arcade2.js?v=7.7"></script>
 <script src="arcade3.js?v=7.7"></script>
 <script src="arcade4.js?v=7.7"></script>
+<script src="arcade5.js?v=9.6"></script>
 <script>PP.arcadeRun()</script>
 <script src="boot.js?v=7.0"></script>
 </body>
