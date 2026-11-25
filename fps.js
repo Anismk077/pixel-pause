@@ -276,7 +276,7 @@
     var e={kind:'b',i:i,name:'Bot '+BOTN[i%BOTN.length],x:x,z:z,yaw:Math.random()*6.28,hp:100,m:m,r:.4,alive:true,cd:1+Math.random(),wander:0,goal:null,strafe:1,hit:0,flash:0,tx:x,tz:z};
     m.userData.ent=e;ents.push(e);return e;
   }
-  function remoteModel(r){if(r.m)scene.remove(r.m);r.m=human(CH_SKINS[r.sk||0].c,0xe0b48f,{gun:true,helmet:true});r.m.userData.ent=r;r.kind='p';scene.add(r.m);r.skShown=r.sk}
+  function remoteModel(r){if(r.m)scene.remove(r.m);r.m=human(online?(teamOf(r.id)?0x2f6fd8:0xd83a2a):CH_SKINS[r.sk||0].c,0xe0b48f,{gun:true,helmet:true});r.m.userData.ent=r;r.kind='p';scene.add(r.m);r.skShown=r.sk}
 
   function reset(seed){
     if(!init())return false;
@@ -321,7 +321,7 @@
     UI.coins.textContent=coins()+' pièces';
     $('fps-hp').textContent=Math.max(0,Math.ceil(P.hp));
     if(mode==='zombie'){$('fps-l1').innerHTML='Zombies <b>'+kills+'</b>';$('fps-l2').innerHTML='Vague <b>'+wave+'</b>';UI.top.textContent='VAGUE '+wave+' · '+ents.filter(function(e){return e.alive}).length+' ZOMBIES'}
-    else{var al=aliveCount();$('fps-l1').innerHTML='Frags <b>'+kills+'</b>';$('fps-l2').innerHTML='En vie <b>'+al+'</b>';UI.top.textContent=(online?'SALON '+net.code+' · ':'')+al+' EN VIE · ZONE '+Math.max(0,Math.ceil(zone?zone.t:0))+' S'}
+    else{var al=aliveCount();$('fps-l1').innerHTML='Frags <b>'+kills+'</b>';$('fps-l2').innerHTML='En vie <b>'+al+'</b>';UI.top.textContent=online?('2V2 · ROUGE '+TSC[0]+' – '+TSC[1]+' BLEU · TU ES '+(myTeam()?'BLEU':'ROUGE')+(teamSize(1)?'':' · EN ATTENTE D\'UN 2E JOUEUR')):(al+' EN VIE · ZONE '+Math.max(0,Math.ceil(zone?zone.t:0))+' S')}
     var best=mode==='br'?PP.store('fps-br'):PP.store('fps-zombie');$('fps-best').textContent=mode==='br'?(best?'Top '+best:'—'):best;
   }
   function center(t){UI.center.textContent=t||'';UI.center.style.display=t?'block':'none'}
@@ -372,7 +372,14 @@
     if(a.mag===0&&a.res>0)setTimeout(function(){if(P&&P.guns[P.gun]===a&&a.mag===0)reload()},250);
     lastInput=performance.now();hud();
   }
+  /* équipes en ligne : rouge contre bleu (alternance dans l'ordre du salon), pas de tir ami */
+  var TSC=[0,0];
+  function teamOf(id){var i=net.slot(id);return i<0?0:i%2}
+  function myTeam(){return teamOf(net.me.id)}
+  function teamAlive(t){var n=0;if(!dead&&myTeam()===t)n++;Object.keys(remotes).forEach(function(k){if(remotes[k].al&&teamOf(k)===t)n++});return n}
+  function teamSize(t){return net.players.filter(function(p,i){return i%2===t}).length}
   function hitEnt(e,dmg,head){
+    if(e.kind==='p'&&online&&teamOf(e.id)===myTeam()){sfx.play('tick');return}
     if(e.kind==='p'){net.relay({g:'fbhit',to:e.id,d:dmg,by:net.me.name});sfx.play('hit');return}
     if(e.kind==='b'&&online&&!auth){net.send({t:'fb-hit',b:e.i,d:dmg,by:net.me.name});sfx.play('hit');return}
     damageEnt(e,dmg,net.me.name||'Toi',true,head);
@@ -521,6 +528,7 @@
     });
     // fin de manche
     if(round&&round.phase==='play'&&performance.now()-round.t0>3000){
+      if(online){var a0=teamAlive(0),a1=teamAlive(1);if(teamSize(0)&&teamSize(1)&&(a0===0||a1===0)){round.phase='end';var wt=a0>0?0:1;TSC[wt]++;var wn=wt?'Équipe bleue':'Équipe rouge';endRound(wn);net.broadcast({t:'fb-end',w:wn,sc:TSC,wt:wt})}return}
       var n=aliveCount();
       if(n<=1){round.phase='end';var w=!dead?(net.me.name||'Toi'):null;if(!w)Object.keys(remotes).forEach(function(k){if(remotes[k].al)w=remotes[k].n});if(!w)ents.forEach(function(e){if(e.kind==='b'&&e.alive)w=e.name});
         endRound(w||'Personne');if(online)net.broadcast({t:'fb-end',w:w||'Personne'})}
@@ -544,7 +552,8 @@
     if(tgt){P.yaw=Math.atan2(-(tgt.x-P.x),-(tgt.z-P.z));P.pitch=0;if(Math.random()<dt*2.5)fire()}
     else if(zone){var a=pathDir(P,zone.x,zone.z);if(Math.hypot(P.x-zone.x,P.z-zone.z)>zone.target*.6){P.yaw=Math.atan2(-Math.sin(a),-Math.cos(a));keys.F=true}}
   }
-  function endRound(w){
+  function endRound(w,wt){
+    if(online){if(wt==null)wt=w==='Équipe bleue'?1:0;var mine=wt===myTeam();if(mine)PP.stat('fps','win');sfx.play(mine?'win':'lose');center((mine?'MANCHE GAGNÉE ! ':'MANCHE PERDUE. ')+'ROUGE '+TSC[0]+' – '+TSC[1]+' BLEU · SUIVANTE DANS 5 S');addFeed(w+' gagne la manche');if(auth)setTimeout(function(){if(online&&auth&&PP.cur()==='fps')hostRound()},5000);hud();return}
     var me=net.me.name||'Toi',won=w===me&&!dead;if(won)PP.stat('fps','win');
     if(!dead||won){var place=won?1:aliveCount();var b=PP.store('fps-br');if(!b||place<b)PP.store('fps-br',place)}
     sfx.play(won?'win':'lose');
@@ -574,7 +583,7 @@
     var seed=(Math.random()*1e9)|0,maps=Object.keys(MAPS);
     round={n:(round?round.n:0)+1,seed:seed,map:maps[(round?round.n:0)%3],phase:'play',t0:performance.now()};
     /* en salon entre potes : pas de bots dès qu'on est au moins 2 (quelques bots seulement si tu es seul) */
-    var nb=net.players.length>=2?0:4;
+    var nb=0;
     var msg={t:'fb-round',n:round.n,seed:seed,map:round.map,nb:nb};
     net.broadcast(msg);startRound(msg);
   }
@@ -583,9 +592,9 @@
     reset(m.seed);center('');
     var R=rng(m.seed+3),sl=Math.max(0,net.slot(net.me.id));
     for(var i=0;i<m.nb;i++){var c=cellC(OPEN[Math.floor(R()*OPEN.length)]);addBot(i,c.x,c.z)}
-    var sp=cellC(OPEN[Math.floor(rng(m.seed+11+sl*97)()*OPEN.length)]);P.x=sp.x;P.z=sp.z;
+    var side=OPEN.slice().sort(function(a,b){return cellC(a).x-cellC(b).x}),q=Math.max(1,Math.floor(side.length*.22)),pool=myTeam()?side.slice(-q):side.slice(0,q);var sp=cellC(pool[Math.floor(rng(m.seed+11+sl*97)()*pool.length)]);P.x=sp.x;P.z=sp.z;
     Object.keys(remotes).forEach(function(k){remotes[k].al=1});
-    $('fps-ov').hidden=true;running=true;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);sfx.play('go');addFeed('Manche '+m.n+' · '+MAPS[m.map]);hud();
+    $('fps-ov').hidden=true;running=true;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);sfx.play('go');addFeed('Manche '+m.n+' · '+MAPS[m.map]);center('TU ES '+(myTeam()?'BLEU':'ROUGE')+' · ROUGE '+TSC[0]+' – '+TSC[1]+' BLEU');setTimeout(function(){if(round&&round.n===m.n&&round.phase==='play')center('')},2500);hud();
   }
   function remote(id,d){var r=remotes[id];if(!r){r=remotes[id]={id:id,kind:'p',x:d.x,z:d.z,tx:d.x,tz:d.z,yaw:0,al:1,n:d.n||'?',sk:0,m:null};}return r}
   net.on(function(m,from){
@@ -598,7 +607,7 @@
       if(d.g==='fchat')chatAdd(d.n||'?',d.t,false);
       return}
     if(m.t==='fb-round'&&!net.isHost){startRound(m);return}
-    if(m.t==='fb-end'&&!net.isHost&&round){round.phase='end';endRound(m.w);return}
+    if(m.t==='fb-end'&&!net.isHost&&round){round.phase='end';if(m.sc)TSC=m.sc;endRound(m.w,m.wt);return}
     if(m.t==='fb-feed'&&!net.isHost){addFeed(m.txt);return}
     if(m.t==='fb-dmg'&&!dead){hurt(m.d,m.by);return}
     if(m.t==='fb-s'&&!net.isHost&&round&&m.r===round.n){
@@ -635,7 +644,7 @@
     },1600);
   }
   function beginOnline(){
-    online=true;auth=net.isHost;mode='br';remotes={};UI.chat.hidden=false;UI.log.innerHTML='';sys('Appuie sur T pour écrire dans le chat');lock();
+    online=true;auth=net.isHost;mode='br';remotes={};TSC=[0,0];UI.chat.hidden=false;UI.log.innerHTML='';sys('Appuie sur T pour écrire dans le chat');lock();
     if(auth)hostRound();else{$('fps-title').textContent='Connexion au serveur';$('fps-msg').textContent='On attend la manche en cours.';$('fps-start').hidden=true;net.send({t:'fb-hello'})}
   }
 
@@ -715,7 +724,7 @@
   pk=PP.held('fps-pad',{},function(k){lastInput=performance.now();if(k==='S'){mouseDown=true;fire()}if(k==='A')aiming=!aiming;if(k==='W')reload()},function(k){if(k==='S')mouseDown=false});
 
   /* ---------- Menus ---------- */
-  var DESC={zombie:'Rôdeurs, coureurs, cracheurs et mastodontes, par vagues. Ramasse les armes, munitions, soins et pièces. Clic droit pour viser, R pour recharger.',br:'Toi contre 9 bots sur la carte choisie. La zone rétrécit, ramasse des armes. Pour jouer avec tes potes, clique sur « Partie en ligne » : ça crée un salon privé, tu leur donnes le code, et vous jouez entre vous sans bots.'};
+  var DESC={zombie:'Rôdeurs, coureurs, cracheurs et mastodontes, par vagues. Ramasse les armes, munitions, soins et pièces. Clic droit pour viser, R pour recharger.',br:'Toi contre 9 bots sur la carte choisie. La zone rétrécit, ramasse des armes. Pour jouer avec tes potes, clique sur « Partie en ligne » : ça crée un salon privé, tu leur donnes le code, et c\'est du 2v2 rouge contre bleu, sans bots, manche après manche.'};
   function menu(){
     $('fps-title').textContent=mode==='zombie'?'Zombies':'Battle royale';$('fps-msg').textContent=DESC[mode];$('fps-start').textContent=mode==='zombie'?'Entrer dans le bunker':'Jouer contre les bots';$('fps-start').hidden=false;$('fps-online').hidden=mode!=='br';$('fps-ov').hidden=false;
     $('fps-modes').querySelectorAll('.mode').forEach(function(x){x.classList.toggle('on',x.dataset.m===mode)});
@@ -754,7 +763,7 @@
     open:function(){if(!init())return;$('fps-lockhint').hidden=true;$('fps-skins').hidden=true;
       if(online&&net.inRoom()){if(round&&!running){running=true;last=0;raf=requestAnimationFrame(loop)}return}
       online=false;UI.chat.hidden=true;
-      if(mp.lobby('fps','Battle royale en ligne')){$('fps-maps').hidden=true;$('fps-online').hidden=true;mode='br';reset();render();if(!net.isHost)net.send({t:'fb-hello'});online=true;auth=net.isHost;UI.chat.hidden=false;return}
+      if(mp.lobby('fps','2v2 en ligne')){$('fps-maps').hidden=true;$('fps-online').hidden=true;mode='br';reset();render();if(!net.isHost)net.send({t:'fb-hello'});online=true;auth=net.isHost;UI.chat.hidden=false;return}
       $('fps-maps').hidden=false;menu()},
     close:function(){if(running){running=false;cancelAnimationFrame(raf)}unlock();keys={};mouseDown=false;aiming=false}
   };
