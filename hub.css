@@ -274,3 +274,12 @@ button.big{font-size:16px;padding:13px 20px}
 @media (max-width:720px){.pp-anim header{animation:none!important}.mast.has-perso .mast-perso{right:0}}
 .f2-c{min-width:0;max-width:100%}html,body{overflow-x:clip}@media (max-width:720px){header .wrap{min-width:0}.roombar{min-width:0;max-width:52vw;overflow:hidden}#roombar-txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}.rm-top>*{min-width:0}.rm-code b{font-size:24px}.rm-tl input{font-size:22px}.lead{max-width:100%}}
 @media (min-width:721px) and (max-width:820px){.pp-nav2 header nav{display:flex!important}}
+/* Zone Morte : l'ancien panneau de skins est remplacé par « Mon perso » */
+#fps-skins-btn,#fps-skins{display:none!important}
+/* panneau du salon collé à droite du jeu sur grand écran */
+body.room-side main.wrap{margin-right:396px;margin-left:max(20px,calc((100vw - 396px - 1100px)/2))}
+body.room-side .room-dock{top:78px;bottom:12px;right:12px;width:370px;align-items:stretch;z-index:900}
+body.room-side .rd-btn{display:none}
+body.room-side .rd-panel{width:auto;max-height:none;height:100%;box-shadow:6px 6px 0 var(--line);animation:none}
+body.room-side .rd-panel .ch-log{flex:1;max-height:none;min-height:160px}
+body.room-side .rd-games{max-height:220px;overflow:auto}

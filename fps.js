@@ -1320,7 +1320,7 @@
     else{var place=aliveCount()+1,bb=PP.store('fps-br');if(!bb||place<bb)PP.store('fps-br',place);showEnd('Éliminé','Par '+(by||'?')+'. Place : '+place+'e. '+kills+' frag'+(kills>1?'s':'')+'.')}
     hud();
   }
-  function showEnd(t,m){running=false;mobFull(false);cancelAnimationFrame(raf);unlock();$('fps-title').textContent=t;$('fps-msg').textContent=m;$('fps-start').textContent='Rejouer';$('fps-start').hidden=false;$('fps-online').hidden=mode!=='br';$('fps-ov').hidden=false;render()}
+  function showEnd(t,m){setTimeout(function(){try{document.dispatchEvent(new CustomEvent('pp-gameover',{detail:'fps'}))}catch(e){}},300);running=false;mobFull(false);cancelAnimationFrame(raf);unlock();$('fps-title').textContent=t;$('fps-msg').textContent=m;$('fps-start').textContent='Rejouer';$('fps-start').hidden=false;$('fps-online').hidden=mode!=='br';$('fps-ov').hidden=false;render()}
 
   /* ---------- Réseau (battle royale en ligne) ---------- */
   var sendAcc=0;

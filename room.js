@@ -207,20 +207,28 @@
   $('join-name').addEventListener('keydown',function(e){if(e.key==='Enter')$('join-go').click()});
 
   /* ---------- Panneau du salon pendant les parties (hors plein écran) ---------- */
-  var dockEl=null,dockOpen=false,unread=0;
+  var dockEl=null,dockOpen=false,unread=0,sideOff=false;
   function dock(){
     var show=net.inRoom()&&PP.cur()!=='room'&&PP.cur()!=='menu'&&PP.cur()!=='join';
     if(!dockEl){dockEl=document.createElement('div');dockEl.className='room-dock';dockEl.innerHTML='<button type="button" class="rd-btn" id="rd-btn">💬 '+T('Salon')+' <span id="rd-n"></span><i id="rd-badge" hidden></i></button><div class="rd-panel" id="rd-panel" hidden></div>';document.body.appendChild(dockEl);
-      $('rd-btn').onclick=function(){dockOpen=!dockOpen;$('rd-panel').hidden=!dockOpen;if(dockOpen){unread=0;dockBadge();renderDock();if(document.pointerLockElement&&document.exitPointerLock)document.exitPointerLock()}}}
+      $('rd-btn').onclick=function(){sideOff=false;if(innerWidth>=1180&&!document.body.classList.contains('fs-mode')&&!document.body.classList.contains('pp-touch')){dock();return}dockOpen=!dockOpen;$('rd-panel').hidden=!dockOpen;if(dockOpen){unread=0;dockBadge();renderDock();if(document.pointerLockElement&&document.exitPointerLock)document.exitPointerLock()}}}
     dockEl.hidden=!show;if(!show){dockOpen=false;$('rd-panel').hidden=true}
+    /* grand écran : le panneau du salon reste ouvert à côté du jeu (chat, joueurs, jeux proposés) */
+    var wide=show&&!sideOff&&innerWidth>=1180&&!document.body.classList.contains('fs-mode')&&!document.body.classList.contains('pp-touch');
+    var was=document.body.classList.contains('room-side');document.body.classList.toggle('room-side',wide);
+    if(wide&&!was){dockOpen=true;$('rd-panel').hidden=false;unread=0;renderDock()}
+    if(!wide&&was){dockOpen=false;$('rd-panel').hidden=true}
     $('rd-n').textContent=net.inRoom()?'('+net.players.length+')':'';dockBadge();
   }
+  window.addEventListener('resize',function(){if(dockEl)dock()});document.addEventListener('pp-fs',function(){setTimeout(dock,50)});
+  /* fin de partie : le panneau s'ouvre pour proposer la suite et parler */
+  document.addEventListener('pp-gameover',function(){if(!net.inRoom())return;dock();dockOpen=true;var pn=$('rd-panel');if(pn){pn.hidden=false;unread=0;dockBadge();renderDock();var d=pn.querySelector('.rd-more');if(d)d.open=true}});
   function dockBadge(){var b=$('rd-badge');if(b){b.hidden=!unread||dockOpen;b.textContent=unread}}
   function renderDock(){var p=$('rd-panel');if(!p)return;var a=document.activeElement,keep=a&&p.contains(a)&&a.tagName==='INPUT'?a.value:null;
     p.innerHTML='<div class="rd-head"><b>'+esc(rs.name||('Salon '+net.code))+'</b><button type="button" class="mini ghost" id="rd-close">×</button></div>'+playersHtml(true)+
       '<div class="ch-log" id="rd-log">'+chatHtml()+'</div>'+chatForm()+
-      '<details class="rd-more"><summary>'+T('Proposer un jeu')+'</summary><div class="rd-games">'+ONLINE.map(function(g){var v=(rs.props[g.id]||[]).length;return '<button type="button" class="mini'+((rs.props[g.id]||[]).indexOf(net.me.id)>=0?' on':'')+'" data-prop="'+g.id+'">'+esc(g.name)+(v?' · '+v:'')+'</button>'}).join('')+'</div></details>';
-    bindRoom(p);$('rd-close').onclick=function(){dockOpen=false;p.hidden=true};var lg=$('rd-log');if(lg)lg.scrollTop=lg.scrollHeight;
+      '<details class="rd-more"'+(document.body.classList.contains('room-side')?' open':'')+'><summary>'+T('Proposer un jeu')+'</summary><div class="rd-games">'+ONLINE.map(function(g){var v=(rs.props[g.id]||[]).length;return '<button type="button" class="mini'+((rs.props[g.id]||[]).indexOf(net.me.id)>=0?' on':'')+'" data-prop="'+g.id+'">'+esc(g.name)+(v?' · '+v:'')+'</button>'}).join('')+'</div></details>';
+    bindRoom(p);$('rd-close').onclick=function(){dockOpen=false;p.hidden=true;sideOff=true;document.body.classList.remove('room-side')};var lg=$('rd-log');if(lg)lg.scrollTop=lg.scrollHeight;
     if(keep!==null){var i=p.querySelector('.rc-form input');i.value=keep;i.focus()}
   }
 
