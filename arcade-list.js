@@ -15,7 +15,12 @@ window.ARCADE_LIST=[
   {id:'quiz',n:'Quiz',sub:'Party · culture générale chrono',pl:'1–12',cat:'tel solo',modes:[['solo','Solo','10 questions'],['online','En ligne','Tout le salon répond']]},
   {id:'memory',n:'Memory',sub:'Cartes · retrouve les paires',pl:'1–2',cat:'pc solo',modes:[['solo','Solo','Le moins de coups'],['duel','2 joueurs','Chacun son tour']]},
   {id:'mines',n:'Démineur',sub:'Réflexion · évite les mines',pl:'1',cat:'solo',modes:[['easy','Facile','12 × 8, 12 mines'],['mid','Moyen','16 × 10, 26 mines'],['hard','Difficile','20 × 11, 45 mines']]},
-  {id:'pong',n:'Pong néon',sub:'Arcade · duel de raquettes',pl:'1–2',cat:'pc solo',modes:[['solo','Solo','Contre l\'ordinateur'],['duel','2 joueurs','Même clavier']]}
+  {id:'pong',n:'Pong néon',sub:'Arcade · duel de raquettes',pl:'1–2',cat:'pc solo',modes:[['solo','Solo','Contre l\'ordinateur'],['duel','2 joueurs','Même clavier']]},
+  {id:'plane',n:'Avion 3D',sub:'3D · vole dans les anneaux',pl:'1',cat:'solo 3d',modes:[['solo','Solo','Le plus loin possible']]},
+  {id:'maze',n:'Labyrinthe 3D',sub:'3D · trouve la sortie',pl:'1',cat:'solo 3d',modes:[['solo','Solo','Un nouveau labyrinthe à chaque fois']]},
+  {id:'hoops',n:'Basket 3D',sub:'3D · paniers à 2 et 3 points',pl:'1–2',cat:'pc solo 3d',modes:[['solo','Solo','15 tirs'],['duel','2 joueurs','Chacun son tour']]},
+  {id:'draw',n:'Dessine et devine',sub:'Party · un dessine, les autres devinent',pl:'2–12',cat:'tel',modes:[['online','En ligne','Tout le salon']]},
+  {id:'pool',n:'Billard',sub:'Adresse · pleines contre rayées',pl:'1–2',cat:'pc solo',modes:[['solo','Solo','Nettoie la table'],['duel','2 joueurs','Chacun son tour']]}
 ];
 (function(){
   var tiles=document.getElementById('tiles'),anchor=document.getElementById('v-geo');if(!tiles||!anchor)return;

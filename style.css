@@ -647,3 +647,7 @@ body.fs-mode::after{content:"";position:fixed;inset:0;background:#000;z-index:99
 .tg-late{margin:0 0 6px;font:700 13px 'IBM Plex Mono',monospace;color:#e2361b}
 .tg-board div.me span{font-weight:800;color:#e2361b}.tg-board div.wait{opacity:.55}
 .tg-side.cfg .tg-yearbox,.tg-side.cfg .tg-mapbox,.tg-side.cfg .tg-hint,.tg-side.cfg #tg-ok{display:none}
+
+.dw-box{display:grid;grid-template-columns:1fr 1.4fr;gap:10px;margin-top:10px}.dw-tools{grid-column:1/-1;display:flex;gap:6px;align-items:center;flex-wrap:wrap}.dw-c{width:30px;height:30px;border:2px solid #141210;border-radius:50%;cursor:pointer}
+.dw-chat{height:120px;overflow:auto;background:#fff;border:2px solid #141210;padding:8px;font:500 13px 'Inter Tight',sans-serif}#dw-form{display:flex;gap:6px;align-items:start}#dw-in{flex:1;padding:10px;border:2px solid #141210;font:600 14px 'IBM Plex Mono',monospace}
+@media (max-width:700px){.dw-box{grid-template-columns:1fr}}
