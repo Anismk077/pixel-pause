@@ -682,3 +682,9 @@ body.fs-mode::after{content:"";position:fixed;inset:0;background:#000;z-index:99
 .sv-save .sv-del{flex:0 0 auto;text-align:center}
 .plist li .chef{font:600 10px var(--mono);text-transform:uppercase;letter-spacing:.1em;background:var(--acc);color:#fff;padding:2px 6px;margin-left:6px}
 .plist li .chef-btn{margin-left:auto;font:600 11px var(--mono);padding:4px 8px}
+
+/* souris capturée : rappel quand elle est libérée */
+.ag-lockhint{position:absolute;left:50%;top:14px;transform:translateX(-50%);background:#141210;color:#f1ece2;font:700 12px 'IBM Plex Mono',monospace;padding:7px 12px;border:2px solid #e2361b;z-index:6;pointer-events:none}
+
+/* options du snake */
+.sn-opts{display:grid;gap:6px;margin:0 auto 14px;max-width:420px;text-align:left}.sn-opt{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.sn-opt span{font:700 11px 'IBM Plex Mono',monospace;min-width:110px;opacity:.8}.sn-opt button{font:700 11px 'IBM Plex Mono',monospace;padding:5px 9px;border:2px solid currentColor;background:transparent;color:inherit;cursor:pointer}.sn-opt button.on{background:#e2361b;border-color:#e2361b;color:#fff}

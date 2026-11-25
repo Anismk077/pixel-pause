@@ -137,14 +137,14 @@ button.big{font-size:16px;padding:13px 20px}
 /* ---------- Ton perso sur l'accueil ---------- */
 .mast.has-perso{grid-template-columns:1.25fr .62fr 1fr}
 .mast-perso{position:relative;align-self:stretch;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-height:300px}
-#mp-cv{width:100%;height:330px;display:block;cursor:pointer}
+#mp-cv{width:100%;height:390px;display:block;cursor:pointer}
 .mp-edit{margin-top:-4px;font:600 11px var(--mono)!important;padding:5px 9px!important}
 .mp-bub{position:absolute;top:2px;left:50%;transform:translateX(-50%);background:var(--panel);border:2px solid var(--line);padding:7px 11px;font:600 13px var(--font);white-space:nowrap;z-index:2;box-shadow:3px 3px 0 var(--line)}
 .mp-bub::after{content:'';position:absolute;left:50%;bottom:-8px;width:12px;height:12px;background:var(--panel);border-right:2px solid var(--line);border-bottom:2px solid var(--line);transform:translateX(-50%) rotate(45deg)}
 .mp-bub.pop{animation:bubPop .4s cubic-bezier(.2,1.6,.4,1) both}
 @keyframes bubPop{from{transform:translateX(-50%) scale(.6);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
-@media (max-width:900px){.mast.has-perso{grid-template-columns:1fr 150px;grid-template-areas:'t p' 's s'}.mast.has-perso .mast-title{grid-area:t}.mast.has-perso .mast-perso{grid-area:p;min-height:220px}.mast.has-perso .mast-side{grid-area:s}#mp-cv{height:230px}.mp-bub{font-size:11px;padding:5px 8px}}
-@media (max-width:600px){.mast.has-perso{grid-template-columns:1fr;grid-template-areas:"t" "s";position:relative}.mast.has-perso .mast-perso{position:absolute;right:-6px;top:8px;width:128px;min-height:0}#mp-cv{height:200px}.mast.has-perso .mp-edit{display:none}.mp-bub{top:-4px;max-width:150px;white-space:normal;text-align:center}}
+@media (max-width:900px){.mast.has-perso{grid-template-columns:1fr 150px;grid-template-areas:'t p' 's s'}.mast.has-perso .mast-title{grid-area:t}.mast.has-perso .mast-perso{grid-area:p;min-height:220px}.mast.has-perso .mast-side{grid-area:s}#mp-cv{height:260px}.mp-bub{font-size:11px;padding:5px 8px}}
+@media (max-width:600px){.mast.has-perso{grid-template-columns:1fr;grid-template-areas:"t" "s";position:relative}.mast.has-perso .mast-perso{position:absolute;right:-6px;top:8px;width:128px;min-height:0}#mp-cv{height:220px}.mast.has-perso .mp-edit{display:none}.mp-bub{top:-4px;max-width:150px;white-space:normal;text-align:center}}
 @media (max-width:600px){.mast.has-perso .mp-bub{display:none}}
 
 /* ---------- Filtres de l'accueil ---------- */

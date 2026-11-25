@@ -4,15 +4,15 @@ PP.perso=(function(){
   'use strict';
   var $=PP.$,esc=PP.esc,T_=function(s){return PP.t?PP.t(s):s};
   var OPT={
-    skin:['#f6dcc4','#eec3a0','#d9a07a','#b97a52','#8d5634','#5e3820'],
+    skin:['#fbe8d8','#f6dcc4','#eec3a0','#e4b48e','#d9a07a','#c98d63','#b97a52','#a3673f','#8d5634','#734328','#5e3820','#432817'],
     hair:['rase','degrade','court','meche','boucle','long','queue','tresses','afro','crete','chignon'],
     beard:['aucune','moustache','courte','bouc','longue'],
-    mouth:['sourire','grand','neutre','langue'],
+    mouth:['sourire','grand','dents','neutre','moue','o','langue'],
     motif:['uni','raye','logo','eclair','flamme','coeur'],
     botType:['jean','jogging','short'],
     back:['aucun','sac','cape','ailes'],
     hairCol:['#17120e','#3a2416','#6e4322','#b8834a','#e6cf96','#a8a29a','#e2361b','#3a6ad8','#7c46c8','#e86aa8'],
-    eyes:['#3a2616','#2f6fd0','#3f7a3a','#7a5a22','#5a5a66'],
+    eyes:['#3a2616','#17120e','#6b4423','#a07a3a','#2f6fd0','#7ab4e8','#3f7a3a','#6a8a5a','#5a5a66','#7c46c8','#c0392b'],
     top:['tshirt','sweat','veste','debardeur'],
     topCol:['#17120e','#f1ece2','#e2361b','#2f4f86','#3f7a3a','#d4a32a','#7c46c8','#e86aa8','#56643a','#4aa3b8'],
     botCol:['#17120e','#2a3a5a','#4a4a52','#6a5236','#56643a','#c9c1b2','#8a2a1e'],
@@ -23,7 +23,7 @@ PP.perso=(function(){
   var NAMES={rase:'Rasé',court:'Court',meche:'Mèche',long:'Long',afro:'Afro',crete:'Crête',chignon:'Chignon',tshirt:'T-shirt',sweat:'Sweat à capuche',veste:'Veste',debardeur:'Débardeur',
     aucun:'Aucun',lunettes:'Lunettes',casquette:'Casquette',bandana:'Bandana',casque:'Casque audio',couronne:'Couronne',masque:'Masque',
     degrade:'Dégradé',boucle:'Bouclé',queue:'Queue de cheval',tresses:'Tresses',aucune:'Aucune',moustache:'Moustache',courte:'Barbe courte',bouc:'Bouc',longue:'Barbe longue',
-    sourire:'Sourire',grand:'Grand sourire',neutre:'Neutre',langue:'Langue',uni:'Uni',raye:'Rayé',logo:'Logo PP',eclair:'Éclair',flamme:'Flammes',coeur:'Cœur',
+    sourire:'Sourire',grand:'Grand sourire',dents:'Dents',neutre:'Neutre',moue:'En coin',o:'Surpris',langue:'Langue',uni:'Uni',raye:'Rayé',logo:'Logo PP',eclair:'Éclair',flamme:'Flammes',coeur:'Cœur',
     jean:'Jean',jogging:'Jogging',short:'Short',sac:'Sac à dos',cape:'Cape',ailes:'Ailes'};
   var DEF={skin:'#d9a07a',hair:'court',hairCol:'#17120e',top:'sweat',topCol:'#e2361b',botCol:'#2a3a5a',shoeCol:'#f1ece2',acc:'aucun',accCol:'#17120e',eyes:'#3a2616',beard:'aucune',mouth:'sourire',motif:'uni',botType:'jean',back:'aucun'};
   /* motif imprimé sur le haut (texture dessinée) */
@@ -90,13 +90,22 @@ PP.perso=(function(){
     lathe([[0,-.12],[.19,-.12],[.225,-.02],[.215,.1],[0,.1]],bot,torso,0,.74);
     m(new T.CylinderGeometry(.218,.218,.045,24),M(0x2a241e,.5),0,.09,0,torso).scale.z=.75;
     var tp=[[0,.08],[.2,.08],[.215,.2],[.225,.36],[.25,.5],[.262,.6],[.23,.68],[.15,.73],[0,.745]];
-    var printed=new T.MeshStandardMaterial({map:topTex(T,a.top==='veste'?'#f1ece2':a.topCol,a.motif),roughness:.85});
+    var printed=a.top==='veste'?top:new T.MeshStandardMaterial({map:topTex(T,a.topCol,a.motif),roughness:.85});
     lathe(tp,printed,torso,0,.7);
     if(bt!=='short'||true){var buckle=m(new T.BoxGeometry(.06,.04,.02),M(0xc9a24a,.3,.6),0,.09,-.165,torso);buckle.userData.noOut=true}
-    if(a.top==='veste'){[-1,1].forEach(function(s){var p=m(new T.BoxGeometry(.15,.6,.04),top,s*.13,.4,-.17,torso);p.rotation.y=s*.12;var c=m(new T.BoxGeometry(.07,.16,.03),topD,s*.11,.66,-.17,torso);c.rotation.z=s*.5;
-        var pc=m(new T.BoxGeometry(.08,.012,.01),topD,s*.13,.28,-.195,torso);pc.rotation.y=s*.12;pc.userData.noOut=true});
-      var zp=m(new T.BoxGeometry(.012,.56,.012),M(0xb9b4aa,.3,.7),-.06,.4,-.198,torso);zp.userData.noOut=true;var zt=m(new T.BoxGeometry(.02,.035,.01),M(0xb9b4aa,.3,.7),-.06,.62,-.205,torso);zt.userData.noOut=true;
+    if(a.top==='veste'){/* veste ouverte : t-shirt visible au milieu, revers de col, fermeture et poches */
+      var tee=new T.MeshStandardMaterial({map:topTex(T,'#f1ece2',a.motif),roughness:.85}),met=M(0xb9b4aa,.3,.7);
+      var ins=m(new T.BoxGeometry(.13,.5,.02),tee,0,.36,-.172,torso);ins.userData.noOut=true;
+      [-1,1].forEach(function(s){var ed=m(new T.BoxGeometry(.018,.52,.026),topD,s*.072,.36,-.176,torso);ed.userData.noOut=true;
+        var lp=m(new T.BoxGeometry(.075,.2,.02),topD,s*.085,.6,-.17,torso);lp.rotation.z=s*.42;lp.rotation.y=s*.2;
+        var pc=m(new T.BoxGeometry(.085,.014,.012),topD,s*.15,.26,-.18,torso);pc.rotation.y=s*.3;pc.userData.noOut=true;
+        var zp=m(new T.BoxGeometry(.008,.5,.01),met,s*.08,.36,-.19,torso);zp.userData.noOut=true});
+      var zt=m(new T.BoxGeometry(.016,.032,.01),met,-.08,.5,-.198,torso);zt.userData.noOut=true;
+      var col=m(new T.TorusGeometry(.11,.028,8,22,Math.PI*1.3),topD,0,.71,.01,torso);col.rotation.set(Math.PI/2,0,-Math.PI*.15+Math.PI);
       m(new T.CylinderGeometry(.205,.205,.06,22,1,true),topD,0,.1,0,torso).scale.z=.72}
+    if(a.top==='debardeur'){/* bretelles et encolure */
+      [-1,1].forEach(function(s){var st2=m(new T.BoxGeometry(.06,.025,.26),top,s*.13,.735,0,torso);st2.rotation.z=-s*.25;st2.userData.noOut=true});
+      var nk=m(new T.TorusGeometry(.075,.012,6,18,Math.PI),topD,0,.69,-.135,torso);nk.rotation.set(-.35,0,Math.PI);nk.userData.noOut=true}
     if(a.top==='sweat'){var hood=m(new T.TorusGeometry(.155,.05,10,24),top,0,.74,.06,torso);hood.rotation.x=Math.PI/2.3;hood.scale.set(1,1,.8);
       var hin=m(new T.SphereGeometry(.15,18,10,0,Math.PI*2,0,Math.PI/2),topD,0,.76,.1,torso);hin.scale.set(1,.5,.7);hin.rotation.x=-.5;
       var pk=m(new T.BoxGeometry(.24,.12,.03),topD,0,.24,-.165,torso);pk.rotation.x=.08;
@@ -121,6 +130,9 @@ PP.perso=(function(){
     var mt=a.mouth,mouthG=new T.Group();mouthG.position.set(0,-.078,-.19);head.add(mouthG);
     if(mt==='neutre'){var mn=m(new T.CapsuleGeometry(.006,.04,4,8),lip,0,0,0,mouthG);mn.rotation.z=Math.PI/2}
     else if(mt==='grand'){var mg=m(new T.SphereGeometry(.036,16,10,0,Math.PI*2,Math.PI/2,Math.PI/2),M(0x5a1a14,.6),0,.008,0,mouthG);mg.scale.set(1.1,.85,.4);var th=m(new T.BoxGeometry(.05,.012,.01),white,0,.002,-.012,mouthG);th.userData.noOut=true}
+    else if(mt==='dents'){var md2=m(new T.SphereGeometry(.036,16,10,0,Math.PI*2,Math.PI/2,Math.PI/2),M(0x5a1a14,.6),0,.008,0,mouthG);md2.scale.set(1.15,.7,.4);var tt=m(new T.BoxGeometry(.066,.016,.012),white,0,.0,-.012,mouthG);tt.userData.noOut=true;var tb=m(new T.BoxGeometry(.04,.01,.01),white,0,-.016,-.01,mouthG);tb.userData.noOut=true}
+    else if(mt==='moue'){var mm=m(new T.TorusGeometry(.03,.007,6,14,Math.PI*.6),lip,.01,.006,0,mouthG);mm.rotation.z=Math.PI*1.2}
+    else if(mt==='o'){var mo2=m(new T.TorusGeometry(.016,.008,8,16),M(0x5a1a14,.6),0,-.004,0,mouthG);mo2.scale.y=1.25;var mi=m(new T.CircleGeometry(.014,14),M(0x3a0e0a,.7),0,-.004,.002,mouthG);mi.rotation.y=Math.PI;mi.scale.y=1.25}
     else{var mo=m(new T.TorusGeometry(.034,.008,6,14,Math.PI),lip,0,0,0,mouthG);mo.rotation.z=Math.PI;
       if(mt==='langue'){var tg=m(new T.SphereGeometry(.018,10,8),M(0xe2617a,.5),.008,-.03,-.005,mouthG);tg.scale.set(1,1.3,.6)}}
     /* barbe */
@@ -141,12 +153,12 @@ PP.perso=(function(){
     else if(hz==='crete'){cap(.207,.5,M(new T.Color(a.hairCol).lerp(new T.Color(a.skin),.55),.95));for(var i=0;i<5;i++){var cn=m(new T.ConeGeometry(.05,.2-Math.abs(i-2)*.025,8),hair,0,.2-Math.abs(i-2)*.015,-.12+i*.07,head);cn.rotation.x=-.3+i*.15}}
     else{cap(.218,hz==='long'?.62:.56);
       /* frange en mèches : plusieurs pointes au lieu d'un bloc */
-      var nT=hz==='meche'?5:6;for(var f=0;f<nT;f++){var u=f/(nT-1)-.5,tf=m(new T.ConeGeometry(.048,.12,8),hair,u*.27+(hz==='meche'?.04:0),.115-Math.abs(u)*.035,-.17+Math.abs(u)*.055,head);
+      var nT=a.acc==='casquette'?0:hz==='meche'?5:6;for(var f=0;f<nT;f++){var u=f/(nT-1)-.5,tf=m(new T.ConeGeometry(.048,.12,8),hair,u*.27+(hz==='meche'?.04:0),.115-Math.abs(u)*.035,-.17+Math.abs(u)*.055,head);
         tf.rotation.x=Math.PI+.42;tf.rotation.z=hz==='meche'?-.55-u*.2:u*.5;tf.scale.set(1.25,1,.6)}
-      var fb=m(new T.SphereGeometry(.13,16,10),hair,hz==='meche'?.03:0,.175,-.1,head);fb.scale.set(1.3,.32,.7);
+      if(a.acc!=='casquette'){var fb=m(new T.SphereGeometry(.13,16,10),hair,hz==='meche'?.03:0,.175,-.1,head);fb.scale.set(1.3,.32,.7)}
       /* pattes sur les côtés */
       [-1,1].forEach(function(s){var pb=m(new T.BoxGeometry(.03,.085,.045),hair,s*.188,-.005,-.045,head);pb.rotation.z=-s*.06});
-      if(hz==='meche'){var fr2=m(new T.ConeGeometry(.05,.18,8),hair,.15,.07,-.13,head);fr2.rotation.set(Math.PI-.3,0,-.35);fr2.scale.set(1,1,.6)}
+      if(hz==='meche'&&a.acc!=='casquette'){var fr2=m(new T.ConeGeometry(.05,.18,8),hair,.15,.07,-.13,head);fr2.rotation.set(Math.PI-.3,0,-.35);fr2.scale.set(1,1,.6)}
       if(hz==='long'){var bk=m(new T.CapsuleGeometry(.17,.26,8,18),hair,0,-.14,.07,head);bk.scale.set(1.18,1,.62);
         for(var q3=0;q3<5;q3++){var uu=q3/4-.5,st3=m(new T.ConeGeometry(.05,.16,8),hair,uu*.3,-.38+Math.abs(uu)*.05,.08,head);st3.rotation.x=Math.PI;st3.scale.set(1,1,.6)}
         [-1,1].forEach(function(s){var sd=m(new T.CapsuleGeometry(.05,.24,6,10),hair,s*.175,-.11,-.04,head);sd.rotation.z=s*.08;var sp2=m(new T.ConeGeometry(.045,.1,8),hair,s*.18,-.3,-.04,head);sp2.rotation.x=Math.PI})}
@@ -160,7 +172,11 @@ PP.perso=(function(){
     else if(ac==='bandana'){var bd=m(new T.CylinderGeometry(.212,.212,.055,26,1,true),acc,0,.085,.01,head);bd.scale.z=1.04;bd.material.side=2;[-1,1].forEach(function(s){var tl=m(new T.BoxGeometry(.05,.13,.012),acc,s*.035,.02,.23,head);tl.rotation.z=s*.35;tl.rotation.x=.3})}
     else if(ac==='casque'){var hb=m(new T.TorusGeometry(.225,.022,8,30,Math.PI),acc,0,.03,0,head);[-1,1].forEach(function(s){var cup=m(new T.CylinderGeometry(.075,.075,.05,20),acc,s*.215,-.01,0,head);cup.rotation.z=Math.PI/2;m(new T.CylinderGeometry(.06,.06,.052,20),M(0x2a241e,.6),s*.218,-.01,0,head).rotation.z=Math.PI/2})}
     else if(ac==='couronne'){var cr=M(0xd9ab2e,.25,.6);var band=m(new T.CylinderGeometry(.15,.155,.07,22,1,true),cr,0,.22,0,head);band.material.side=2;for(var j=0;j<6;j++){var a6=j/6*Math.PI*2;m(new T.ConeGeometry(.028,.09,6),cr,Math.cos(a6)*.15,.3,Math.sin(a6)*.15,head);m(new T.SphereGeometry(.014,8,6),cr,Math.cos(a6)*.15,.35,Math.sin(a6)*.15,head)}m(new T.SphereGeometry(.024,10,8),M(0xe2361b,.2,.2),0,.22,-.155,head)}
-    else if(ac==='masque'){var mk=m(new T.SphereGeometry(.15,20,12,0,Math.PI*2,Math.PI*.42,Math.PI*.36),acc,0,-.04,-.07,head);mk.scale.set(1.02,.9,1.06);mk.material.side=2}
+    else if(ac==='masque'){/* loup de super-héros : un anneau autour de chaque œil, un pont et l'élastique */
+      [-1,1].forEach(function(s){var rg=m(new T.TorusGeometry(.056,.017,10,22),acc,s*.074,.016,-.188,head);rg.scale.set(1.1,.92,.45);rg.rotation.y=s*.18;
+        var tip=m(new T.ConeGeometry(.022,.05,8),acc,s*.13,.03,-.165,head);tip.rotation.z=-s*Math.PI/2.4;tip.scale.z=.5});
+      m(new T.BoxGeometry(.05,.022,.02),acc,0,.022,-.205,head);
+      var el2=m(new T.CylinderGeometry(.208,.208,.022,28,1,true,Math.PI*.3,Math.PI*1.4),acc,0,.02,.005,head);el2.material.side=2}
     /* bras */
     var elbows=[],hands=[],arms=[-1,1].map(function(s){
       var sh=m(new T.SphereGeometry(.085,16,12),a.top==='debardeur'?skin:top,s*.25,.61,0,torso);sh.scale.set(1,.9,.85);
@@ -216,7 +232,7 @@ PP.perso=(function(){
     function setA(a){if(md){scene.remove(md)}md=build(a||get());scene.add(md);md.rotation.y=yaw}
     setA(opt.perso);
     function size(){var w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return false;if(w!==w0||h!==h0){w0=w;h0=h;R.setPixelRatio(Math.min(2,window.devicePixelRatio||1));R.setSize(w,h,false);cam.aspect=w/h;
-      var fit=opt.bust?{y:1.75,z:2.2,l:1.72}:{y:1.16,z:5.6,l:1.08};if(cam.aspect<.6)fit.z*=1.15;cam.position.set(0,fit.y+.12,fit.z);cam.lookAt(0,fit.l,0);cam.updateProjectionMatrix()}return true}
+      var fit=opt.bust?{y:1.75,z:2.2,l:1.72}:{y:1.3,z:6.3,l:1.32};if(cam.aspect<.6)fit.z*=1.15;cam.position.set(0,fit.y+.12,fit.z);cam.lookAt(0,fit.l,0);cam.updateProjectionMatrix()}return true}
     function loop(t){if(!alive)return;if(!cv.isConnected){dispose();return}raf=requestAnimationFrame(loop);
       if(!cv.getClientRects().length||document.hidden)return;var dt=Math.min(.05,(t-last)/1000||0);last=t;if(!size())return;
       if(!drag){if(opt.spin)yaw+=dt*.35;else yaw+=((opt.yaw==null?Math.PI+.35:opt.yaw)+Math.sin(t/4000)*.25-yaw)*Math.min(1,dt*1.5)}
