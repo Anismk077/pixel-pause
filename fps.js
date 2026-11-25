@@ -651,7 +651,7 @@
   function addZombie(type,mult){
     var t=ZT[type],s=spawnFar(14),m=zombieModel(type);
     m.position.set(s.x,-1.9,s.z);scene.add(m);dust(s.x,s.z);
-    mult*=D().hp;var e={kind:'z',type:type,x:s.x,z:s.z,yaw:0,hp:t.hp*mult,max:t.hp*mult,sp:t.sp*(.9+Math.random()*.25)*D().sp,dmg:t.dmg*D().dmg,cd:0,spit:2+Math.random()*2,m:m,r:.45*t.sc,alive:true,hit:0,rise:0};
+    mult*=D().hp;var e={kind:'z',type:type,x:s.x,z:s.z,yaw:0,hp:t.hp*mult,max:t.hp*mult,sp:t.sp*(.9+Math.random()*.25)*D().sp,dmg:t.dmg*D().dmg,cd:0,spit:2+Math.random()*2,m:m,r:({walker:.55,runner:.5,crawler:.8,tank:.95,spitter:.6,exploder:.62,brute:1.25})[type]||.55,alive:true,hit:0,rise:0};
     m.userData.ent=e;ents.push(e);return e;
   }
   var BOTN=['Rex','Nova','Kilo','Vega','Orion','Bravo','Lynx','Jinx','Zed','Moka','Tango','Echo'];
@@ -836,6 +836,8 @@
   function smoke(){var d=fwd();var m=new THREE.Mesh(new THREE.SphereGeometry(.12,8,6),new THREE.MeshBasicMaterial({color:0xcfcfcf,transparent:true,opacity:.35,depthWrite:false}));m.position.set(P.x+d.x*1.1+Math.cos(P.yaw)*.15,EYE+P.y+d.y*1.1-.12,P.z+d.z*1.1-Math.sin(P.yaw)*.15);scene.add(m);smokes.push({m:m,t:.7})}
   function startDeath(e){
     var a=Math.atan2(e.x-P.x,e.z-P.z);e.fx=Math.sin(a);e.fz=Math.cos(a);e.roll=(Math.random()-.5)*.6;
+    /* le corps tombe là où il y a de la place, jamais à travers un mur */
+    var len=2.2*(e.m.scale.x||1);[0,Math.PI/2,-Math.PI/2,Math.PI,Math.PI/4,-Math.PI/4].some(function(o){var fx=Math.sin(a+o),fz=Math.cos(a+o);for(var s=.5;s<=len;s+=.5)if(solid(e.x+fx*s,e.z+fz*s))return false;e.fx=fx;e.fz=fz;return true});
     if(e.headshot&&e.m.userData.parts){e.m.userData.parts.head.visible=false;blood(new THREE.Vector3(e.x,1.8*(e.m.scale.y||1),e.z),true)}
     var pool=new THREE.Mesh(new THREE.CircleGeometry(1,24),new THREE.MeshBasicMaterial({color:0x3a0303,transparent:true,opacity:.8,depthWrite:false}));pool.rotation.x=-Math.PI/2;pool.position.set(e.x+e.fx*1.1,.03,e.z+e.fz*1.1);pool.scale.setScalar(.01);scene.add(pool);e.pool=pool;
   }
