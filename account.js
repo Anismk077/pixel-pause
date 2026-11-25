@@ -26,12 +26,23 @@
     GAMES.forEach(function(g){tot.p+=PP.store('st-'+g.id+'-parties');tot.w+=PP.store('st-'+g.id+'-win')});
     var x='<div class="acc-top"><div><span class="lbl">Compte</span><div class="acc-name">'+(cur?esc(cur):'Invité')+'</div><p class="muted">'+(cur?'Tes records, tes stats, tes skins et ta survie sont rangés dans ce compte.':'Tu joues sans compte. Crée-en un pour garder tes records et ta survie à ton nom.')+'</p></div>'+
       '<div class="acc-big"><div><b>'+tot.p+'</b><span>parties</span></div><div><b>'+tot.w+'</b><span>victoires</span></div><div><b>'+PP.store('st-surv-kills')+'</b><span>créatures abattues</span></div></div></div>';
+    var CL=PP.cloud;
+    if(CL&&CL.state!=='off'){
+      x+='<div class="panel cloud-box"><h3 class="t">Compte en ligne</h3>';
+      if(CL.user){x+='<p>Connecté avec <b>'+esc(CL.user.email||CL.user.displayName||'ton compte')+'</b>. Tes records, stats, réglages et ta survie sont sauvegardés en ligne et te suivent sur tous tes appareils.</p><p class="muted">'+(CL.state==='error'?'Problème de synchro : '+esc(CL.err||''):CL.lastSync?'Dernière synchro : '+new Date(CL.lastSync).toLocaleTimeString('fr-FR'):'Synchronisation…')+'</p><div class="row"><button type="button" class="ghost" id="cl-sync">Synchroniser maintenant</button><button type="button" class="ghost" id="cl-out">Se déconnecter</button></div>'}
+      else if(CL.state==='loading')x+='<p class="muted">Chargement…</p>';
+      else{x+='<p>Connecte-toi pour garder tes records et ta survie en ligne, sur tous tes appareils.</p><button type="button" class="gbtn" id="cl-google"><span>G</span> Continuer avec Google</button><div class="cl-or">ou</div><label class="lbl" for="cl-mail">Adresse mail</label><div class="row"><input id="cl-mail" type="email" placeholder="toi@exemple.fr" autocomplete="email"><button type="button" id="cl-send">Recevoir un lien de connexion</button></div><p class="muted" id="cl-msg">Pas de mot de passe : tu reçois un lien sécurisé par mail, tu cliques dessus et c\'est bon.</p>'}
+      x+='</div>';
+    }
     x+='<h3 class="t">Statistiques</h3><div class="acc-table"><div class="acc-row head"><span>Jeu</span><span>Parties</span><span>Victoires</span><span>Record</span></div>'+GAMES.map(function(g){return '<div class="acc-row"><span>'+esc(g.n)+'</span><span>'+PP.store('st-'+g.id+'-parties')+'</span><span title="'+esc(g.win)+'">'+(g.win==='—'?'—':PP.store('st-'+g.id+'-win'))+'</span><span>'+esc(g.rec())+'</span></div>'}).join('')+'</div>';
     x+='<div class="acc-cols"><div class="panel"><h3 class="t">Créer un compte</h3><label class="lbl" for="acc-new">Pseudo</label><input id="acc-new" maxlength="14" placeholder="Ton pseudo"><label class="lbl" for="acc-pin" style="margin-top:10px">Code à 4 chiffres (facultatif)</label><input id="acc-pin" maxlength="4" inputmode="numeric" placeholder="Pour que personne ne joue sur ton compte"><p class="err" id="acc-err"></p><button type="button" id="acc-create">Créer et jouer</button></div>';
     x+='<div class="panel"><h3 class="t">Changer de compte</h3>'+(list.length?'<div class="acc-list">'+list.map(function(p){return '<div class="acc-item'+(p.n===cur?' on':'')+'"><b>'+esc(p.n)+'</b>'+(p.pin?'<small>protégé</small>':'')+(p.n===cur?'<span class="tag">connecté</span>':'<button type="button" class="ink" data-sw="'+esc(p.n)+'">Jouer</button>')+'<button type="button" class="ghost" data-del="'+esc(p.n)+'" aria-label="Supprimer">×</button></div>'}).join('')+'</div>':'<p class="muted">Aucun compte pour l\'instant.</p>')+
       (cur?'<button type="button" class="ghost" id="acc-out" style="margin-top:10px">Se déconnecter (jouer en invité)</button>':'')+'</div></div>';
     x+='<div class="panel"><h3 class="t">Emporter ton compte sur un autre appareil</h3><p class="muted">Les comptes sont gardés dans ce navigateur. Copie ce code, puis colle-le sur l\'autre appareil (Importer) : tu retrouves tout, survie comprise.</p><div class="row"><button type="button" class="ink" id="acc-exp">Copier mon code de sauvegarde</button><button type="button" class="ghost" id="acc-imp">Importer un code</button></div><textarea id="acc-code" rows="3" placeholder="Colle ici un code de sauvegarde puis clique sur Importer" hidden></textarea></div>';
     box.innerHTML=x;
+    if(CL){var g=$('cl-google');if(g)g.onclick=function(){g.disabled=true;CL.google().catch(function(e){g.disabled=false;PP.toast('Connexion annulée','warn')})};
+      var se=$('cl-send');if(se)se.onclick=function(){var m=$('cl-mail').value.trim();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)){$('cl-msg').textContent='Adresse mail invalide.';return}se.disabled=true;CL.email(m).then(function(){$('cl-msg').innerHTML='<b>Lien envoyé à '+esc(m)+'</b> : ouvre ton mail et clique dessus (regarde aussi dans les spams).'}).catch(function(e){se.disabled=false;$('cl-msg').textContent='Envoi impossible : '+(e&&e.message||e)})};
+      var so=$('cl-out');if(so)so.onclick=function(){CL.logout()};var sy=$('cl-sync');if(sy)sy.onclick=function(){CL.syncNow();PP.toast('Sauvegardé en ligne','ok')}}
     $('acc-create').onclick=function(){
       var n=$('acc-new').value.trim().replace(/[^\wÀ-ÿ .-]/g,'').slice(0,14),pin=$('acc-pin').value.trim();
       if(n.length<2){$('acc-err').textContent='Choisis un pseudo d\'au moins 2 lettres.';return}
@@ -63,5 +74,6 @@
   }
   /* bouton du compte dans l'en-tête */
   var nb=$('nav-acc');if(nb)nb.textContent=PP.profile()?PP.profile():'compte';
+  if(PP.cloud&&PP.cloud.on)PP.cloud.on(function(){if(PP.cur()==='account')render();var nb2=$('nav-acc');if(nb2&&PP.cloud.user)nb2.textContent=PP.profile()||'compte'});
   PP.games.account={open:render};
 })();

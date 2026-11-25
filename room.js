@@ -100,6 +100,10 @@
   $('join-code').addEventListener('keydown',function(e){if(e.key==='Enter')$('join-name').focus()});
   $('join-name').addEventListener('keydown',function(e){if(e.key==='Enter')$('join-go').click()});
 
+  /* l'hôte change de jeu : tout le salon suit ; un nouveau venu arrive directement sur le jeu en cours */
+  document.addEventListener('pp-go',function(e){var v=e.detail;if(!net.inRoom()||!net.isHost)return;if(!ONLINE.some(function(g){return g.id===v})||v===curGame)return;curGame=v;beat();net.broadcast({t:'launch',game:v})});
+  var knownIds={};
+  net.on(function(msg){if(msg.t!=='players'||!net.isHost)return;msg.players.forEach(function(p){if(p.id!=='host'&&!knownIds[p.id]){knownIds[p.id]=1;if(curGame&&curGame!=='surv')net.to(p.id,{t:'launch',game:curGame})}})});
   var known=[];
   net.on(function(msg){
     if(msg.t==='players'){

@@ -524,7 +524,7 @@
     if(!s)return newGame();
     buildWorld(s.seed);day=s.day;dayT=s.t;inv=Object.assign(freshInv(),s.inv);st=s.st||{bois:0,fer:0,deer:0,kills:0};goalI=s.goal||0;rescueT=s.rescue==null?-1:s.rescue;won=false;
     P={x:s.p.x,z:s.p.z,y:height(s.p.x,s.p.z),vy:0,yaw:0,pitch:0,hp:s.p.hp,food:s.p.food,water:s.p.water,stam:100,bob:0,spawn:s.p.spawn};
-    if(s.p.ur>=0&&rooms[s.p.ur]){P.under=rooms[s.p.ur];P.back=s.p.back;P.y=P.under.y}else if(s.p.back)P.back=s.p.back;
+    if(s.p&&s.p.ur>=0&&rooms[s.p.ur]){P.under=rooms[s.p.ur];P.back=s.p.back;P.y=P.under.y}else if(s.p&&s.p.back)P.back=s.p.back;
     (s.sts||[]).forEach(function(o){var x=build(o[0],o[1],o[2],o[3],true);if(x){x.hp=o[4];if(o[5])x.store=o[5]}});P.spawn=s.p.spawn;
     (s.ch||[]).forEach(function(id){var c=chests[id];if(c){c.open=true;c.m.userData.lid.rotation.x=-1.9;if(c.m.userData.spark)c.m.userData.spark.visible=false}});Object.keys(s.ci||{}).forEach(function(id){if(chests[id])chests[id].items=s.ci[id]});
     (s.tr||[]).forEach(function(i){var o=trees.list[i];if(o)fell(o,'tree',true)});
@@ -1298,7 +1298,7 @@
       or:ores.userData.list.filter(function(o){return o.hp<=0}).map(function(o){return o.i})};
   }
   function applyWorld(s){
-    if(s.p.ur>=0&&rooms[s.p.ur]){P.under=rooms[s.p.ur];P.back=s.p.back;P.y=P.under.y}else if(s.p.back)P.back=s.p.back;
+    if(s.p&&s.p.ur>=0&&rooms[s.p.ur]){P.under=rooms[s.p.ur];P.back=s.p.back;P.y=P.under.y}else if(s.p&&s.p.back)P.back=s.p.back;
     (s.sts||[]).forEach(function(o){var x=build(o[0],o[1],o[2],o[3],true);if(x){x.hp=o[4];if(o[5])x.store=o[5]}});
     (s.ch||[]).forEach(function(id){var c=chests[id];if(c){c.open=true;c.m.userData.lid.rotation.x=-1.9;if(c.m.userData.spark)c.m.userData.spark.visible=false}});Object.keys(s.ci||{}).forEach(function(id){if(chests[id])chests[id].items=s.ci[id]});
     (s.tr||[]).forEach(function(i){var o=trees.list[i];if(o)fell(o,'tree',true)});
@@ -1313,6 +1313,8 @@
       z:zombies.filter(function(z){return z.alive}).map(function(z){return [z.id,+z.x.toFixed(2),+z.z.toFixed(2),+z.yaw.toFixed(2),z.big?1:0,z.mv?1:0]}),
       a:animals.filter(function(a){return a.alive}).map(function(a){return [a.id,a.kind==='wolf'?1:0,+a.x.toFixed(2),+a.z.toFixed(2),+a.yaw.toFixed(2),a.mv?1:0,a.ant?1:0]})})}
   }
+  var joinedCode=null,helloT=0;
+  function askWorld(){clearInterval(helloT);net.send({t:'sv-hello'});var tries=0;helloT=setInterval(function(){if(joinedCode===net.code||!net.inRoom()||PP.cur()!=='surv'||++tries>20){clearInterval(helloT);return}net.send({t:'sv-hello'})},3000)}
   function guestJoinWorld(m){
     if(!init())return;running=false;cancelAnimationFrame(raf);
     buildWorld(m.seed,true);day=m.day;dayT=m.dt;won=false;rescueT=-1;goalI=0;
@@ -1321,7 +1323,7 @@
     else{inv=freshInv();st={bois:0,fer:0,deer:0,kills:0};var a=Math.random()*6.28;P={x:m.hx+Math.cos(a)*3,z:m.hz+Math.sin(a)*3,y:0,vy:0,yaw:0,pitch:0,hp:100,food:80,water:80,stam:100,bob:0,spawn:null}}
     P.y=height(P.x,P.z);applyWorld(m);
     viewModel();hudInv();$('sv-ov').hidden=true;$('sv-build').hidden=true;$('sv-craft').hidden=true;$('sv-invp').hidden=true;buildMode=null;running=true;paused=false;last=0;raf=requestAnimationFrame(loop);lock();sfx.play('go');
-    msg('Tu as rejoint l\'île de l\'hôte');
+    msg('Tu as rejoint l\'île de l\'hôte');joinedCode=net.code;clearInterval(helloT);
   }
   net.on(function(m,from){
     if(!online||PP.cur()!=='surv')return;
@@ -1329,7 +1331,7 @@
       if(d.g==='svp'){var r=remotes[id];if(!r){r=remotes[id]={id:id,x:d.x,z:d.z,tx:d.x,tz:d.z,yaw:0,hp:100,n:d.n,m:null}}r.tx=d.x;r.tz=d.z;r.yaw=d.yw;r.hp=d.hp;r.tool=d.tool;r.n=d.n;r.ready=!!scene;return}
       if(d.g==='sve'&&scene){netEvent(d);return}
       return}
-    if(m.t==='sv-world'&&!net.isHost){guestJoinWorld(m);return}
+    if(m.t==='sv-world'&&!net.isHost){if(joinedCode===net.code&&running)return;try{guestJoinWorld(m)}catch(e){console.error('sv-world',e);window.__svErr=String(e&&e.stack||e)}return}
     if(m.t==='sv-dmg'&&running){hurt(m.d);return}
     if(m.t==='sv-kill'&&running){sfx.play('kill');killDrops(m.k,m.x,m.z);return}
     if(m.t==='sv-s'&&!net.isHost&&running){
@@ -1345,7 +1347,7 @@
     }
     if(m.t==='players'){var ids=m.players.map(function(p){return p.id});Object.keys(remotes).forEach(function(k){if(ids.indexOf(k)<0){if(remotes[k].m)scene.remove(remotes[k].m);delete remotes[k]}});
       if(net.isHost&&running)m.players.forEach(function(p){if(p.id!=='host'&&!seenJoin[p.id]){seenJoin[p.id]=1;PP.toast(p.name+' arrive sur ton île','ok');net.to(p.id,{t:'launch',game:'surv'})}});return}
-    if(m.t==='closed'){online=false;msg('L\'hôte a quitté : tu continues seul sur ta propre île');running=false;cancelAnimationFrame(raf);PP.games.surv.open()}
+    if(m.t==='closed'){online=false;joinedCode=null;msg('L\'hôte a quitté : tu continues seul sur ta propre île');running=false;cancelAnimationFrame(raf);PP.games.surv.open()}
   });
   function netEvent(d){
     if(d.e==='fell'){var o=d.ty==='tree'?trees.list[d.i]:(d.ty==='rock'?rocks:ores).userData.list[d.i];if(o&&o.hp>0){if(d.ty==='tree'&&running&&Math.hypot(o.x-P.x,o.z-P.z)<120){o.hp=0;fallTree(o,true);if(!ZERO)ZERO=new THREE.Matrix4().makeScale(0,0,0);o.ms.forEach(function(im){im.setMatrixAt(o.i,ZERO);im.instanceMatrix.needsUpdate=true});near(o.x,o.z,2).forEach(function(c){if(c.ref===o)remCol(c)})}else fell(o,d.ty,true);if(d.ty!=='tree'){var gy=height(o.x,o.z)+.6;burst(o.x,gy,o.z,d.ty==='ore'?0x8a5a3c:0x8c8a84,18,6)}}}
@@ -1709,8 +1711,8 @@
   PP._sv=function(){return {houses:function(){return houseList},fog:function(){return fog},MV:MV,scene:function(){return scene},R3:function(){return R3},isl:function(){return ISL},boats:function(){return boats},boardBoat:boardBoat,height:height,traps:traps,castles:castles,goDown:goDown,chestPanel:chestPanel,remotes:remotes,online:function(){return online},trees:trees,drops:drops,invPanel:invPanel,P:P,inv:inv,st:st,zombies:zombies,animals:animals,structs:structs,chests:chests,setT:function(t){dayT=t},attack:attack,interact:interact,build:build,setTool:setTool,craft:craft,goal:function(){return goalI},render:render}};
   PP.games.surv={
     open:function(){$('sv-lockhint').hidden=true;
-      if(net.inRoom()){if(online&&P&&scene&&!running&&!$('sv-ov').hidden===false){}if(online&&P&&scene&&$('sv-ov').hidden){running=true;last=0;raf=requestAnimationFrame(loop);return}online=true;auth=net.isHost;$('sv-online').hidden=true;
-        if(!auth){$('sv-title').textContent='Survie à plusieurs';$('sv-msg').textContent='Connexion à l\'île de l\'hôte… Si rien ne se passe, l\'hôte doit lancer sa partie.';$('sv-start').hidden=true;$('sv-cont').hidden=true;$('sv-ov').hidden=false;net.send({t:'sv-hello'});return}}
+      if(net.inRoom()){/* on ne reprend une île que si c'est bien celle de ce salon */if(online&&P&&scene&&$('sv-ov').hidden&&(net.isHost||joinedCode===net.code)){running=true;last=0;raf=requestAnimationFrame(loop);return}if(!net.isHost&&joinedCode!==net.code){running=false;cancelAnimationFrame(raf)}online=true;auth=net.isHost;$('sv-online').hidden=true;
+        if(!auth){$('sv-title').textContent='Survie à plusieurs';$('sv-msg').textContent='Connexion à l\'île de l\'hôte… Si rien ne se passe, l\'hôte doit lancer sa partie.';$('sv-start').hidden=true;$('sv-cont').hidden=true;$('sv-ov').hidden=false;askWorld();return}}
       else{online=false;auth=true;$('sv-online').hidden=false}
       $('sv-start').hidden=false;var s=hasSave();$('sv-cont').hidden=!s;$('sv-start').textContent=s?'Nouvelle île':'Commencer';$('sv-title').textContent='Survie';
       $('sv-msg').textContent='Une grande île sauvage. Récolte, chasse, fabrique tes outils, construis ta base, mine le fer et trouve les pièces d\'une radio pour appeler les secours. La nuit, les zombies sortent. 14 objectifs à remplir.';$('sv-ov').hidden=false;if(online&&auth)$('sv-msg').textContent+=' Tu es l\'hôte : tes potes arrivent sur ton île dès que tu lances.';$('sv-best').textContent=PP.store('sv-best')},

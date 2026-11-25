@@ -24,6 +24,7 @@ window.PP=(function(){
     document.querySelectorAll('.view').forEach(function(s){s.classList.toggle('on',s.id==='v-'+v)});
     current=v;window.scrollTo(0,0);
     if(games[v]&&games[v].open)games[v].open();
+    try{document.dispatchEvent(new CustomEvent('pp-go',{detail:v}))}catch(e){}
     try{history.replaceState(null,'',v==='menu'?location.pathname:'#'+v)}catch(e){}
   }
   document.addEventListener('click',function(e){var b=e.target.closest('[data-go]');if(b)go(b.dataset.go)});
