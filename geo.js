@@ -88,7 +88,7 @@
   function go(n){V.steps++;load({id:n.id,c:n.c,h:n.h},false)}
   function getJSON(u,ms){var ac=window.AbortController?new AbortController():null,t=setTimeout(function(){if(ac)ac.abort()},ms||7000);return fetch(u,ac?{signal:ac.signal}:{}).then(function(r){clearTimeout(t);if(!r.ok)throw new Error(r.status);return r.json()},function(e){clearTimeout(t);throw e})}
   function apiFor(h){return h?'https://'+h+'/api':API}
-  function item(id,c,h){var k=c+'/'+id;if(!cache[k])cache[k]=getJSON(apiFor(h)+'/collections/'+c+'/items/'+id).catch(function(){return getJSON(API+'/collections/'+c+'/items/'+id,5000)}).catch(function(e){delete cache[k];throw e});return cache[k]}
+  function item(id,c,h){var k=c+'/'+id;if(!cache[k])cache[k]=getJSON(apiFor(h)+'/collections/'+c+'/items/'+id,5000).catch(function(){return getJSON(API+'/collections/'+c+'/items/'+id,4000)}).catch(function(e){delete cache[k];throw e});return cache[k]}
   function chevron(){
     var s=new THREE.Shape();s.moveTo(0,.55);s.lineTo(.55,-.05);s.lineTo(.3,-.05);s.lineTo(0,.28);s.lineTo(-.3,-.05);s.lineTo(-.55,-.05);s.lineTo(0,.55);
     var g=new THREE.Group(),m=new THREE.Mesh(new THREE.ShapeGeometry(s),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.92,side:THREE.DoubleSide,depthTest:false}));
@@ -118,19 +118,17 @@
     HOST=p.h||HOST;
     item(p.id,p.c,p.h).then(function(f){
       if(tok!==V.tok)return;
-      var url=(f.assets.sd||f.assets.hd).href,az=f.properties['view:azimuth']||0;
-      return Promise.all([new Promise(function(ok,ko){var l=new THREE.TextureLoader();l.setCrossOrigin('anonymous');var tt=setTimeout(function(){ko(new Error('timeout'))},12000);l.load(url,function(t){clearTimeout(tt);ok(t)},undefined,function(e){clearTimeout(tt);ko(e)})}),neighbours(f,p.c)]).then(function(res){
-        if(tok!==V.tok)return;
-        var t=res[0];t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;
-        var old=V.sph.material;V.sph.material=new THREE.MeshBasicMaterial({map:t});if(old.map)old.map.dispose();old.dispose();
-        V.sph.rotation.y=(270-az)*Math.PI/180;
-        V.cur={id:p.id,c:p.c,h:p.h,ll:[f.geometry.coordinates[1],f.geometry.coordinates[0]]};V.nb=res[1];
-        if(first){V.start={id:p.id,c:p.c,h:p.h};V.H=Math.random()*360;V.P=-.06;V.fov=75;V.cam.fov=75;V.cam.updateProjectionMatrix();V.steps=0}
-        setArrows();V.busy=false;$('geo-loading').hidden=true;
-        if(!locked)$('geo-status').textContent=V.nb.length?'Avance avec les flèches au sol, ou Z / flèche haut. Clique sur la carte pour poser ton point.':'Pas de chemin ici : regarde autour de toi puis pose ton point sur la carte.';
-        // précharge les voisins
-        V.nb.forEach(function(n){item(n.id,n.c,n.h).then(function(g){var i=new Image();i.crossOrigin='anonymous';i.src=(g.assets.sd||g.assets.hd).href}).catch(function(){})});
-      });
+      var url=(f.assets.sd||f.assets.hd).href,thumb=f.assets.thumb&&f.assets.thumb.href,az=f.properties['view:azimuth']||0,shown=false;
+      function apply(t,hd){if(tok!==V.tok)return;t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;var old=V.sph.material;V.sph.material=new THREE.MeshBasicMaterial({map:t});if(old.map)old.map.dispose();old.dispose();V.sph.rotation.y=(270-az)*Math.PI/180;
+        if(!shown){shown=true;V.cur={id:p.id,c:p.c,h:p.h,ll:[f.geometry.coordinates[1],f.geometry.coordinates[0]]};if(first){V.start={id:p.id,c:p.c,h:p.h};V.H=Math.random()*360;V.P=-.06;V.fov=75;V.cam.fov=75;V.cam.updateProjectionMatrix();V.steps=0}V.busy=false}
+        if(hd){$('geo-loading').hidden=true}else{$('geo-loading').textContent='Image en haute qualité…'}draw()}
+      function tex(u,ms){return new Promise(function(ok,ko){var l=new THREE.TextureLoader();l.setCrossOrigin('anonymous');var tt=setTimeout(function(){ko(new Error('timeout'))},ms);l.load(u,function(t){clearTimeout(tt);ok(t)},undefined,function(e){clearTimeout(tt);ko(e)})})}
+      /* d'abord une petite image floue tout de suite, puis la vraie image ; les flèches arrivent à part */
+      var hdDone=false;if(thumb)tex(thumb,5000).then(function(t){if(!hdDone)apply(t,false)}).catch(function(){});
+      neighbours(f,p.c).then(function(nb){if(tok!==V.tok)return;V.nb=nb;setArrows();if(!locked)$('geo-status').textContent=nb.length?'Avance avec les flèches au sol, ou Z / flèche haut. Clique sur la carte pour poser ton point.':'Pas de chemin ici : regarde autour de toi puis pose ton point sur la carte.';
+        nb.forEach(function(n){item(n.id,n.c,n.h).then(function(g){var i=new Image();i.crossOrigin='anonymous';i.src=(g.assets.sd||g.assets.hd).href}).catch(function(){})})});
+      V.nb=[];setArrows();
+      return tex(url,15000).then(function(t){hdDone=true;apply(t,true)},function(e){if(shown){$('geo-loading').hidden=true;return}throw e});
     }).catch(function(){
       if(tok!==V.tok)return;V.busy=false;
       if(first&&V.onfail){$('geo-loading').textContent='Rue indisponible, on en prend une autre';V.onfail()}
@@ -156,7 +154,8 @@
 
   /* ---------- Solo ---------- */
   function soloNew(){solo.rounds=PP.shuffle(PLACES).slice(0,5);solo.ri=0;solo.score=0;soloRender()}
-  function soloRender(){var p=solo.rounds[solo.ri];$('geo-round').textContent='Manche '+(solo.ri+1)+' / 5';$('geo-score').textContent=solo.score;newRound(p,function(){var used=solo.rounds.map(function(q){return q.id}),alt=PP.shuffle(PLACES).filter(function(q){return used.indexOf(q.id)<0})[0];if(alt){solo.rounds[solo.ri]=alt;soloRender()}})}
+  function prefetch(p){if(!p)return;item(p.id,p.c,p.h).then(function(f){var i=new Image();i.crossOrigin='anonymous';i.src=(f.assets.sd||f.assets.hd).href;if(f.assets.thumb){var j=new Image();j.crossOrigin='anonymous';j.src=f.assets.thumb.href}}).catch(function(){})}
+  function soloRender(){var p=solo.rounds[solo.ri];setTimeout(function(){prefetch(solo.rounds[solo.ri+1])},1500);$('geo-round').textContent='Manche '+(solo.ri+1)+' / 5';$('geo-score').textContent=solo.score;newRound(p,function(){var used=solo.rounds.map(function(q){return q.id}),alt=PP.shuffle(PLACES).filter(function(q){return used.indexOf(q.id)<0})[0];if(alt){solo.rounds[solo.ri]=alt;soloRender()}})}
   function soloAnswer(){
     sfx.play('ui');
     var p=solo.rounds[solo.ri],d=dist(guess,p.ll),pts=Math.round(5000*Math.exp(-d/600));if(d<1)pts=5000;
