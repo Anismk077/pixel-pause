@@ -214,9 +214,10 @@
       if(u._cr<0)continue;var dx=o.position.x+u._cx-P.x,dz=o.position.z+u._cz-P.z,lim=(u._cr>5?650:u._cr>1.5?230:130)+u._cr,far=dx*dx+dz*dz>lim*lim;
       if(far){if(o.visible){o.visible=false;u._ch=true}}else if(u._ch){o.visible=true;u._ch=false}}
   }
+  function applyQ(){if(!R3)return;var q=PP.settings.q,dpr=window.devicePixelRatio||1;if(q==='haute')R3.setPixelRatio(Math.min(1.5,dpr));else if(q==='basse')R3.setPixelRatio(.7);if(q!=='auto')R3.setSize(cv.width,cv.height,false);if(sun)sun.castShadow=q!=='basse'}
   /* qualité auto : si ça rame, on baisse la résolution du rendu, si ça va bien on la remonte */
   function autoQ(dt){
-    qT+=dt;qN++;if(qT<2.5)return;var fps=qN/qT;qT=0;qN=0;var cur=R3.getPixelRatio(),max=Math.min(1.25,window.devicePixelRatio||1);
+    if(PP.settings.q!=='auto')return;qT+=dt;qN++;if(qT<2.5)return;var fps=qN/qT;qT=0;qN=0;var cur=R3.getPixelRatio(),max=Math.min(1.25,window.devicePixelRatio||1);
     if(fps<27&&cur>.7){R3.setPixelRatio(Math.max(.7,cur-.1));R3.setSize(cv.width,cv.height,false)}
     else if(fps>55&&cur<max){R3.setPixelRatio(Math.min(max,cur+.1));R3.setSize(cv.width,cv.height,false)}
   }
@@ -224,9 +225,9 @@
     if(R3)return true;
     if(!window.THREE){PP.toast('La 3D (three.js) n\'a pas pu se charger','warn');return false}
     ray=new THREE.Raycaster();
-    R3=new THREE.WebGLRenderer({canvas:cv,antialias:true});R3.setPixelRatio(Math.min(1,window.devicePixelRatio||1));R3.setSize(cv.width,cv.height,false);R3.autoClear=false;
+    R3=new THREE.WebGLRenderer({canvas:cv,antialias:true});R3.setPixelRatio(Math.min(1,window.devicePixelRatio||1));R3.setSize(cv.width,cv.height,false);R3.autoClear=false;applyQ();
     R3.shadowMap.enabled=true;R3.shadowMap.type=THREE.PCFShadowMap;R3.toneMapping=THREE.ACESFilmicToneMapping;R3.toneMappingExposure=1.05;
-    cam=new THREE.PerspectiveCamera(72,cv.width/cv.height,.1,1700);cam.rotation.order='YXZ';
+    cam=new THREE.PerspectiveCamera(PP.settings.fov-3,cv.width/cv.height,.1,1700);cam.rotation.order='YXZ';
     vscene=new THREE.Scene();vcam=new THREE.PerspectiveCamera(60,cv.width/cv.height,.01,10);
     vscene.add(new THREE.HemisphereLight(0xffffff,0x555555,1.3));var dl=new THREE.DirectionalLight(0xffffff,1.1);dl.position.set(1,2,1);vscene.add(dl);
     document.addEventListener('pp-fs',function(){setTimeout(fit,30)});window.addEventListener('resize',fit);
@@ -347,7 +348,7 @@
     scene.background=new THREE.Color(0xbfdcf0);scene.fog=new THREE.Fog(0xbfdcf0,120,700);
     buildSky();
     amb=new THREE.HemisphereLight(0xdfefff,0x4a5a30,.85);scene.add(amb);
-    sun=new THREE.DirectionalLight(0xfff2dc,1.6);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);var sc=sun.shadow.camera;sc.left=sc.bottom=-55;sc.right=sc.top=55;sc.near=1;sc.far=320;sun.shadow.bias=-.0006;sun.shadow.normalBias=.4;scene.add(sun);scene.add(sun.target);
+    sun=new THREE.DirectionalLight(0xfff2dc,1.6);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);var sc=sun.shadow.camera;sc.left=sc.bottom=-55;sc.right=sc.top=55;sc.near=1;sc.far=320;sun.shadow.bias=-.0006;sun.shadow.normalBias=.4;sun.castShadow=PP.settings.q!=='basse';scene.add(sun);scene.add(sun.target);
     torchL=new THREE.PointLight(0xffa64a,0,18,1.5);scene.add(torchL);lpool=[];for(var lp=0;lp<LPOOL;lp++){var LL=new THREE.PointLight(0xffa050,0,12,1.5);scene.add(LL);lpool.push(LL)}
     // relief : couleurs selon hauteur et pente, texture de détail par-dessus
     var g=new THREE.PlaneGeometry(SIZE,SIZE,SEG,SEG);g.rotateX(-Math.PI/2);
@@ -1629,8 +1630,11 @@
   document.addEventListener('mouseup',function(e){if(e.button===0)mouseDown=false});
   cv.addEventListener('contextmenu',function(e){e.preventDefault()});
   cv.addEventListener('wheel',function(e){if(!running||buildMode)return;e.preventDefault();var own=TORDER.filter(function(t){return t==='axe'||inv[t]}),i=own.indexOf(tool);setTool(own[(i+(e.deltaY>0?1:-1)+own.length)%own.length])},{passive:false});
-  document.addEventListener('mousemove',function(e){if(document.pointerLockElement!==cv||!P)return;P.yaw-=e.movementX*.0025;P.pitch=Math.max(-1.45,Math.min(1.45,P.pitch-e.movementY*.0025))});
-  document.addEventListener('pointerlockchange',function(){if(PP.cur()!=='surv'||!running)return;var l=document.pointerLockElement===cv;$('sv-lockhint').hidden=l||menusOpen();if(!l&&!menusOpen()){paused=true;save()}else paused=false});
+  document.addEventListener('mousemove',function(e){if(document.pointerLockElement!==cv||!P)return;var ss=.0025*PP.settings.sens/100;P.yaw-=e.movementX*ss;P.pitch=Math.max(-1.45,Math.min(1.45,P.pitch-e.movementY*ss*(PP.settings.invY?-1:1)))});
+  document.addEventListener('pointerlockchange',function(){if(PP.cur()!=='surv'||!running)return;var l=document.pointerLockElement===cv;$('sv-lockhint').hidden=l||menusOpen();if(!l&&!menusOpen()){paused=true;save();if(!online)PP.pause(true)}else paused=false});
+  PP.pauseGuard('surv',function(){return running&&!menusOpen()});
+  document.addEventListener('pp-resume',function(){if(PP.cur()!=='surv'||!running)return;lock();paused=false;$('sv-lockhint').hidden=true});
+  document.addEventListener('pp-settings',function(){if(!cam)return;cam.fov=PP.settings.fov-3;cam.updateProjectionMatrix();applyQ()});
   function lock(){if(cv.requestPointerLock&&matchMedia('(hover:hover)').matches)try{var r=cv.requestPointerLock();if(r&&r.catch)r.catch(function(){})}catch(e){}}
   function unlock(){if(document.pointerLockElement===cv&&document.exitPointerLock)document.exitPointerLock()}
   var tl=null;

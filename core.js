@@ -105,6 +105,11 @@ window.PP=(function(){
 
 
 
+  /* ---------- Réglages (gardés dans ce navigateur) ---------- */
+  var SET_DEF={vol:80,sens:100,fov:75,q:'auto',invY:false,fpsMeter:false},SET=Object.assign({},SET_DEF);
+  try{Object.assign(SET,JSON.parse(localStorage.getItem('pp-settings'))||{})}catch(e){}
+  function setSetting(k,v){SET[k]=v;try{localStorage.setItem('pp-settings',JSON.stringify(SET))}catch(e){}document.dispatchEvent(new CustomEvent('pp-settings',{detail:SET}))}
+  window.PP_settings=SET;
   /* ---------- Barre sous chaque jeu : plein écran et pause (solo) ---------- */
   function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement}
   var paused=false,rafQ=[],RAF=window.requestAnimationFrame.bind(window);
@@ -119,12 +124,36 @@ window.PP=(function(){
     if(paused){if(document.pointerLockElement&&document.exitPointerLock)document.exitPointerLock()}
     else{var q=rafQ;rafQ=[];q.forEach(function(cb){RAF(cb)})}
   }
+  function pauseHtml(){
+    function rng(k,l,min,max,step,unit){return '<label class="pz-row"><span>'+l+'</span><input type="range" data-set="'+k+'" min="'+min+'" max="'+max+'" step="'+step+'"><em data-val="'+k+'"></em></label>'}
+    return '<div class="pz"><div class="pz-l"><b>PAUSE</b><div class="pz-btns"><button type="button" class="primary" data-resume>Reprendre</button><button type="button" class="pz-quit" data-quit>Quitter le jeu</button></div><p class="pz-hint">Échap : reprendre</p></div>'+
+      '<div class="pz-set"><h4>Réglages</h4>'+rng('vol','Volume',0,100,5)+rng('sens','Sensibilité souris',30,250,5)+rng('fov','Champ de vision (3D)',60,100,1)+
+      '<label class="pz-row"><span>Qualité (3D)</span><select data-set="q"><option value="auto">Auto</option><option value="haute">Haute</option><option value="basse">Basse (plus fluide)</option></select><em></em></label>'+
+      '<label class="pz-row chk"><span>Inverser la souris (haut/bas)</span><input type="checkbox" data-set="invY"><em></em></label>'+
+      '<label class="pz-row chk"><span>Afficher les images par seconde</span><input type="checkbox" data-set="fpsMeter"><em></em></label></div></div>';
+  }
+  function fmtSet(k,v){return k==='vol'||k==='sens'?v+' %':k==='fov'?v+'°':''}
+  function syncSettings(root){(root||document).querySelectorAll('[data-set]').forEach(function(i){var k=i.dataset.set;if(i.type==='checkbox')i.checked=!!SET[k];else i.value=SET[k]});(root||document).querySelectorAll('[data-val]').forEach(function(e){e.textContent=fmtSet(e.dataset.val,SET[e.dataset.val])})}
+  function bindSettings(root){syncSettings(root);root.querySelectorAll('[data-set]').forEach(function(i){var k=i.dataset.set;i.addEventListener('input',function(){var v=i.type==='checkbox'?i.checked:i.type==='range'?+i.value:i.value;setSetting(k,v);syncSettings()});i.addEventListener('change',function(){var v=i.type==='checkbox'?i.checked:i.type==='range'?+i.value:i.value;setSetting(k,v);syncSettings()})})}
+  /* compteur d'images par seconde (option) */
+  var fpsN=0,fpsT=performance.now(),fpsBox=null;
+  (function tick(){fpsN++;var n=performance.now();if(n-fpsT>500){var f=Math.round(fpsN*1000/(n-fpsT));fpsN=0;fpsT=n;if(SET.fpsMeter){if(!fpsBox){fpsBox=document.createElement('div');fpsBox.className='fps-meter'}var st=document.querySelector('.view.on .stage.wide');if(st){if(fpsBox.parentNode!==st)st.appendChild(fpsBox);fpsBox.textContent=f+' img/s';fpsBox.hidden=false}else fpsBox.hidden=true}else if(fpsBox)fpsBox.hidden=true}RAF(tick)})();
+  /* Échap : met en pause un jeu solo en cours (ou reprend) */
+  var pauseGuards={};
+  function canPause(){var st=document.querySelector('.view.on .stage.wide');if(!st)return false;if(PP.net&&PP.net.inRoom())return false;if(document.querySelector('.view.on .overlay:not([hidden])'))return false;var g=pauseGuards[current];return !(g&&g()===false)}
+  document.addEventListener('keydown',function(e){if(e.key!=='Escape'||/INPUT|TEXTAREA|SELECT/.test((e.target&&e.target.tagName)||''))return;
+    if(paused){e.preventDefault();setPause(false);document.dispatchEvent(new CustomEvent('pp-resume'));return}
+    if(canPause()){e.preventDefault();e.stopImmediatePropagation();setPause(true)}},true);
+  window.PP_pauseGuard=function(view,fn){pauseGuards[view]=fn};window.PP_canPause=canPause;
   document.querySelectorAll('.stage.wide').forEach(function(st){
     var bar=document.createElement('div');bar.className='stage-bar';
     bar.innerHTML='<button type="button" class="ghost" data-pause>Pause</button><button type="button" class="ghost" data-fs>Plein écran</button>';
     st.parentNode.insertBefore(bar,st.nextSibling);
-    var ov=document.createElement('div');ov.className='pause-ov';ov.hidden=true;ov.innerHTML='<b>PAUSE</b><button type="button" class="primary" data-resume>Reprendre</button>';st.appendChild(ov);
-    ov.querySelector('[data-resume]').addEventListener('click',function(e){e.stopPropagation();setPause(false)});
+    var ov=document.createElement('div');ov.className='pause-ov';ov.hidden=true;ov.innerHTML=pauseHtml();st.appendChild(ov);
+    ov.addEventListener('mousedown',function(e){e.stopPropagation()});ov.addEventListener('click',function(e){e.stopPropagation()});
+    ov.querySelector('[data-resume]').addEventListener('click',function(e){e.stopPropagation();setPause(false);document.dispatchEvent(new CustomEvent('pp-resume'))});
+    ov.querySelector('[data-quit]').addEventListener('click',function(e){e.stopPropagation();setPause(false);go('menu')});
+    bindSettings(ov);
     bar.querySelector('[data-fs]').addEventListener('click',function(){toggleFs(st)});
     var tb=document.createElement('div');tb.className='fs-tools';tb.innerHTML='<button type="button" data-pause>Pause</button><button type="button" data-fsx>Quitter le plein écran</button>';st.appendChild(tb);
     tb.querySelector('[data-pause]').addEventListener('click',function(e){e.stopPropagation();setPause(!paused)});tb.querySelector('[data-fsx]').addEventListener('click',function(e){e.stopPropagation();exitFs()});
@@ -150,7 +179,7 @@ window.PP=(function(){
   function toggleFs(st){if(fsStage===st)exitFs();else enterFs(st)}
   function onRealFs(){if(!fsEl()&&fsStage&&fsReal){fsReal=false;exitFs(true)}else fsChanged()}
   document.addEventListener('fullscreenchange',onRealFs);document.addEventListener('webkitfullscreenchange',onRealFs);
-  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&fsStage&&!fsEl()&&!document.pointerLockElement)exitFs()});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&fsStage&&!fsEl()&&!document.pointerLockElement&&!paused&&!canPause())exitFs()});
   PP_fs={toggle:toggleFs,exit:exitFs,isOn:function(st){return fsStage===st}};
   PP_pause=setPause;
   /* ---------- Toasts ---------- */
@@ -169,5 +198,5 @@ window.PP=(function(){
   }
 
 
-  return {fs:function(){return PP_fs},key:key,stat:stat,profile:function(){return PROF},toast:toast,avatar:avatar,$:$,esc:esc,store:store,text:text,shuffle:shuffle,pick:pick,pad6:pad6,fmtTime:fmtTime,go:go,games:games,icon:icon,refreshHi:refreshHi,myName:myName,setName:setName,held:held,cur:function(){return current}};
+  return {settings:SET,setSetting:setSetting,pause:function(on){setPause(on)},isPaused:function(){return paused},pauseGuard:function(v,f){pauseGuards[v]=f},canPause:canPause,fs:function(){return PP_fs},key:key,stat:stat,profile:function(){return PROF},toast:toast,avatar:avatar,$:$,esc:esc,store:store,text:text,shuffle:shuffle,pick:pick,pad6:pad6,fmtTime:fmtTime,go:go,games:games,icon:icon,refreshHi:refreshHi,myName:myName,setName:setName,held:held,cur:function(){return current}};
 })();

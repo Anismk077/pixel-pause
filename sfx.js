@@ -4,9 +4,10 @@ PP.sfx=(function(){
   var ctx=null,muted=!!PP.store('muted'),master=null;
   function ac(){
     if(ctx)return ctx;
-    try{ctx=new (window.AudioContext||window.webkitAudioContext)();master=ctx.createGain();master.gain.value=.25;master.connect(ctx.destination)}catch(e){ctx=null}
+    try{ctx=new (window.AudioContext||window.webkitAudioContext)();master=ctx.createGain();master.gain.value=.25*((PP.settings?PP.settings.vol:80)/80);master.connect(ctx.destination)}catch(e){ctx=null}
     return ctx;
   }
+  document.addEventListener('pp-settings',function(){if(master)master.gain.value=.25*(PP.settings.vol/80)});
   document.addEventListener('pointerdown',function(){if(ac()&&ctx.state==='suspended')ctx.resume()},{passive:true});
   document.addEventListener('keydown',function(){if(ac()&&ctx.state==='suspended')ctx.resume()});
   function tone(type,f0,f1,dur,vol,delay){

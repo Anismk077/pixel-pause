@@ -393,7 +393,7 @@
   /* souris : tourner la caméra (joueur 1) */
   cv.addEventListener('click',function(){if(running&&cv.requestPointerLock)try{var r=cv.requestPointerLock();if(r&&r.catch)r.catch(function(){})}catch(e){}});
   document.addEventListener('pointerlockchange',function(){mouseCam=document.pointerLockElement===cv});
-  document.addEventListener('mousemove',function(e){if(mouseCam&&running){camYaw[0]-=e.movementX*.004;camPitch[0]=Math.max(-.15,Math.min(1.35,camPitch[0]+e.movementY*.003));mouseT=performance.now()}});
+  document.addEventListener('mousemove',function(e){if(mouseCam&&running){var ps=PP.settings.sens/100;camYaw[0]-=e.movementX*.004*ps;camPitch[0]=Math.max(-.15,Math.min(1.35,camPitch[0]+e.movementY*.003*ps*(PP.settings.invY?-1:1)));mouseT=performance.now()}});
   cv.addEventListener('wheel',function(e){if(!running)return;e.preventDefault();camDist=Math.max(3.5,Math.min(16,camDist+e.deltaY*.01))},{passive:false});
   keys=PP.held('pa-pad',KEYMAP,function(k,e){if(PP.cur()==='party'&&running&&e.preventDefault)e.preventDefault()});
   mp.guestSender('party',keys);
