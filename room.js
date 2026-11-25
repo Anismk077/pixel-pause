@@ -28,12 +28,22 @@
   function beat(){}
   setInterval(beat,8000);
   PP.setRoomGame=function(g){curGame=g;beat()};
+  function gid(){return curGame==='fps-br'?'fps':curGame}
+  function backToGame(){var g=gid();if(!g)return;sfx.play('go');PP.go(g);if(!net.isHost)setTimeout(function(){net.send({t:'rejoin',game:g})},250)}
+  /* l'hôte garde les derniers messages de départ de chaque jeu pour remettre dans la partie ceux qui reviennent */
+  var replay={},rb0=net.broadcast;
+  net.broadcast=function(m,ex){try{var t=m&&m.t,g=gid();if(t&&g&&g!=='fps'&&g!=='surv'){if(/-(go|start)$/.test(t))replay[g]=[m];else if(/-(round|r|inter|b)$/.test(t)&&replay[g]){replay[g]=replay[g].slice(0,1).concat([m])}else if(/-end$/.test(t))delete replay[g]}}catch(e){}return rb0.apply(net,arguments)};
+  function catchUp(id,g){if(net.isHost&&g===gid()&&PP.cur()===g&&replay[g])replay[g].forEach(function(m,i){setTimeout(function(){net.to(id,m)},i*150)})}
+  setInterval(function(){if(net.inRoom())bar()},1500);document.addEventListener('pp-go',function(){setTimeout(bar,0)});
   function bar(){
     var rb=$('roombar');
     if(net.inRoom()){rb.hidden=false;$('roombar-txt').textContent='Salon '+net.code+' · '+net.players.length+' joueur'+(net.players.length>1?'s':'')}
     else rb.hidden=true;
+    /* on a quitté le jeu du salon : bouton pour y retourner */
+    var bk=$('roombar-back');if(!bk){bk=document.createElement('button');bk.type='button';bk.id='roombar-back';bk.className='mini roombar-back';rb.insertBefore(bk,$('roombar-leave'));bk.onclick=backToGame}
+    var g=gid(),show=net.inRoom()&&g&&PP.cur()!==g;bk.hidden=!show;if(show)bk.textContent='▶ '+(GN[g]||g)+' en cours · Rejoindre';
   }
-  $('roombar-leave').addEventListener('click',function(){if(net.isHost&&lobby)lobby.unregister(net.code);net.leave();bar();PP.go('menu')});
+  $('roombar-leave').addEventListener('click',function(){curGame=null;if(net.isHost&&lobby)lobby.unregister(net.code);net.leave();bar();PP.go('menu')});
 
   function render(){
     bar();
@@ -55,7 +65,7 @@
     h+='<p style="margin:18px 0 0"><button type="button" class="red" id="room-leave">Quitter le salon</button></p></div>';
     box.innerHTML=h;
     var cp=$('room-copy');if(cp)cp.onclick=function(){var i=$('room-link');i.select();try{navigator.clipboard.writeText(i.value);cp.textContent='Copié !'}catch(e){document.execCommand('copy');cp.textContent='Copié !'}};
-    $('room-leave').onclick=function(){if(net.isHost&&lobby)lobby.unregister(net.code);net.leave();render()};
+    $('room-leave').onclick=function(){if(net.isHost&&lobby)lobby.unregister(net.code);net.leave();curGame=null;render()};
     box.querySelectorAll('[data-launch]').forEach(function(b){b.onclick=function(){curGame=b.dataset.launch;beat();net.all({t:'launch',game:b.dataset.launch});}});
   }
 
@@ -104,15 +114,16 @@
   /* l'hôte change de jeu : tout le salon suit ; un nouveau venu arrive directement sur le jeu en cours */
   document.addEventListener('pp-go',function(e){var v=e.detail;if(!net.inRoom()||!net.isHost)return;if(!ONLINE.some(function(g){return g.id===v})||v===curGame)return;curGame=v;beat();net.broadcast({t:'launch',game:v})});
   var knownIds={};
-  net.on(function(msg){if(msg.t!=='players'||!net.isHost)return;msg.players.forEach(function(p){if(p.id!=='host'&&!knownIds[p.id]){knownIds[p.id]=1;if(curGame&&curGame!=='surv')net.to(p.id,{t:'launch',game:curGame})}})});
+  net.on(function(msg){if(msg.t!=='players'||!net.isHost)return;msg.players.forEach(function(p){if(p.id!=='host'&&!knownIds[p.id]){knownIds[p.id]=1;if(curGame&&curGame!=='surv'){net.to(p.id,{t:'launch',game:gid()});var pid=p.id;setTimeout(function(){catchUp(pid,gid())},700)}}})});
   var known=[];
   net.on(function(msg){
     if(msg.t==='players'){
       var now=msg.players.map(function(p){return p.name});
       if(known.length&&net.inRoom()){now.filter(function(n){return known.indexOf(n)<0}).forEach(function(n){PP.toast(n+' a rejoint le salon','ok');sfx.play('join')});known.filter(function(n){return now.indexOf(n)<0}).forEach(function(n){PP.toast(n+' a quitté le salon','warn')})}
       known=now;bar();if(PP.cur()==='room')render()}
-    if(msg.t==='launch'){sfx.play('go');PP.go(msg.game)}
-    if(msg.t==='closed'){PP.toast('Le salon a été fermé par l\'hôte','warn');known=[];bar();if(PP.cur()!=='menu'){PP.go('room')}}
+    if(msg.t==='launch'){curGame=msg.game;sfx.play('go');PP.go(msg.game)}
+    if(msg.t==='rejoin'&&net.isHost){catchUp(arguments[1],msg.game)}
+    if(msg.t==='closed'){curGame=null;PP.toast('Le salon a été fermé par l\'hôte','warn');known=[];bar();if(PP.cur()!=='menu'){PP.go('room')}}
   });
   net.onStatus(function(s){var e=$('room-err');if(e)e.textContent=s});
 

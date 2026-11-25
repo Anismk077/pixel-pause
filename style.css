@@ -672,3 +672,6 @@ body.fs-mode::after{content:"";position:fixed;inset:0;background:#000;z-index:99
 .gbtn span{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:conic-gradient(#ea4335 0 25%,#fbbc05 0 50%,#34a853 0 75%,#4285f4 0);color:#fff;font:800 13px Arial}
 .cl-or{margin:12px 0;font:600 12px 'IBM Plex Mono',monospace;opacity:.6}
 .cloud-box .row{display:flex;gap:8px;flex-wrap:wrap}.cloud-box input{flex:1;min-width:200px;padding:10px;border:2px solid #141210;font:600 14px 'IBM Plex Mono',monospace}
+.roombar .roombar-back{background:var(--acc);color:#fff;animation:pp-pulse 1.6s ease-in-out infinite}
+.roombar .roombar-back[hidden]{display:none}
+@keyframes pp-pulse{50%{opacity:.7}}
