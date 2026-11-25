@@ -53,6 +53,10 @@
   if(LANG==='en'){document.documentElement.lang='en';trTree(document.body);
     new MutationObserver(function(ms){ms.forEach(function(m){if(m.type==='characterData')trText(m.target);else m.addedNodes.forEach(trTree)})}).observe(document.body,{childList:true,subtree:true,characterData:true})}
 
+  /* nombre de jeux de l'accueil, compté automatiquement */
+  (function(){var p=document.querySelector('.mast-side p'),n=document.querySelectorAll('#tiles .row-game').length;if(!p||!n)return;
+    p.textContent=LANG==='en'?n+' little games to play right in your browser. Solo, on one keyboard, or everyone on their own phone with a code.':n+' petits jeux à lancer dans le navigateur. Seul, sur un même clavier, ou chacun sur son téléphone avec un code.'})();
+
   /* ================= Page Paramètres ================= */
   var ACT=[['fwd','Avancer'],['back','Reculer'],['left','Gauche'],['right','Droite'],['jump','Sauter'],['sprint','Courir'],['slide','Glisser'],['reload','Recharger'],['use','Ouvrir / acheter'],['next','Arme suivante'],['prev','Arme précédente'],['map','Grande carte']];
   var layout=null;try{if(navigator.keyboard&&navigator.keyboard.getLayoutMap)navigator.keyboard.getLayoutMap().then(function(m){layout=m;if(PP.cur()==='settings')render()})}catch(e){}
