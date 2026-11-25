@@ -42,7 +42,13 @@
   function pic(p,size){return PP.perso?PP.perso.img(p&&p.av,size||28,'perso-pic'):PP.avatar(p?p.name:'?')}
 
   /* l'annuaire public : seuls les salons « publics » y apparaissent */
-  function beat(){if(!net.inRoom()||!net.isHost||!lobby)return;if(rs.vis==='public')lobby.register({code:net.code,host:net.me.name,name:rs.name||defName(),n:net.players.length,game:curGame});else lobby.unregister(net.code)}
+  function cloudOk(){var C=PP.cloud;return !!(C&&C.user&&C.verified)}
+  function isFriend(uid){var C=PP.cloud;return !!(uid&&C&&C.friendUids&&C.friendUids().indexOf(uid)>=0)}
+  /* salon « Amis » : le chef ne laisse entrer que ses amis (et ceux qui étaient déjà là, en cas de changement de chef) */
+  net.setGate(function(d){if(rs.vis!=='friends')return true;return isFriend(d.uid)||known.indexOf(String(d.name||'').slice(0,14))>=0});
+  /* tes amis voient dans quel salon tu es (sauf salon sur invitation) */
+  function shareRoom(){var C=PP.cloud;if(!C||!C.setRoom)return;C.setRoom(net.inRoom()&&rs.vis!=='invite'?{code:net.code,name:rs.name||'',n:net.players.length}:null)}
+  function beat(){shareRoom();if(!net.inRoom()||!net.isHost||!lobby)return;if(rs.vis==='public')lobby.register({code:net.code,host:net.me.name,name:rs.name||defName(),n:net.players.length,game:curGame});else lobby.unregister(net.code)}
   setInterval(beat,8000);
   PP.setRoomGame=function(g){curGame=g;beat()};
   function gid(){return curGame==='fps-br'?'fps':curGame}
@@ -50,7 +56,7 @@
   var replay={},rb0=net.broadcast;
   net.broadcast=function(m,ex){try{var t=m&&m.t,g=gid();if(t&&g&&g!=='fps'&&g!=='surv'){if(/-(go|start)$/.test(t))replay[g]=[m];else if(/-(round|r|inter|b)$/.test(t)&&replay[g]){replay[g]=replay[g].slice(0,1).concat([m])}else if(/-end$/.test(t))delete replay[g]}}catch(e){}return rb0.apply(net,arguments)};
   function catchUp(id,g){if(net.isHost&&g===gid()&&PP.cur()===g&&replay[g])replay[g].forEach(function(m,i){setTimeout(function(){net.to(id,m)},i*150)})}
-  setInterval(function(){if(net.inRoom())bar()},1500);document.addEventListener('pp-go',function(){setTimeout(function(){bar();dock()},0)});
+  setInterval(function(){if(net.inRoom())bar();shareRoom()},1500);document.addEventListener('pp-go',function(){setTimeout(function(){bar();dock()},0)});
   function bar(){
     var rb=$('roombar');
     if(net.inRoom()){rb.hidden=false;$('roombar-txt').textContent=(rs.name||('Salon '+net.code))+' · '+net.players.length+' '+T(net.players.length>1?'joueurs':'joueur')}
@@ -65,7 +71,10 @@
   /* ---------- Rendu de la page Salon ---------- */
   function chatHtml(){return chat.slice(-60).map(function(m){if(m.sys)return '<div class="ch-sys">'+esc(m.txt)+'</div>';return '<div class="ch-msg'+(m.id===net.me.id?' me':'')+'">'+pic({av:m.av,name:m.n},22)+'<span><b>'+esc(m.n)+'</b> '+esc(m.txt)+'</span></div>'}).join('')||'<p class="muted ch-empty">'+T('Pas encore de message. Dis bonjour !')+'</p>'}
   function playersHtml(compact){return '<ul class="plist rp-list">'+net.players.map(function(p){var chef=p.id==='host';return '<li class="'+(p.id===net.me.id?'me ':'')+(chef?'host':'')+'">'+pic(p,compact?24:32)+'<span class="rp-n">'+esc(p.name)+(chef?' <small class="chef">'+T('chef')+'</small>':'')+(p.id===net.me.id?' <small class="you">'+T('toi')+'</small>':'')+'</span>'+
-    (net.isHost&&!chef?'<span class="rp-act"><button type="button" class="mini ghost" data-chef="'+esc(p.id)+'">'+T('Nommer chef')+'</button><button type="button" class="mini red" data-kick="'+esc(p.id)+'">'+T('Exclure')+'</button></span>':'')+'</li>'}).join('')+'</ul>'}
+    (cloudOk()&&p.uid&&p.id!==net.me.id&&!isFriend(p.uid)&&!(PP.cloud.friend(p.uid))?'<button type="button" class="mini ghost" data-addf="'+esc(p.uid)+'">+ '+T('Ami')+'</button>':'')+(net.isHost&&!chef?'<span class="rp-act"><button type="button" class="mini ghost" data-chef="'+esc(p.id)+'">'+T('Nommer chef')+'</button><button type="button" class="mini red" data-kick="'+esc(p.id)+'">'+T('Exclure')+'</button></span>':'')+'</li>'}).join('')+'</ul>'}
+  function invHtml(){var C=PP.cloud;if(!cloudOk())return '';var here={};net.players.forEach(function(p){if(p.uid)here[p.uid]=1});
+    var l=(C.friends||[]).filter(function(f){return f.status==='friends'&&!here[f.uid]}).sort(function(a,b){return C.online(b)-C.online(a)});
+    if(!l.length)return '';return '<label class="lbl" style="margin-top:14px">'+T('Inviter des amis')+'</label><ul class="rp-list">'+l.slice(0,12).map(function(f){var nm=(f.prof&&f.prof.name)||f.name;return '<li>'+pic({av:f.prof&&f.prof.av,name:nm},24)+'<span class="rp-n">'+esc(nm)+(C.online(f)?'':' <small class="you">'+T('hors ligne')+'</small>')+'</span><button type="button" class="mini primary" data-invf="'+f.uid+'">'+T('Inviter')+'</button></li>'}).join('')+'</ul>'}
   function gamesHtml(){var n=net.players.length;return '<div class="tiles room-tiles">'+ONLINE.map(function(g){
       var ok=n>=g.min,why=ok?(g.max&&n>g.max?T('Les ')+g.max+T(' premiers jouent'):g.desc):T('Il faut ')+g.min+' '+T('joueurs'),votes=(rs.props[g.id]||[]).length,mine=(rs.props[g.id]||[]).indexOf(net.me.id)>=0;
       return '<div class="tile rt'+(ok?'':' locked')+(votes?' voted':'')+'"><img src="thumb-'+g.id+'.jpg?v=3.3" alt=""><span class="tile-info"><b>'+esc(g.name)+'</b><small>'+esc(why)+'</small></span>'+(votes?'<span class="rt-votes">'+votes+' '+T(votes>1?'votes':'vote')+'</span>':'')+
@@ -76,10 +85,11 @@
     var h='<div class="room-grid"><div class="panel room-main">';
     h+='<div class="rm-head"><div><label class="lbl">'+T('Salon')+'</label>'+(net.isHost?'<input id="rm-name" maxlength="28" value="'+esc(rs.name||defName())+'" aria-label="Nom du salon">':'<div class="rm-title">'+esc(rs.name||('Salon '+net.code))+'</div>')+'</div><div class="code-big" title="Code">'+esc(net.code)+'</div></div>';
     h+='<div class="linkbox"><input id="room-link" readonly value="'+esc(net.inviteLink())+'"><button type="button" class="ghost" id="room-copy">'+T('Copier le lien')+'</button>'+(navigator.share?'<button type="button" class="ghost" id="room-share">'+T('Partager')+'</button>':'')+'</div>';
-    if(net.isHost){h+='<div class="rm-set"><div><label class="lbl">'+T('Qui peut entrer')+'</label><div class="seg" data-seg="vis"><button type="button" data-v="invite" class="'+(rs.vis==='invite'?'on':'')+'">'+T('Sur invitation')+'</button><button type="button" data-v="public" class="'+(rs.vis==='public'?'on':'')+'">'+T('Public')+'</button><button type="button" data-v="friends" class="'+(rs.vis==='friends'?'on':'')+'" title="'+T('Bientôt, avec les comptes en ligne')+'" disabled>'+T('Amis')+'</button></div></div>'+
+    if(net.isHost){h+='<div class="rm-set"><div><label class="lbl">'+T('Qui peut entrer')+'</label><div class="seg" data-seg="vis"><button type="button" data-v="invite" class="'+(rs.vis==='invite'?'on':'')+'">'+T('Sur invitation')+'</button><button type="button" data-v="public" class="'+(rs.vis==='public'?'on':'')+'">'+T('Public')+'</button><button type="button" data-v="friends" class="'+(rs.vis==='friends'?'on':'')+'"'+(cloudOk()?'':' title="'+T('Connecte-toi à ton compte pour ça')+'" disabled')+'>'+T('Amis')+'</button></div></div>'+
       '<div><label class="lbl">'+T('Choix du jeu')+'</label><div class="seg" data-seg="mode"><button type="button" data-v="chef" class="'+(rs.mode==='chef'?'on':'')+'">'+T('Le chef décide')+'</button><button type="button" data-v="vote" class="'+(rs.mode==='vote'?'on':'')+'">'+T('Vote du salon')+'</button></div></div></div>'}
     else h+='<p class="muted">'+T(rs.mode==='vote'?'Propose un jeu : dès que plus de la moitié du salon le propose, il se lance.':'Propose un jeu, le chef décide.')+'</p>';
     h+='<label class="lbl" style="margin-top:14px">'+T('Joueurs')+' ('+net.players.length+')</label>'+playersHtml(false);
+    h+=invHtml();
     h+='<p style="margin:14px 0 0"><button type="button" class="red" id="room-leave">'+T('Quitter le salon')+'</button></p></div>';
     h+='<div class="panel room-chat"><label class="lbl">'+T('Chat du salon')+'</label><div class="ch-log" id="rc-log">'+chatHtml()+'</div><form class="ch-form" id="rc-form"><input id="rc-in" maxlength="200" placeholder="'+T('Écris un message…')+'" autocomplete="off"><button type="submit" class="primary">'+T('Envoyer')+'</button></form></div></div>';
     h+='<label class="lbl" style="margin-top:18px;display:block">'+T(net.isHost?'Lance un jeu pour tout le salon, ou regarde ce que les autres proposent':'Propose un jeu au salon')+'</label>'+gamesHtml();
@@ -93,6 +103,8 @@
     root.querySelectorAll('[data-seg]').forEach(function(sg){sg.querySelectorAll('[data-v]').forEach(function(b){b.onclick=function(){rs[sg.dataset.seg]=b.dataset.v;pushRs();render()}})});
     root.querySelectorAll('[data-chef]').forEach(function(b){b.onclick=function(){var p=pl(b.dataset.chef);if(!p)return;curGame=null;net.handover(p.id,false);PP.toast(p.name+' '+T('devient le chef'),'ok')}});
     root.querySelectorAll('[data-kick]').forEach(function(b){b.onclick=function(){var p=pl(b.dataset.kick);if(!p||!confirm(T('Exclure ')+p.name+' ?'))return;net.kick(p.id);sysMsg(p.name+' '+T('a été exclu'))}});
+    root.querySelectorAll('[data-addf]').forEach(function(b){b.onclick=function(){b.disabled=true;PP.cloud.addFriendUid(b.dataset.addf).then(function(n){PP.toast(T('Demande d\'ami envoyée à ')+n,'ok')}).catch(function(e){b.disabled=false;PP.toast(PP.cloud.msg(e),'warn')})}});
+    root.querySelectorAll('[data-invf]').forEach(function(b){b.onclick=function(){b.disabled=true;PP.cloud.sendDM(b.dataset.invf,T('Viens dans mon salon')+(rs.name?' « '+rs.name+' »':'')+' !',{room:{code:net.code,name:rs.name||''}}).then(function(){b.textContent=T('Invité ✓')}).catch(function(e){b.disabled=false;PP.toast(PP.cloud.msg(e),'warn')})}});
     root.querySelectorAll('[data-launch]').forEach(function(b){b.onclick=function(){launch(b.dataset.launch)}});
     root.querySelectorAll('[data-prop]').forEach(function(b){b.onclick=function(){propose(b.dataset.prop)}});
     var f=root.querySelector('.ch-form');if(f)f.onsubmit=function(e){e.preventDefault();var i=f.querySelector('input');say(i.value);i.value=''};
@@ -116,9 +128,9 @@
   function setup(){
     box.innerHTML='<div class="room-grid"><div class="panel"><h3 class="t">'+T('Créer un salon')+'</h3><label class="lbl" for="room-name">'+T('Ton pseudo')+'</label><input id="room-name" maxlength="14" placeholder="Pseudo" value="'+esc(PP.myName())+'">'+
       '<label class="lbl" for="room-title" style="margin-top:10px">'+T('Nom du salon')+'</label><input id="room-title" maxlength="28" placeholder="'+T('Ex. : Les potes du vendredi')+'">'+
-      '<label class="lbl" style="margin-top:10px">'+T('Qui peut entrer')+'</label><div class="seg" id="room-vis"><button type="button" data-v="invite" class="on">'+T('Sur invitation')+'</button><button type="button" data-v="public">'+T('Public')+'</button></div>'+
+      '<label class="lbl" style="margin-top:10px">'+T('Qui peut entrer')+'</label><div class="seg" id="room-vis"><button type="button" data-v="invite" class="on">'+T('Sur invitation')+'</button><button type="button" data-v="public">'+T('Public')+'</button><button type="button" data-v="friends"'+(cloudOk()?'':' disabled title="'+T('Connecte-toi à ton compte pour ça')+'"')+'>'+T('Amis')+'</button></div>'+
       '<p class="err" id="room-err"></p><div class="row" style="margin-top:12px"><button type="button" class="primary" id="room-create">'+T('Créer le salon')+'</button><button type="button" class="ghost" data-go="join">'+T('J\'ai un code')+'</button></div>'+
-      '<p class="muted" style="margin-top:12px">'+T('Sur invitation : seuls ceux qui ont le code ou le lien entrent. Public : ton salon apparaît dans la liste.')+'</p></div>'+
+      '<p class="muted" style="margin-top:12px">'+T('Sur invitation : seuls ceux qui ont le code ou le lien entrent. Public : ton salon apparaît dans la liste. Amis : seuls tes amis peuvent entrer, et ils le voient dans leur liste.')+'</p></div>'+
       '<div class="panel"><h3 class="t">'+T('Salons publics')+'</h3><div id="room-list"><p class="muted">'+T('Recherche…')+'</p></div></div></div>';
     var vis='invite';box.querySelectorAll('#room-vis [data-v]').forEach(function(b){b.onclick=function(){vis=b.dataset.v;box.querySelectorAll('#room-vis [data-v]').forEach(function(x){x.classList.toggle('on',x===b)})}});
     bindRooms();if(lobby){lobby.refresh();var l0=lobby.list&&lobby.list();if(l0){$('room-list').innerHTML=roomsHtml(l0);bindRooms()}}
@@ -200,5 +212,6 @@
 
   PP.games.room={open:render};
   PP.games.join={open:function(){$('join-name').value=PP.myName();var m=/[?&]salon=(\d{3})/.exec(location.search);if(m)$('join-code').value=m[1];($('join-code').value?$('join-name'):$('join-code')).focus()}};
-  PP.room={say:say,propose:propose};
+  PP.room={say:say,propose:propose,info:function(){return {code:net.code,name:rs.name||defName(),vis:rs.vis}}};
+  if(PP.cloud&&PP.cloud.on){var fsig='';PP.cloud.on(function(C){var s=(C.verified?1:0)+'|'+(C.friends||[]).map(function(f){return f.uid+f.status}).join(',');if(s===fsig)return;fsig=s;if(PP.cur()==='room'&&!(document.activeElement&&/INPUT/.test(document.activeElement.tagName)))render()})}
 })();
