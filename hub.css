@@ -271,3 +271,5 @@ button.big{font-size:16px;padding:13px 20px}
 .ad-list li>span{flex:1;min-width:0;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ad-list li i{font-style:normal;font:600 10px var(--mono)}
 .ad-list li.bl{background:#fff3ef}
 #ad-q{width:100%;margin-top:10px;padding:10px;border:2px solid var(--line);font:500 14px var(--font)}
+@media (max-width:720px){.pp-anim header{animation:none!important}.mast.has-perso .mast-perso{right:0}}
+.f2-c{min-width:0;max-width:100%}html,body{overflow-x:clip}@media (max-width:720px){header .wrap{min-width:0}.roombar{min-width:0;max-width:52vw;overflow:hidden}#roombar-txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}.rm-top>*{min-width:0}.rm-code b{font-size:24px}.rm-tl input{font-size:22px}.lead{max-width:100%}}
