@@ -1727,7 +1727,7 @@
   PP.pauseGuard('surv',function(){return running&&!menusOpen()});
   document.addEventListener('pp-resume',function(){if(PP.cur()!=='surv'||!running)return;lock();paused=false;$('sv-lockhint').hidden=true});
   document.addEventListener('pp-settings',function(){if(!cam)return;cam.fov=PP.settings.fov-3;cam.updateProjectionMatrix();applyQ()});
-  function lock(){if(cv.requestPointerLock&&matchMedia('(hover:hover)').matches)try{var r=cv.requestPointerLock();if(r&&r.catch)r.catch(function(){})}catch(e){}}
+  function lock(){if(cv.requestPointerLock&&matchMedia('(hover:hover)').matches)try{var r=cv.requestPointerLock();if(r&&r.catch)r.catch(function(){if(running&&!menusOpen()){paused=true;$('sv-lockhint').hidden=false}})}catch(e){}}
   function unlock(){if(document.pointerLockElement===cv&&document.exitPointerLock)document.exitPointerLock()}
   var tl=null;
   cv.addEventListener('touchstart',function(e){var t=e.touches[0];tl={x:t.clientX,y:t.clientY}},{passive:true});

@@ -127,7 +127,7 @@ window.PP=(function(){
   }
   function pauseHtml(){
     function rng(k,l,min,max,step,unit){return '<label class="pz-row"><span>'+l+'</span><input type="range" data-set="'+k+'" min="'+min+'" max="'+max+'" step="'+step+'"><em data-val="'+k+'"></em></label>'}
-    return '<div class="pz"><div class="pz-l"><b>PAUSE</b><div class="pz-btns"><button type="button" class="primary" data-resume>Reprendre</button><button type="button" class="pz-quit" data-quit>Quitter le jeu</button></div><p class="pz-hint">Échap : reprendre</p></div>'+
+    return '<div class="pz"><div class="pz-l"><b>PAUSE</b><div class="pz-btns"><button type="button" class="primary" data-resume>Reprendre</button><button type="button" class="pz-quit" data-quit>Quitter le jeu</button></div><p class="pz-hint">Clique sur Reprendre pour rejouer</p></div>'+
       '<div class="pz-set"><h4>Réglages</h4>'+rng('vol','Volume',0,100,5)+rng('sens','Sensibilité souris',30,250,5)+rng('fov','Champ de vision (3D)',60,100,1)+
       '<label class="pz-row"><span>Qualité (3D)</span><select data-set="q"><option value="auto">Auto</option><option value="haute">Haute</option><option value="basse">Basse (plus fluide)</option></select><em></em></label>'+
       '<label class="pz-row chk"><span>Inverser la souris (haut/bas)</span><input type="checkbox" data-set="invY"><em></em></label>'+
@@ -140,12 +140,20 @@ window.PP=(function(){
   var fpsN=0,fpsT=performance.now(),fpsBox=null;
   (function tick(){fpsN++;var n=performance.now();if(n-fpsT>500){var f=Math.round(fpsN*1000/(n-fpsT));fpsN=0;fpsT=n;if(SET.fpsMeter){if(!fpsBox){fpsBox=document.createElement('div');fpsBox.className='fps-meter'}var st=document.querySelector('.view.on .stage.wide');if(st){if(fpsBox.parentNode!==st)st.appendChild(fpsBox);fpsBox.textContent=f+' img/s';fpsBox.hidden=false}else fpsBox.hidden=true}else if(fpsBox)fpsBox.hidden=true}RAF(tick)})();
   /* Échap : met en pause un jeu solo en cours (ou reprend) */
-  var pauseGuards={};
+  var pauseGuards={},LOOK={fps:1,surv:1,party:1,maze:1};
   function canPause(){var st=document.querySelector('.view.on .stage.wide');if(!st)return false;if(PP.net&&PP.net.inRoom())return false;if(document.querySelector('.view.on .overlay:not([hidden])'))return false;var g=pauseGuards[current];return !(g&&g()===false)}
   document.addEventListener('keydown',function(e){if(e.key!=='Escape'||/INPUT|TEXTAREA|SELECT/.test((e.target&&e.target.tagName)||''))return;
+    /* dans les jeux qui capturent la souris, on reprend avec un clic (le navigateur refuse de recapturer la souris avec Échap) */
+    if(paused&&LOOK[current]){e.preventDefault();document.querySelectorAll('.view.on .pause-ov [data-resume]').forEach(function(b){b.classList.remove('nudge');void b.offsetWidth;b.classList.add('nudge')});return}
     if(paused){e.preventDefault();setPause(false);document.dispatchEvent(new CustomEvent('pp-resume'));return}
     if(canPause()){e.preventDefault();e.stopImmediatePropagation();setPause(true)}},true);
   window.PP_pauseGuard=function(view,fn){pauseGuards[view]=fn};window.PP_canPause=canPause;
+  /* Dernier Debout et Labyrinthe : si la souris est relâchée en pleine partie, on met en pause au lieu de laisser la souris filer */
+  var lockedEl=null;
+  document.addEventListener('pointerlockchange',function(){var el=document.pointerLockElement;if(el){lockedEl=el;return}var was=lockedEl;lockedEl=null;
+    if(was&&(current==='party'||current==='maze')&&was.closest&&was.closest('.view.on')&&!paused&&canPause())setPause(true)});
+  /* Reprendre (un clic) recapture tout de suite la souris dans ces jeux */
+  document.addEventListener('pp-resume',function(){if(current!=='party'&&current!=='maze')return;var c=document.querySelector('.view.on canvas');if(c&&c.requestPointerLock&&matchMedia('(hover:hover)').matches)try{var r=c.requestPointerLock();if(r&&r.catch)r.catch(function(){})}catch(e){}});
   document.querySelectorAll('.stage.wide').forEach(function(st){
     var bar=document.createElement('div');bar.className='stage-bar';
     bar.innerHTML='<button type="button" class="ghost" data-pause>Pause</button><button type="button" class="ghost" data-fs>Plein écran</button>';
