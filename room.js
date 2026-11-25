@@ -43,7 +43,10 @@
     var bk=$('roombar-back');if(!bk){bk=document.createElement('button');bk.type='button';bk.id='roombar-back';bk.className='mini roombar-back';rb.insertBefore(bk,$('roombar-leave'));bk.onclick=backToGame}
     var g=gid(),show=net.inRoom()&&g&&PP.cur()!==g;bk.hidden=!show;if(show)bk.textContent='▶ '+(GN[g]||g)+' en cours · Rejoindre';
   }
-  $('roombar-leave').addEventListener('click',function(){curGame=null;if(net.isHost&&lobby)lobby.unregister(net.code);net.leave();bar();PP.go('menu')});
+  /* le chef qui part laisse le salon au joueur suivant au lieu de le fermer */
+  var leaving=false;
+  function leaveRoom(){curGame=null;if(net.isHost&&net.players.length>1&&net.handover(net.players[1].id,true)){leaving=true;PP.toast('On passe le salon à '+net.players[1].name+'…','ok')}else{if(net.isHost&&lobby)lobby.unregister(net.code);net.leave()}}
+  $('roombar-leave').addEventListener('click',function(){leaveRoom();setTimeout(function(){bar();PP.go('menu')},350)});
 
   function render(){
     bar();
@@ -55,7 +58,7 @@
     }else{
       h+='<label class="lbl">Salon</label><div class="code-big">'+esc(net.code)+'</div><p class="muted">Tu es connecté. Quand l\'hôte lance un jeu, ton écran le suit tout seul.</p>';
     }
-    h+='<label class="lbl" style="margin-top:14px">Joueurs ('+net.players.length+')</label><ul class="plist">'+net.players.map(function(p){return '<li class="'+(p.id===net.me.id?'me ':'')+(p.id==='host'?'host':'')+'">'+PP.avatar(p.name)+esc(p.name)+'</li>'}).join('')+'</ul>';
+    h+='<label class="lbl" style="margin-top:14px">Joueurs ('+net.players.length+')</label><ul class="plist">'+net.players.map(function(p){return '<li class="'+(p.id===net.me.id?'me ':'')+(p.id==='host'?'host':'')+'">'+PP.avatar(p.name)+esc(p.name)+(p.id==='host'?' <small class="chef">chef</small>':'')+(net.isHost&&p.id!=='host'?' <button type="button" class="mini ghost chef-btn" data-chef="'+esc(p.id)+'">Nommer chef</button>':'')+'</li>'}).join('')+'</ul>';
     if(net.isHost){
       h+='<label class="lbl" style="margin-top:18px">Choisis le jeu pour tout le salon</label><div class="tiles room-tiles">'+ONLINE.map(function(g){
         var n=net.players.length,ok=n>=g.min,why=ok?(g.max&&n>g.max?'Les '+g.max+' premiers jouent':g.desc):'Il faut '+g.min+' joueurs';
@@ -65,7 +68,8 @@
     h+='<p style="margin:18px 0 0"><button type="button" class="red" id="room-leave">Quitter le salon</button></p></div>';
     box.innerHTML=h;
     var cp=$('room-copy');if(cp)cp.onclick=function(){var i=$('room-link');i.select();try{navigator.clipboard.writeText(i.value);cp.textContent='Copié !'}catch(e){document.execCommand('copy');cp.textContent='Copié !'}};
-    $('room-leave').onclick=function(){if(net.isHost&&lobby)lobby.unregister(net.code);net.leave();curGame=null;render()};
+    $('room-leave').onclick=function(){leaveRoom();setTimeout(render,350)};
+    box.querySelectorAll('[data-chef]').forEach(function(b){b.onclick=function(){var p=net.players.filter(function(q){return q.id===b.dataset.chef})[0];if(!p)return;curGame=null;net.handover(p.id,false);PP.toast(p.name+' devient le chef','ok');box.innerHTML='<div class="panel"><p class="wait">On passe le salon à '+esc(p.name)+'…</p></div>'}});
     box.querySelectorAll('[data-launch]').forEach(function(b){b.onclick=function(){curGame=b.dataset.launch;beat();net.all({t:'launch',game:b.dataset.launch});}});
   }
 
@@ -121,6 +125,10 @@
       var now=msg.players.map(function(p){return p.name});
       if(known.length&&net.inRoom()){now.filter(function(n){return known.indexOf(n)<0}).forEach(function(n){PP.toast(n+' a rejoint le salon','ok');sfx.play('join')});known.filter(function(n){return now.indexOf(n)<0}).forEach(function(n){PP.toast(n+' a quitté le salon','warn')})}
       known=now;bar();if(PP.cur()==='room')render()}
+    if(msg.t==='handfail'){PP.toast('Le changement de chef n\'a pas marché','warn');if(leaving){leaving=false;net.leave()}bar();if(PP.cur()==='room')render()}
+    if(msg.t==='migrating'&&msg.me&&leaving){leaving=false;curGame=null;PP.toast('Tu as quitté le salon, '+msg.chef+' est le nouveau chef','ok');setTimeout(function(){bar();if(PP.cur()==='room')render()},600);return}
+    if(msg.t==='migrating'){curGame=null;PP.toast(msg.mine?'Tu deviens le chef du salon':(msg.chef+' est le nouveau chef, reconnexion…'),'ok');if(PP.cur()==='room')box.innerHTML='<div class="panel"><p class="wait">Reconnexion au salon de '+esc(msg.chef)+'…</p></div>';if(PP.cur()!=='menu')PP.go('room')}
+    if(msg.t==='migrated'){known=net.players.map(function(p){return p.name});bar();if(PP.cur()==='room')render();if(msg.chef)PP.toast('Salon '+net.code+' : c\'est toi qui choisis le jeu','ok')}
     if(msg.t==='launch'){curGame=msg.game;sfx.play('go');PP.go(msg.game)}
     if(msg.t==='rejoin'&&net.isHost){catchUp(arguments[1],msg.game)}
     if(msg.t==='closed'){curGame=null;PP.toast('Le salon a été fermé par l\'hôte','warn');known=[];bar();if(PP.cur()!=='menu'){PP.go('room')}}

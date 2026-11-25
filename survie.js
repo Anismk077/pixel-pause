@@ -516,11 +516,21 @@
       tr:trees.list.filter(function(o){return o.hp<=0}).map(function(o){return trees.list.indexOf(o)}),
       rk:rocks.userData.list.filter(function(o){return o.hp<=0}).map(function(o){return o.i}),
       or:ores.userData.list.filter(function(o){return o.hp<=0}).map(function(o){return o.i})};
-    try{localStorage.setItem(PP.key('survie2'),JSON.stringify(s))}catch(e){}fogSave();
+    try{localStorage.setItem(slotKey(curSlot),JSON.stringify(s))}catch(e){}fogSave();
+    var L=saves().filter(function(e){return e.id!==curSlot});L.unshift({id:curSlot,day:day,goal:goalI,t:Date.now(),mp:online?1:0,code:online?net.code:null});setSaves(L);
   }
-  function hasSave(){try{return !!JSON.parse(localStorage.getItem(PP.key('survie2')))}catch(e){return false}}
+  /* plusieurs sauvegardes : chaque île a son emplacement, listées dans « Mes îles » */
+  var curSlot='',svRoom=null;
+  PP.net.on(function(m){if(m.t==='migrating'){if(running&&online){save();running=false;cancelAnimationFrame(raf);unlock()}online=false;svRoom=null;joinedCode=null}});
+  function slotKey(id){return PP.key('survie2'+(id?'-'+id:''))}
+  function saves(){var L=[];try{L=JSON.parse(localStorage.getItem(PP.key('sv-saves')))||[]}catch(e){}
+    if(!L.some(function(e){return e.id===''})){try{var o=JSON.parse(localStorage.getItem(slotKey('')));if(o&&o.seed!=null){L.push({id:'',day:o.day||1,goal:o.goal||0,t:0,mp:0});setSaves(L)}}catch(e){}}
+    return L.filter(function(e){try{return !!localStorage.getItem(slotKey(e.id))}catch(x){return false}})}
+  function setSaves(L){try{localStorage.setItem(PP.key('sv-saves'),JSON.stringify(L.slice(0,12)))}catch(e){}}
+  function dropSlot(id){try{localStorage.removeItem(slotKey(id));localStorage.removeItem(PP.key('sv-fog'+(id?'-'+id:'')))}catch(e){}setSaves(saves().filter(function(e){return e.id!==id}))}
+  function hasSave(){return saves().length>0}
   function load(){
-    var s;try{s=JSON.parse(localStorage.getItem(PP.key('survie2')))}catch(e){}
+    var s;try{s=JSON.parse(localStorage.getItem(slotKey(curSlot)))}catch(e){}
     if(!s)return newGame();
     buildWorld(s.seed);day=s.day;dayT=s.t;inv=Object.assign(freshInv(),s.inv);st=s.st||{bois:0,fer:0,deer:0,kills:0};goalI=s.goal||0;rescueT=s.rescue==null?-1:s.rescue;won=false;
     P={x:s.p.x,z:s.p.z,y:height(s.p.x,s.p.z),vy:0,yaw:0,pitch:0,hp:s.p.hp,food:s.p.food,water:s.p.water,stam:100,bob:0,spawn:s.p.spawn};
@@ -1122,7 +1132,7 @@
     sfx.play('lose');var best=PP.store('sv-best');if(day>best){PP.store('sv-best',day);PP.refreshHi()}
     if(P.spawn){var lost={};['bois','pierre','fer','baies','viande','cuite','conserve','cuir'].forEach(function(k){var n=Math.floor((inv[k]||0)/2);if(n){lost[k]=n;inv[k]-=n}});dropAt(P.x,P.z,lost);P.x=P.spawn.x;P.z=P.spawn.z;P.y=groundAt(P.x,P.z);P.hp=60;P.food=Math.max(P.food,40);P.water=Math.max(P.water,40);msg('Tu te réveilles dans ton lit. Ton sac est resté là où tu es tombé.');save();return}
     if(online){var lost2={};['bois','pierre','fer','baies','viande','cuite','conserve','cuir'].forEach(function(k){var n=Math.floor((inv[k]||0)/2);if(n){lost2[k]=n;inv[k]-=n}});dropAt(P.x,P.z,lost2);var rs=Object.keys(remotes).map(function(k){return remotes[k]}).filter(function(r){return r.hp>0})[0],sp=rs?{x:rs.x+2,z:rs.z+2}:findSpawn();P.x=sp.x;P.z=sp.z;P.y=groundAt(P.x,P.z);P.hp=60;P.food=Math.max(P.food,40);P.water=Math.max(P.water,40);msg('Tu réapparais près de tes potes. Ton sac est resté là où tu es tombé.');return}
-    running=false;cancelAnimationFrame(raf);unlock();exitFull();try{localStorage.removeItem(PP.key('survie2'))}catch(e){}
+    running=false;cancelAnimationFrame(raf);unlock();exitFull();dropSlot(curSlot);
     $('sv-title').textContent='Tu es mort';$('sv-msg').textContent='Tu as survécu '+day+' jour'+(day>1?'s':'')+' et rempli '+goalI+' objectif'+(goalI>1?'s':'')+' sur '+GOALS.length+'. Construis un lit pour réapparaître la prochaine fois.';$('sv-start').textContent='Nouvelle île';$('sv-cont').hidden=true;$('sv-ov').hidden=false;
   }
   function msg(t){var m=$('sv-msg2');m.textContent=t;m.style.opacity=1;msgT=3.2}
@@ -1160,7 +1170,7 @@
   }
   function victory(){
     won=true;PP.stat('surv','win');running=false;cancelAnimationFrame(raf);unlock();exitFull();sfx.play('win');
-    var best=PP.store('sv-best');if(day>best)PP.store('sv-best',day);try{localStorage.removeItem(PP.key('survie2'))}catch(e){}
+    var best=PP.store('sv-best');if(day>best)PP.store('sv-best',day);dropSlot(curSlot);
     $('sv-title').textContent='Sauvé !';$('sv-msg').textContent='L\'hélicoptère t\'a trouvé après '+day+' jours sur l\'île. '+st.kills+' créatures abattues. Bravo.';$('sv-start').textContent='Nouvelle île';$('sv-cont').hidden=true;$('sv-ov').hidden=false;
   }
   var cDay=new THREE.Color(0x3d7cc9),cDayH=new THREE.Color(0xbfdcf0),cDusk=new THREE.Color(0x5a4a7a),cDuskH=new THREE.Color(0xf0a060),cNight=new THREE.Color(0x050914),cNightH=new THREE.Color(0x101a30),cBlood=new THREE.Color(0x3a0a0a),cBloodH=new THREE.Color(0x6a1a12),tA=new THREE.Color(),tB=new THREE.Color(),sv=new THREE.Vector3();
@@ -1598,7 +1608,7 @@
   }
   /* ---------- Carte : tout est gris tant qu'on n'est pas passé par là ---------- */
   var FN=580,fog=null,fogCv=null,fogDirty=true,fogSeed=null,fogT=0,MV={z:2.5,cx:0,cz:0,drag:null,hx:-1,hy:-1};
-  function fogKey(){return PP.key('sv-fog')}
+  function fogKey(){return PP.key('sv-fog'+(curSlot?'-'+curSlot:''))}
   function fogLoad(){
     fog=new Uint8Array(FN*FN);fogSeed=SEED;fogDirty=true;
     try{var o=JSON.parse(localStorage.getItem(fogKey()));if(o&&o.seed===SEED&&o.n===FN){var b=atob(o.d);for(var i=0;i<FN*FN;i++)fog[i]=(b.charCodeAt(i>>3)>>(i&7))&1}}catch(e){}
@@ -1726,20 +1736,25 @@
 
   function start(fresh){
     if(!init())return;
-    if(fresh||!hasSave())newGame();else load();
+    if(fresh){curSlot=Date.now().toString(36);newGame()}else load();
     viewModel();hudInv();$('sv-ov').hidden=true;$('sv-build').hidden=true;$('sv-craft').hidden=true;$('sv-invp').hidden=true;buildMode=null;running=true;paused=false;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);lock();sfx.play('go');
     if(online&&auth){remotes={};net.broadcast(worldMsg());msg('Ton île est ouverte : salon '+net.code)}
   }
-  $('sv-start').addEventListener('click',function(){if(hasSave()&&!confirm('Recommencer une nouvelle île ? Ta partie en cours sera effacée.'))return;start(true)});
-  $('sv-cont').addEventListener('click',function(){start(false)});
+  $('sv-start').addEventListener('click',function(){start(true)});
+  $('sv-cont').addEventListener('click',function(){var L=saves();if(L[0]){curSlot=L[0].id;start(false)}});
+  function savesHtml(){var L=saves();if(!L.length)return '';return '<div class="sv-saves"><b>Mes îles</b>'+L.map(function(e){var d=e.t?new Date(e.t):null;return '<div class="sv-save"><button type="button" class="ghost" data-sv-load="'+e.id+'">Île'+(d?' du '+d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'')+' · jour '+e.day+' · '+(e.goal||0)+'/'+GOALS.length+' objectifs'+(e.mp?' · à plusieurs':'')+'</button><button type="button" class="ghost sv-del" data-sv-del="'+e.id+'" title="Supprimer">✕</button></div>'}).join('')+'</div>'}
+  function showSaves(){var box=$('sv-savelist');if(!box){box=document.createElement('div');box.id='sv-savelist';$('sv-ov').appendChild(box)}box.innerHTML=savesHtml();box.hidden=online&&net.inRoom()}
+  $('sv-ov').addEventListener('click',function(e){var b=e.target.closest('[data-sv-load]');if(b){curSlot=b.dataset.svLoad;start(false);return}
+    var d=e.target.closest('[data-sv-del]');if(d){if(d.dataset.sure){dropSlot(d.dataset.svDel);showSaves();var n=hasSave();$('sv-cont').hidden=!n;$('sv-start').textContent=n?'Nouvelle île':'Commencer'}else{d.dataset.sure=1;d.textContent='Supprimer ?';setTimeout(function(){if(d.isConnected){delete d.dataset.sure;d.textContent='✕'}},2500)}}});
   $('sv-online').addEventListener('click',goOnline);
   PP._sv=function(){return {houses:function(){return houseList},fog:function(){return fog},MV:MV,scene:function(){return scene},R3:function(){return R3},isl:function(){return ISL},boats:function(){return boats},boardBoat:boardBoat,height:height,traps:traps,castles:castles,goDown:goDown,chestPanel:chestPanel,remotes:remotes,online:function(){return online},trees:trees,drops:drops,invPanel:invPanel,P:P,inv:inv,st:st,zombies:zombies,animals:animals,structs:structs,chests:chests,setT:function(t){dayT=t},attack:attack,interact:interact,build:build,setTool:setTool,craft:craft,goal:function(){return goalI},render:render}};
   PP.games.surv={
     open:function(){$('sv-lockhint').hidden=true;
       if(net.inRoom()){/* on ne reprend une île que si c'est bien celle de ce salon */if(online&&P&&scene&&$('sv-ov').hidden&&(net.isHost||joinedCode===net.code)){running=true;last=0;raf=requestAnimationFrame(loop);return}if(!net.isHost&&joinedCode!==net.code){running=false;cancelAnimationFrame(raf)}online=true;auth=net.isHost;$('sv-online').hidden=true;
+        if(auth&&svRoom!==net.code){svRoom=net.code;start(true);$('sv-lockhint').hidden=false;return}
         if(!auth){$('sv-title').textContent='Survie à plusieurs';$('sv-msg').textContent='Connexion à l\'île de l\'hôte… Si rien ne se passe, l\'hôte doit lancer sa partie.';$('sv-start').hidden=true;$('sv-cont').hidden=true;$('sv-ov').hidden=false;askWorld();return}}
       else{online=false;auth=true;$('sv-online').hidden=false}
-      $('sv-start').hidden=false;var s=hasSave();$('sv-cont').hidden=!s;$('sv-start').textContent=s?'Nouvelle île':'Commencer';$('sv-title').textContent='Survie';
+      $('sv-start').hidden=false;var s=hasSave();$('sv-cont').hidden=!s;showSaves();$('sv-start').textContent=s?'Nouvelle île':'Commencer';$('sv-title').textContent='Survie';
       $('sv-msg').textContent='Une grande île sauvage. Récolte, chasse, fabrique tes outils, construis ta base, mine le fer et trouve les pièces d\'une radio pour appeler les secours. La nuit, les zombies sortent. 14 objectifs à remplir.';$('sv-ov').hidden=false;if(online&&auth)$('sv-msg').textContent+=' Tu es l\'hôte : tes potes arrivent sur ton île dès que tu lances.';$('sv-best').textContent=PP.store('sv-best')},
     close:function(){if(running){save();running=false;cancelAnimationFrame(raf)}unlock();exitFull();keys={};mouseDown=false}
   };

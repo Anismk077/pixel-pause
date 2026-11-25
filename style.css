@@ -675,3 +675,10 @@ body.fs-mode::after{content:"";position:fixed;inset:0;background:#000;z-index:99
 .roombar .roombar-back{background:var(--acc);color:#fff;animation:pp-pulse 1.6s ease-in-out infinite}
 .roombar .roombar-back[hidden]{display:none}
 @keyframes pp-pulse{50%{opacity:.7}}
+#sv-savelist{width:min(520px,100%)}
+.sv-saves{display:grid;gap:6px;margin-top:6px;max-height:190px;overflow:auto;text-align:left}
+.sv-saves>b{font:600 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:#cfc7b8}
+.sv-save{display:flex;gap:6px}.sv-save button{font:500 12px var(--mono);padding:8px 10px;flex:1;text-align:left;color:#f1ece2;border-color:rgba(241,236,226,.35)}
+.sv-save .sv-del{flex:0 0 auto;text-align:center}
+.plist li .chef{font:600 10px var(--mono);text-transform:uppercase;letter-spacing:.1em;background:var(--acc);color:#fff;padding:2px 6px;margin-left:6px}
+.plist li .chef-btn{margin-left:auto;font:600 11px var(--mono);padding:4px 8px}

@@ -401,7 +401,8 @@
     lastInput=performance.now();hud();
   }
   /* équipes en ligne : rouge contre bleu (alternance dans l'ordre du salon), pas de tir ami */
-  var TSC=[0,0];
+  var TSC=[0,0],fpsRoom=null;
+  net.on(function(m){if(m.t==='migrating'){fpsRoom=null;online=false;if(running&&PP.cur()==='fps'){running=false;cancelAnimationFrame(raf);unlock()}}});
   function teamOf(id){var i=net.slot(id);return i<0?0:i%2}
   function myTeam(){return teamOf(net.me.id)}
   function teamAlive(t){var n=0;if(!dead&&myTeam()===t)n++;Object.keys(remotes).forEach(function(k){if(remotes[k].al&&teamOf(k)===t)n++});return n}
@@ -822,6 +823,7 @@
   PP._fps=function(){return {reload:reload,fire:fire,P:P,ents:ents,zone:zone,items:items,remotes:remotes,round:round,online:online,setMode:function(m){mode=m}}};
   PP.games.fps={
     open:function(){if(!init())return;$('fps-lockhint').hidden=true;$('fps-skins').hidden=true;
+      /* nouveau salon = score remis à zéro */if(net.inRoom()&&fpsRoom!==net.code){fpsRoom=net.code;online=false;running=false;cancelAnimationFrame(raf);round=null;TSC=[0,0];kills=0;Object.keys(remotes).forEach(function(k){if(remotes[k].m&&scene)scene.remove(remotes[k].m)});remotes={}}
       if(online&&net.inRoom()){if(auth&&round&&round.phase==='end'){hostRound();return}if(round&&!running){$('fps-ov').hidden=true;running=true;last=0;raf=requestAnimationFrame(loop);$('fps-lockhint').hidden=false;sendState(1);addFeed('De retour dans la partie')}return}
       online=false;UI.chat.hidden=true;
       if(mp.lobby('fps','2v2 en ligne')){$('fps-maps').hidden=true;$('fps-online').hidden=true;mode='br';reset();render();if(!net.isHost)net.send({t:'fb-hello'});online=true;auth=net.isHost;UI.chat.hidden=false;return}
