@@ -9,7 +9,7 @@
     var S,CARS=['#e2361b','#3fa9ff','#3fe09a','#f3c623','#b072e0','#ff8a3d','#f1ece2','#2fa3a3'];
     function newRace(txt,bots){S.txt=txt;S.i=0;S.err=0;S.t0=0;S.done=false;S.racers=[{n:'Toi',p:0,me:true,c:CARS[0]}];if(bots)[[28,'Lent'],[42,'Moyen'],[58,'Rapide']].forEach(function(b,k){S.racers.push({n:'Bot '+b[1],p:0,wpm:b[0]*(0.9+Math.random()*.2),c:CARS[k+1]})});S.place=0}
     function wpm(){var t=(performance.now()-S.t0)/60000;return t>0?Math.round(S.i/5/t):0}
-    function finish(C){S.done=true;var w=wpm(),acc=Math.round(100*S.txt.length/(S.txt.length+S.err));sfx.play('win');
+    function finish(C){S.done=true;var w=wpm(),acc=Math.round(100*S.txt.length/(S.txt.length+S.err));sfx.play('win');C.pop(w+' MOTS/MIN','#3fe09a','56px');
       if(C.mode==='online'){C.net.send({t:'ty-done',w:w});return}var place=1+S.racers.filter(function(r){return !r.me&&r.p>=1}).length;if(place===1)C.win();var nb=C.best('wpm',w);C.stop();
       C.over(place===1?'1er !':place+'e','<b>'+w+'</b> mots/minute · précision '+acc+' %'+(nb?' · nouveau record !':''),'Nouvelle course')}
     PP.arcade({id:'typing',
@@ -55,7 +55,7 @@
     var S,ROUNDS=10,T=15;
     function ask(C,qi,order){S.q=qi;S.order=order;S.t=T;S.ans=null;S.reveal=false;S.phase='q'}
     function shuffled(qi){return PP.shuffle([0,1,2,3])}
-    function reveal(C){S.reveal=true;S.phase='r';var ok=S.ans!=null&&S.order[S.ans]===0;var pts=ok?Math.round(500+500*S.left/T):0;if(C.mode!=='online'){S.score+=pts;if(ok)S.good++;sfx.play(ok?'win':'lose')}S.gain=pts}
+    function reveal(C){S.reveal=true;S.phase='r';var ok=S.ans!=null&&S.order[S.ans]===0;var pts=ok?Math.round(500+500*S.left/T):0;if(C.mode!=='online')C.pop(ok?'+'+pts:'RATÉ',ok?'#3fe09a':'#ff8a6a');if(C.mode!=='online'){S.score+=pts;if(ok)S.good++;sfx.play(ok?'win':'lose')}S.gain=pts}
     PP.arcade({id:'quiz',
       setup:function(C){S={score:0,good:0,n:0,list:PP.shuffle(Q.map(function(q,i){return i})).slice(0,ROUNDS),phase:'idle',tot:{}};
         C.keysText('Clique la bonne réponse ou tape <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> · plus tu réponds vite, plus tu marques');
@@ -95,7 +95,7 @@
     PP.arcade({id:'memory',
       setup:function(C){S={};deal();C.keysText('Clique deux cartes pour trouver les paires');C.over('Memory','12 paires à retrouver.'+(C.mode==='duel'?' Chacun son tour : une paire trouvée = tu rejoues.':' Le moins de coups possible.')+(C.mode==='solo'?'<br>Record : <b>'+(C.best('coups')||'—')+'</b> coups':''),'Jouer')},
       start:function(C){deal()},
-      mouse:function(C,t,x,y){if(t!=='down'||!C.running||S.lock>0)return;S.cards.forEach(function(c){var b=cell(c.k);if(x>b[0]&&x<b[0]+b[2]&&y>b[1]&&y<b[1]+b[3]&&!c.up&&!c.done&&S.open.length<2){c.up=true;S.open.push(c);sfx.play('ui');if(S.open.length===2){S.moves++;var a=S.open[0],b2=S.open[1];if(a.v===b2.v){a.done=b2.done=true;S.open=[];S.pairs[S.turn]++;sfx.play('win');if(S.cards.every(function(q){return q.done}))setTimeout(function(){end(C)},600)}else{S.lock=1}}}})},
+      mouse:function(C,t,x,y){if(t!=='down'||!C.running||S.lock>0)return;S.cards.forEach(function(c){var b=cell(c.k);if(x>b[0]&&x<b[0]+b[2]&&y>b[1]&&y<b[1]+b[3]&&!c.up&&!c.done&&S.open.length<2){c.up=true;S.open.push(c);sfx.play('ui');if(S.open.length===2){S.moves++;var a=S.open[0],b2=S.open[1];if(a.v===b2.v){a.done=b2.done=true;S.open=[];S.pairs[S.turn]++;sfx.play('win');C.pop('PAIRE !','#3fe09a','48px');if(S.cards.every(function(q){return q.done}))setTimeout(function(){end(C)},600)}else{S.lock=1}}}})},
       step:function(C,dt){if(S.lock>0){S.lock-=dt;if(S.lock<=0){S.open.forEach(function(c){c.up=false});S.open=[];if(C.mode==='duel')S.turn=1-S.turn}}
         S.cards.forEach(function(c){var tg=c.up||c.done?1:0;c.f+=(tg-c.f)*Math.min(1,dt*10)});
         C.hud(C.mode==='duel'?'<span'+(S.turn===0?' style="background:#e2361b;color:#fff"':'')+'>J1 <b>'+S.pairs[0]+'</b></span><span'+(S.turn===1?' style="background:#3fa9ff;color:#fff"':'')+'>J2 <b>'+S.pairs[1]+'</b></span>':'<span>Coups <b>'+S.moves+'</b></span><span>Temps <b>'+Math.round((performance.now()-S.t0)/1000)+' s</b></span>')},
@@ -116,7 +116,7 @@
       for(x=0;x<w;x++)for(var y3=0;y3<h;y3++){var n=0;nb(x,y3,function(a,b){if(S.g[a][b].m)n++});S.g[x][y3].n=n}}
     function nb(x,y,fn){var L=S.L;for(var dx=-1;dx<=1;dx++)for(var dy=-1;dy<=1;dy++){var a=x+dx,b=y+dy;if((dx||dy)&&a>=0&&b>=0&&a<L[0]&&b<L[1])fn(a,b)}}
     function open(C,x,y){var c=S.g[x][y];if(c.o||c.f)return;c.o=true;S.left--;if(c.m){S.boom=[x,y];lose(C);return}if(!c.n)nb(x,y,function(a,b){open(C,a,b)})}
-    function lose(C){S.over=true;sfx.play('kill');S.g.forEach(function(col){col.forEach(function(c){if(c.m)c.o=true})});C.stop();setTimeout(function(){C.over('BOUM !','Une mine… Retente ta chance.','Rejouer')},900)}
+    function lose(C){S.over=true;sfx.play('kill');C.shake(14);S.g.forEach(function(col){col.forEach(function(c){if(c.m)c.o=true})});C.stop();setTimeout(function(){C.over('BOUM !','Une mine… Retente ta chance.','Rejouer')},900)}
     function cs(){var L=S.L;return Math.min(Math.floor(900/L[0]),Math.floor(480/L[1]))}
     function org(){var L=S.L,c=cs();return [480-L[0]*c/2,24+(492-L[1]*c)/2]}
     PP.arcade({id:'mines',
@@ -151,7 +151,7 @@
         S.p=S.p.map(function(y){return Math.max(PH/2,Math.min(H-PH/2,y))});
         if(S.wait>0){S.wait-=dt;return}var b=S.b;b.tr.push([b.x,b.y]);if(b.tr.length>14)b.tr.shift();b.x+=b.vx*dt;b.y+=b.vy*dt;if(b.y<10){b.y=10;b.vy=Math.abs(b.vy);sfx.play('tick')}if(b.y>H-10){b.y=H-10;b.vy=-Math.abs(b.vy);sfx.play('tick')}
         [[40,0,1],[W-40,1,-1]].forEach(function(q){var px=q[0],i=q[1],dir=q[2];if((dir>0&&b.vx<0&&b.x<px+14&&b.x>px-10)||(dir<0&&b.vx>0&&b.x>px-14&&b.x<px+10)){if(Math.abs(b.y-S.p[i])<PH/2+10){var off=(b.y-S.p[i])/(PH/2),spd=Math.min(1100,Math.hypot(b.vx,b.vy)*1.07),a=off*1.0;b.vx=Math.cos(a)*spd*dir;b.vy=Math.sin(a)*spd;b.x=px+dir*14;sfx.play('hit');for(var f=0;f<14;f++)S.fx.push({x:b.x,y:b.y,vx:dir*Math.random()*300,vy:(Math.random()-.5)*300,t:1,c:i?BLU:RED})}}});
-        if(b.x<-20||b.x>W+20){var w=b.x<0?1:0;S.sc[w]++;sfx.play(w===0||C.mode==='duel'?'win':'lose');if(S.sc[w]>=WIN){C.stop();if(C.mode==='solo'&&w===0)C.win();C.over(C.mode==='solo'?(w===0?'Victoire !':'Perdu'):(w===0?'J1':'J2')+' gagne !',S.sc[0]+' – '+S.sc[1],'Revanche');return}serve(w===0?1:-1)}
+        if(b.x<-20||b.x>W+20){var w=b.x<0?1:0;S.sc[w]++;C.pop('POINT !',w?'#3fa9ff':'#e2361b','52px');C.shake(6);sfx.play(w===0||C.mode==='duel'?'win':'lose');if(S.sc[w]>=WIN){C.stop();if(C.mode==='solo'&&w===0)C.win();C.over(C.mode==='solo'?(w===0?'Victoire !':'Perdu'):(w===0?'J1':'J2')+' gagne !',S.sc[0]+' – '+S.sc[1],'Revanche');return}serve(w===0?1:-1)}
         S.fx=S.fx.filter(function(f){f.t-=dt*2;f.x+=f.vx*dt;f.y+=f.vy*dt;return f.t>0})},
       draw:function(C){var g=C.g;g.fillStyle='#07060d';g.fillRect(0,0,W,H);g.strokeStyle='rgba(241,236,226,.15)';g.setLineDash([10,14]);g.lineWidth=3;g.beginPath();g.moveTo(W/2,0);g.lineTo(W/2,H);g.stroke();g.setLineDash([]);
         ag.txt(g,S.sc[0]+'',W/2-90,80,90,'rgba(226,54,27,.5)');ag.txt(g,S.sc[1]+'',W/2+90,80,90,'rgba(63,169,255,.5)');

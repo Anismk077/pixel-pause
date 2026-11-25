@@ -13,6 +13,9 @@
       C.keysText=function(h){$(L.id+'-keys').innerHTML=h};
       C.best=function(k,v,low){var key='ag-'+L.id+'-'+k,b=PP.store(key);if(v==null)return b;if(!b||(low?v<b:v>b)){PP.store(key,v);return true}return false};
       C.win=function(){PP.stat(L.id,'win')};
+      /* grosse annonce animée au centre (STRIKE !, +10, etc.) et tremblement d'écran */
+      C.pop=function(t,col,size){var st=cv.parentNode,e=document.createElement('div');e.className='ag-pop';e.textContent=t;if(col)e.style.color=col;if(size)e.style.fontSize=size;st.appendChild(e);setTimeout(function(){e.remove()},1300)};
+      C.shake=function(k){cv.classList.remove('ag-shake');void cv.offsetWidth;cv.style.setProperty('--sh',(k||6)+'px');cv.classList.add('ag-shake')};
       C.listen=function(fn){C.subs.push(net.on(function(m,from){if(PP.cur()===L.id)fn(m,from)}))};
       C.stop=function(){C.running=false};
       C.go=function(){C.hide();C.running=true;C.last=0;cancelAnimationFrame(C.raf);C.raf=requestAnimationFrame(loop)};
