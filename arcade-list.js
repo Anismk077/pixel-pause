@@ -5,7 +5,12 @@ window.ARCADE_LIST=[
   {id:'hockey',n:'Air Hockey',sub:'Duel · palets et rebonds',pl:'1–2',cat:'pc solo',modes:[['solo','Solo','Contre l\'ordinateur'],['duel','2 joueurs','ZQSD contre flèches']]},
   {id:'stack',n:'Tour Infinie',sub:'3D · empile au bon moment',pl:'1',cat:'solo 3d',modes:[['solo','Solo','Monte le plus haut possible']]},
   {id:'reflex',n:'Réflexes',sub:'Party · le plus rapide gagne',pl:'1–8',cat:'pc tel solo',modes:[['solo','Solo','Bats ton temps de réaction'],['duel','2 joueurs','A contre L, même clavier'],['online','En ligne','Tout le salon en même temps']]},
-  {id:'bricks',n:'Casse-Briques Néon',sub:'Arcade · niveaux et bonus',pl:'1',cat:'solo',modes:[['solo','Solo','5 niveaux, 3 vies']]}
+  {id:'bricks',n:'Casse-Briques Néon',sub:'Arcade · niveaux et bonus',pl:'1',cat:'solo',modes:[['solo','Solo','5 niveaux, 3 vies']]},
+  {id:'bowl',n:'Bowling 3D',sub:'3D · strikes et spares',pl:'1–2',cat:'pc solo 3d',modes:[['solo','Solo','10 frames'],['duel','2 joueurs','Chacun son tour']]},
+  {id:'golf',n:'Mini-golf 3D',sub:'3D · 6 trous, moulin et bumpers',pl:'1–4',cat:'pc solo 3d',modes:[['solo','Solo','Le moins de coups'],['duel','2 joueurs','Chacun son tour'],['trio','3 joueurs','Chacun son tour'],['quad','4 joueurs','Chacun son tour']]},
+  {id:'arch',n:'Tir à l\'arc 3D',sub:'3D · vent et distance',pl:'1–2',cat:'pc solo 3d',modes:[['solo','Solo','10 flèches'],['duel','2 joueurs','Chacun son tour']]},
+  {id:'tanks',n:'Tanks',sub:'Duel · obus qui rebondissent',pl:'1–2',cat:'pc solo',modes:[['solo','Solo','Contre l\'ordinateur'],['duel','2 joueurs','Même clavier']]},
+  {id:'navale',n:'Bataille navale',sub:'Stratégie · coule la flotte',pl:'1–2',cat:'tel solo',modes:[['solo','Solo','Contre l\'ordinateur'],['online','En ligne','Contre un pote du salon']]}
 ];
 (function(){
   var tiles=document.getElementById('tiles'),anchor=document.getElementById('v-geo');if(!tiles||!anchor)return;
