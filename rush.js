@@ -86,7 +86,7 @@
   }
   function spark(x,yy,z,col){for(var i=0;i<8;i++){var m=new THREE.Mesh(new THREE.BoxGeometry(.08,.08,.08),new THREE.MeshBasicMaterial({color:col}));m.position.set(x,yy,z);scene.add(m);sparks.push({m:m,vx:(Math.random()-.5)*6,vy:Math.random()*5,vz:(Math.random()-.5)*6,t:.5})}}
 
-  function step(dt){pdt=dt;
+  function step(dt){pdt=dt;if(downHeld&&slideT>0&&runT-slide0<1.2)slideT=Math.max(slideT,.05);
     runT+=dt;speed=Math.min(32,14+runT*.35);var mv=speed*dt;dist+=mv;
     laneX+=(LX[lane]-laneX)*Math.min(1,dt*12);
     // saut et glissade
@@ -121,7 +121,7 @@
       var run=[-.18,Math.abs(Math.cos(ph))*.07,0,s2*.95,Math.max(0,s2)*1.5+.15,-s2*.95,Math.max(0,-s2)*1.5+.15,-s2*.9,s2*.9,0,0,-1.3],
         jmp=[-.12,0,0,-1.1,1.5,.5,.9,-2.6,-2.6,.35,-.35,-.4],
         sld=[1.0,.24,-.25,-.75,.2,-.55,.35,.5,.5,.5,-.5,-.2];
-      var tg=sl?sld:air?jmp:run,k=Math.min(1,dt*(sl?26:20));if(!pose)pose=run.slice();
+      var tg=sl?sld:air?jmp:run,k=Math.min(1,dt*(sl?30:38));if(!pose)pose=run.slice();
       for(var i=0;i<12;i++)pose[i]+=(tg[i]-pose[i])*(tg===run&&i>=3?Math.max(k,.55):k);
       model.rotation.x=pose[0];model.position.y=pose[1];model.position.z=pose[2];
       P.legs[0].rotation.x=pose[3];P.knees[0].rotation.x=pose[4];P.legs[1].rotation.x=pose[5];P.knees[1].rotation.x=pose[6];
@@ -157,7 +157,10 @@
     if(m.t==='rel'&&m.d&&m.d.g==='run'){var pl=net.players.filter(function(q){return q.id===m.from})[0];others[m.from]={n:pl?pl.name:'?',s:m.d.d,dead:m.d.dead};board();if(dead)onlineEnd()}
   });
   function start(){won1=0;if(!init())return;if(mp.on()){others={};net.players.forEach(function(q){if(q.id!==net.me.id)others[q.id]={n:q.name,s:0,dead:false}});if(net.isHost)net.broadcast({t:'run-go'})}player.rotation.x=0;reset();$('rn-ov').hidden=true;running=true;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);sfx.play('go')}
-  function key(k){if(!running)return;if(k==='L')lane=Math.max(0,lane-1);if(k==='R')lane=Math.min(2,lane+1);if(k==='U'&&jumpT<=0){jumpT=.62;slideT=0;sfx.play('ui')}if(k==='D'){slideT=.48;jumpT=0}}
+  function key(k){if(!running)return;if(k==='L')lane=Math.max(0,lane-1);if(k==='R')lane=Math.min(2,lane+1);if(k==='U'&&jumpT<=0){jumpT=.62;slideT=0;sfx.play('ui')}if(k==='D'){slideT=.34;slide0=runT;downHeld=true;jumpT=0}}
+  /* glissade : courte si on tape, tant qu'on reste appuyé si on maintient, et on se relève dès qu'on lâche */
+  var downHeld=false,slide0=0;
+  document.addEventListener('keyup',function(e){if(e.key==='ArrowDown'||e.key.toLowerCase()==='s'){downHeld=false;if(slideT>0)slideT=Math.min(slideT,Math.max(0,.18-(runT-slide0)))}});
   $('rn-start').addEventListener('click',start);
   $('rn-pad').addEventListener('click',function(e){var b=e.target.closest('[data-k]');if(b)key(b.dataset.k)});
   document.addEventListener('keydown',function(e){if(PP.cur()!=='run'||e.repeat)return;var k={ArrowLeft:'L',ArrowRight:'R',ArrowUp:'U',ArrowDown:'D',q:'L',a:'L',d:'R',z:'U',w:'U',s:'D',' ':'U'}[e.key.length===1?e.key.toLowerCase():e.key];if(k&&running){key(k);e.preventDefault()}});
