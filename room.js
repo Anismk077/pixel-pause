@@ -24,7 +24,8 @@
   ];
 
   var GN={party:'Dernier Debout',time:'Quand et où',surv:'Survie','fps-br':'Bunker · battle royale',fps:'Bunker 3D',sumo:'Sumo Arena',foot:'Foot 2v2',kart:'Pixel Kart',run:'Néon Rush',geo:'Devine où',imp:'Mot imposteur',prob:'Le plus probable',snake:'Paquet Snake',draw:'Dessine et devine',quiz:'Quiz',typing:'Course de frappe',reflex:'Réflexes',c4:'Quatre en ligne',navale:'Bataille navale'},curGame=null,lobby=PP.lobby;
-  function beat(){if(net.inRoom()&&net.isHost&&lobby)lobby.register({code:net.code,host:net.me.name,n:net.players.length,game:curGame})}
+  /* les salons sont privés : on ne les affiche plus dans une liste publique, on rejoint avec le code ou le lien */
+  function beat(){}
   setInterval(beat,8000);
   PP.setRoomGame=function(g){curGame=g;beat()};
   function bar(){
@@ -71,7 +72,7 @@
   if(lobby)lobby.on(function(l){var el=$('room-list');if(el&&!net.inRoom()){el.innerHTML=roomsHtml(l);bindRooms()}});
   setInterval(function(){if(PP.cur()==='room'&&!net.inRoom()&&lobby)lobby.refresh()},4000);
   function setup(){
-    box.innerHTML='<div class="rooms-open"><h3 class="t">Salons ouverts</h3><div id="room-list">'+roomsHtml(lobby?lobby.list():[])+'</div></div><div class="panel narrow"><label class="lbl" for="room-name">Ton pseudo</label><input id="room-name" maxlength="14" placeholder="Pseudo" value="'+esc(PP.myName())+'">'+
+    box.innerHTML='<div class="panel narrow"><p class="muted" style="margin-top:0">Crée ton salon, puis envoie le code (ou le lien) à tes potes. Seuls ceux qui ont le code peuvent entrer.</p><label class="lbl" for="room-name">Ton pseudo</label><input id="room-name" maxlength="14" placeholder="Pseudo" value="'+esc(PP.myName())+'">'+
       '<p class="err" id="room-err"></p><div class="row" style="margin-top:16px"><button type="button" id="room-create">Créer le salon</button><button type="button" class="ghost" data-go="join">J\'ai un code</button></div>'+
       '<p class="muted" style="margin-top:14px">Le salon marche entre téléphones et PC, même sur des réseaux différents. L\'hôte doit rester sur la page.</p></div>';
     bindRooms();if(lobby)lobby.refresh();

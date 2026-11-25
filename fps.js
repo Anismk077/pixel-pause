@@ -573,7 +573,8 @@
   function hostRound(){
     var seed=(Math.random()*1e9)|0,maps=Object.keys(MAPS);
     round={n:(round?round.n:0)+1,seed:seed,map:maps[(round?round.n:0)%3],phase:'play',t0:performance.now()};
-    var nb=Math.max(2,10-net.players.length);
+    /* en salon entre potes : pas de bots dès qu'on est au moins 2 (quelques bots seulement si tu es seul) */
+    var nb=net.players.length>=2?0:4;
     var msg={t:'fb-round',n:round.n,seed:seed,map:round.map,nb:nb};
     net.broadcast(msg);startRound(msg);
   }
@@ -623,13 +624,14 @@
     var btn=$('fps-online');btn.disabled=true;btn.textContent='Recherche d\'un serveur…';
     if(PP.lobby)PP.lobby.refresh();
     setTimeout(function(){
-      var l=(PP.lobby?PP.lobby.list():[]).filter(function(r){return r.game==='fps-br'&&r.code!==net.code});
+      var l=[];
       function done(){btn.disabled=false;btn.textContent='Partie en ligne'}
+      if(net.inRoom()&&!net.isHost){done();beginOnline();return}
       if(net.inRoom()&&net.isHost&&PP.setRoomGame){done();PP.setRoomGame('fps-br');beginOnline();return}
       if(l.length){
         net.join(l[0].code,name,function(err){done();if(err){PP.toast('Serveur plein ou fermé, on en crée un','warn');hostServer();return}PP.toast('Serveur '+l[0].code+' rejoint','ok');beginOnline()});
       }else hostServer();
-      function hostServer(){net.host(name,function(err,code){done();if(err){PP.toast(err,'warn');return}if(PP.setRoomGame)PP.setRoomGame('fps-br');PP.toast('Serveur '+code+' créé : les bots jouent avec toi en attendant','ok');beginOnline()})}
+      function hostServer(){net.host(name,function(err,code){done();if(err){PP.toast(err,'warn');return}if(PP.setRoomGame)PP.setRoomGame('fps-br');PP.toast('Salon '+code+' créé : donne ce code à tes potes (bouton salon en haut)','ok');beginOnline()})}
     },1600);
   }
   function beginOnline(){
@@ -713,7 +715,7 @@
   pk=PP.held('fps-pad',{},function(k){lastInput=performance.now();if(k==='S'){mouseDown=true;fire()}if(k==='A')aiming=!aiming;if(k==='W')reload()},function(k){if(k==='S')mouseDown=false});
 
   /* ---------- Menus ---------- */
-  var DESC={zombie:'Rôdeurs, coureurs, cracheurs et mastodontes, par vagues. Ramasse les armes, munitions, soins et pièces. Clic droit pour viser, R pour recharger.',br:'Toi contre 9 bots sur la carte choisie. La zone rétrécit, ramasse des armes. Ou clique sur « Partie en ligne » : tu rejoins un serveur ouvert (ou tu en crées un) et les bots complètent la partie.'};
+  var DESC={zombie:'Rôdeurs, coureurs, cracheurs et mastodontes, par vagues. Ramasse les armes, munitions, soins et pièces. Clic droit pour viser, R pour recharger.',br:'Toi contre 9 bots sur la carte choisie. La zone rétrécit, ramasse des armes. Pour jouer avec tes potes, clique sur « Partie en ligne » : ça crée un salon privé, tu leur donnes le code, et vous jouez entre vous sans bots.'};
   function menu(){
     $('fps-title').textContent=mode==='zombie'?'Zombies':'Battle royale';$('fps-msg').textContent=DESC[mode];$('fps-start').textContent=mode==='zombie'?'Entrer dans le bunker':'Jouer contre les bots';$('fps-start').hidden=false;$('fps-online').hidden=mode!=='br';$('fps-ov').hidden=false;
     $('fps-modes').querySelectorAll('.mode').forEach(function(x){x.classList.toggle('on',x.dataset.m===mode)});

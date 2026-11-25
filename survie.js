@@ -1367,8 +1367,8 @@
     setTimeout(function(){
       function done(){btn.disabled=false;btn.textContent='Jouer à plusieurs'}
       if(net.inRoom()&&net.isHost){done();if(PP.setRoomGame)PP.setRoomGame('surv');online=true;auth=true;start(false);return}
-      var l=(PP.lobby?PP.lobby.list():[]).filter(function(r){return r.game==='surv'&&r.code!==net.code});
-      function hostIt(){net.host(name,function(err,code){done();if(err){PP.toast(err,'warn');return}if(PP.setRoomGame)PP.setRoomGame('surv');online=true;auth=true;PP.toast('Île ouverte (salon '+code+') : tes potes la verront dans « Jouer à plusieurs »','ok');start(false)})}
+      var l=[];if(net.inRoom()&&!net.isHost){done();online=true;auth=false;askWorld();return}
+      function hostIt(){net.host(name,function(err,code){done();if(err){PP.toast(err,'warn');return}if(PP.setRoomGame)PP.setRoomGame('surv');online=true;auth=true;PP.toast('Île ouverte dans le salon '+code+' : donne ce code à tes potes','ok');start(false)})}
       if(l.length)net.join(l[0].code,name,function(err){done();if(err){hostIt();return}online=true;auth=false;PP.toast('Tu rejoins l\'île de '+l[0].host,'ok');$('sv-title').textContent='Connexion';$('sv-msg').textContent='Chargement de l\'île de '+l[0].host+'…';net.send({t:'sv-hello'})});
       else hostIt();
     },1600);
