@@ -24,6 +24,7 @@
   var cmode='login',cloudSig='';
   var SEC='<p class="muted cl-sec"><b>Sécurisé :</b> ton mot de passe est vérifié par Google (Firebase), le site ne le voit jamais. Ton mail doit être confirmé, et chaque nouvel appareil doit être validé par un lien envoyé sur ton mail.</p>';
   function cloudHtml(CL){
+    if(PP.accountMode){cmode=PP.accountMode;PP.accountMode=null;setTimeout(function(){var b=$('cloud-box');if(b){b.scrollIntoView({behavior:'smooth',block:'start'});var i=$(cmode==='signup'?'cl-mail':'cl-mail');if(i)i.focus()}},60)}
     var x='<div class="panel cloud-box" id="cloud-box"><h3 class="t">Compte en ligne</h3>';
     var st=CL.state;
     if(st==='loading'||st==='checking'){x+='<p class="wait">Connexion…</p>'}
@@ -82,7 +83,7 @@
   function render(){
     var cur=PP.profile(),list=profiles(),tot={p:0,w:0};
     GAMES.forEach(function(g){tot.p+=PP.store('st-'+g.id+'-parties');tot.w+=PP.store('st-'+g.id+'-win')});
-    var x='<div class="acc-top"><div><span class="lbl">Compte</span><div class="acc-name">'+(cur?esc(cur):'Invité')+'</div><p class="muted">'+(cur?'Tes records, tes stats, tes skins et ta survie sont rangés dans ce compte.':'Tu joues sans compte. Crée-en un pour garder tes records et ta survie à ton nom.')+'</p></div>'+
+    var x='<div class="acc-top"><div><span class="lbl">Compte</span><div class="acc-name">'+(cur?esc(cur):'Invité')+'</div><p class="muted">'+(cur&&PP.cloud&&PP.cloud.state!=='off'&&!PP.cloud.user?'<b>Profil local</b> : il est gardé seulement sur cet appareil. Crée ton compte en ligne juste en dessous (même pseudo) pour le sauvegarder et avoir des amis.':cur?'Tes records, tes stats, tes skins et ta survie sont rangés dans ce compte.':'Tu joues sans compte. Crée-en un pour garder tes records et ta survie à ton nom.')+'</p></div>'+
       '<div class="acc-big"><div><b>'+tot.p+'</b><span>parties</span></div><div><b>'+tot.w+'</b><span>victoires</span></div><div><b>'+PP.store('st-surv-kills')+'</b><span>créatures abattues</span></div></div></div>';
     if(PP.perso)x+='<div class="panel acc-perso">'+PP.perso.img(PP.perso.get(),84,'perso-pic big')+'<div><h3 class="t">Mon perso</h3><p class="muted">Ton personnage : on le voit dans les salons et il est utilisé dans les jeux 3D. Il est gardé dans ce compte.</p><button type="button" class="primary" data-go="perso">Personnaliser mon perso</button></div></div>';
     var CL=PP.cloud,online=CL&&CL.user&&CL.name&&(CL.state==='sync'||CL.state==='error');
