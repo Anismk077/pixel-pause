@@ -118,9 +118,9 @@
     player.rotation.z=(LX[lane]-laneX)*-.12;
     if(P){var s2=Math.sin(ph),air=y>0,dt=Math.min(.05,pdt||.016);
       /* poses : course, saut, glissade — on passe de l'une à l'autre en douceur mais vite */
-      var run=[-.18,Math.abs(Math.cos(ph))*.07,0,s2*.95,Math.max(0,s2)*1.5+.15,-s2*.95,Math.max(0,-s2)*1.5+.15,-s2*.9,s2*.9,0,0,-1.3],
-        jmp=[-.12,0,0,-1.1,1.5,.5,.9,-2.6,-2.6,.35,-.35,-.4],
-        sld=[1.0,.24,-.25,-.75,.2,-.55,.35,.5,.5,.5,-.5,-.2];
+      var run=[-.18,Math.abs(Math.cos(ph))*.07,0,s2*.95,Math.max(0,s2)*1.5+.15,-s2*.95,Math.max(0,-s2)*1.5+.15,-s2*.9,s2*.9,0,0,1.3],
+        jmp=[-.12,0,0,-1.1,1.5,.5,.9,2.6,2.6,.35,-.35,.4],
+        sld=[1.0,.24,-.25,-.75,.2,-.55,.35,.5,.5,.5,-.5,.2];
       var tg=sl?sld:air?jmp:run,k=Math.min(1,dt*(sl?30:38));if(!pose)pose=run.slice();
       for(var i=0;i<12;i++)pose[i]+=(tg[i]-pose[i])*(tg===run&&i>=3?Math.max(k,.55):k);
       model.rotation.x=pose[0];model.position.y=pose[1];model.position.z=pose[2];

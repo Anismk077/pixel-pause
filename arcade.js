@@ -27,7 +27,7 @@
         view.querySelectorAll('.ag-modes .mode').forEach(function(x){x.classList.toggle('on',x===b)});C.mode=m;C.running=false;d.setup(C);C.loop()})});
       /* souris « capturée » : dans les jeux d'action, la souris reste dans le jeu (pointer lock).
          Hors plein écran, Échap la libère (règle du navigateur) et un clic la reprend ; en plein écran il faut maintenir Échap. */
-      var LOCK={hockey:1,bricks:1,bowl:1,golf:1,arch:1,pong:1,plane:1,hoops:1,pool:1,marz:1,snakeio:1}[L.id],DESK=matchMedia('(hover:hover) and (pointer:fine)').matches,vp=[C.W/2,C.H/2];
+      var LOCK={hockey:1,bricks:1,bowl:1,golf:1,arch:1,pong:1,plane:1,hoops:1,pool:1,marz:1,snakeio:1,volt:1}[L.id],DESK=matchMedia('(hover:hover) and (pointer:fine)').matches,vp=[C.W/2,C.H/2];
       function locked(){return document.pointerLockElement===cv}
       function grab(){if(!LOCK||!DESK||locked()||!cv.requestPointerLock)return;try{var r=cv.requestPointerLock();if(r&&r.catch)r.catch(function(){})}catch(e){}}
       function unlock(){if(locked())try{document.exitPointerLock()}catch(e){}}

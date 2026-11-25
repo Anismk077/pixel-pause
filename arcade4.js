@@ -104,6 +104,9 @@
         S.ball=new THREE.Mesh(new THREE.SphereGeometry(BR,20,14),new THREE.MeshLambertMaterial({map:bt}));S.ball.castShadow=true;sc.add(S.ball);
         /* mains du joueur */
         S.hands=new THREE.Group();[-1,1].forEach(function(s){var h=new THREE.Mesh(new THREE.SphereGeometry(.045,10,8),lam(0xd9a77c));h.scale.set(1,.8,1.3);h.position.set(s*.16,0,0);S.hands.add(h);var arm2=new THREE.Mesh(new THREE.CylinderGeometry(.045,.055,.5,8),lam(0x3fa9ff));arm2.rotation.x=Math.PI/2.4;arm2.position.set(s*.18,-.12,.24);S.hands.add(arm2)});sc.add(S.hands);
+        S.hands.visible=false;S.side=1;S.sideX=1;
+        /* ton perso, vu de dos : il dribble, change de main, saute pour tirer */
+        if(PP.perso&&PP.perso.build){S.me=PP.perso.build(PP.perso.get());S.me.scale.setScalar(.82);S.me.traverse(function(o){if(o.isMesh)o.castShadow=true});sc.add(S.me);S.P=S.me.userData.parts}
         S.px=0;S.pz=HZ+6;S.cur=0;S.pts=[0,0];S.score=0;S.time=TURN;S.phase='hold';S.pw=0;S.jump=0;S.dr=0;S.streak=0;S.made=0;S.camY=1.7;S.mx=0;S.my=0;S.hold=null;
         C.keysText('<kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> ou flèches : te déplacer en dribblant · maintiens clic ou <kbd>Espace</kbd> et relâche dans la zone verte pour tirer (tu sautes) · la souris ajuste le tir');
         C.over('Basket 3D',(C.mode==='duel'?'Chacun '+TURN+' secondes, le meilleur score gagne.':TURN+' secondes pour marquer un max.')+' Déplace-toi sur le terrain : derrière la ligne courbe, c\'est 3 points. Après 30 s, le panier se met à bouger !<br>Record : <b>'+C.best('pts')+'</b>','Coup d\'envoi')},
@@ -121,11 +124,22 @@
         S.sweet=Math.min(.92,.32+dist*.075);
         /* saut au moment du tir */
         if(S.jump>0){S.jump-=dt}var jy=S.jump>0?Math.sin((1-S.jump/.7)*Math.PI)*.55:0;
-        var eye=new THREE.Vector3(S.px,1.7+jy+(moving?Math.abs(Math.sin(S.dr))*.05:0),S.pz);C.cam.position.lerp(eye,Math.min(1,dt*12));
-        var look=new THREE.Vector3(H.x+S.mx*2.2,H.y-.9-S.my*1.6+(S.phase==='fly'?.4:0),H.z);C.cam.lookAt(look);
+        var eye=S.me?new THREE.Vector3(S.px-fx*3.3+fz*.55,2.55+jy*.5,S.pz-fz*3.3-fx*.55):new THREE.Vector3(S.px,1.7+jy+(moving?Math.abs(Math.sin(S.dr))*.05:0),S.pz);if(S.me){eye.x=Math.max(-6.4,Math.min(6.4,eye.x));eye.z=Math.min(HZ+13,eye.z)}C.cam.position.lerp(eye,Math.min(1,dt*(S.me?6:12)));
+        var look=new THREE.Vector3(H.x+S.mx*2.2,H.y-.9-S.my*1.6+(S.phase==='fly'?.4:0)-(S.me?.6:0),H.z);C.cam.lookAt(look);
+        if(S.me){var P=S.P,ang=Math.atan2(-fx,-fz),wk=moving?Math.sin(S.dr*.9):0;S.me.position.set(S.px,jy,S.pz);S.me.rotation.y=ang;
+          if(mvS)S.side=mvS>0?1:-1;S.sideX+=(S.side-S.sideX)*Math.min(1,dt*9);
+          var up=S.phase==='charge'||S.jump>.35,ch=S.phase==='charge'?S.pw:0;
+          P.legs[0].rotation.x=wk*.6-ch*.3;P.legs[1].rotation.x=-wk*.6-ch*.3;P.knees[0].rotation.x=Math.max(0,-wk)*.8+ch*.7;P.knees[1].rotation.x=Math.max(0,wk)*.8+ch*.7;P.root.position.y=-ch*.08;
+          if(up){P.arms[0].rotation.x=P.arms[1].rotation.x=2.7+(S.jump>0?.3:0);P.arms[0].rotation.z=-.15;P.arms[1].rotation.z=.15;P.elbows[0].rotation.x=P.elbows[1].rotation.x=S.jump>0?.1:.9}
+          else if(moving&&S.phase==='hold'){var di=S.side>0?1:0,ot=1-di,bn=Math.abs(Math.sin(S.dr*1.1));P.arms[di].rotation.x=.55+bn*.25;P.elbows[di].rotation.x=.5+bn*.5;P.arms[di].rotation.z=di?.25:-.25;P.arms[ot].rotation.x=-wk*.5;P.elbows[ot].rotation.x=.4;P.arms[ot].rotation.z=0}
+          else{P.arms[0].rotation.x=P.arms[1].rotation.x=.9;P.elbows[0].rotation.x=P.elbows[1].rotation.x=.9;P.arms[0].rotation.z=.25;P.arms[1].rotation.z=-.25}
+          P.torso.rotation.x=ch*.15;S.me.updateMatrixWorld(true)}
         /* mains et ballon (dribble quand on bouge) */
         var q=C.cam.quaternion,hpos=new THREE.Vector3(0,-.24,-.72).applyQuaternion(q).add(C.cam.position);S.hands.position.copy(hpos);S.hands.quaternion.copy(q);
-        if(S.phase==='hold'||S.phase==='charge'){var bp;if(moving&&S.phase==='hold'){var bounce=Math.abs(Math.sin(S.dr*1.1));bp=new THREE.Vector3(.16,-.18-(1-bounce)*1.25,-.78).applyQuaternion(q).add(C.cam.position);bp.y=Math.max(BR,bp.y);if(bounce<.08&&!S.thud){S.thud=1;sfx.play('tick')}if(bounce>.3)S.thud=0}else{bp=new THREE.Vector3(.02,-.17+(S.phase==='charge'?S.pw*.1:0),-.74).applyQuaternion(q).add(C.cam.position)}S.ball.position.lerp(bp,Math.min(1,dt*18));S.ball.rotation.x-=dt*(moving?10:0)}
+        if(S.me&&(S.phase==='hold'||S.phase==='charge')){var hl=new THREE.Vector3(),hr2=new THREE.Vector3(),bp2;S.P.hands[0].getWorldPosition(hl);S.P.hands[1].getWorldPosition(hr2);
+          if(moving&&S.phase==='hold'){var bn2=Math.abs(Math.sin(S.dr*1.1)),hand=S.sideX>0?hr2:hl,mid=hl.clone().lerp(hr2,(S.sideX+1)/2);bp2=new THREE.Vector3(mid.x-fx*.12,BR+(hand.y-BR-.08)*bn2,mid.z-fz*.12);if(bn2<.08&&!S.thud){S.thud=1;sfx.play('tick')}if(bn2>.3)S.thud=0;S.ball.position.copy(bp2)}
+          else{bp2=hl.clone().add(hr2).multiplyScalar(.5);bp2.x+=fx*.12;bp2.z+=fz*.12;bp2.y+=S.phase==='charge'?.12:.02;S.ball.position.lerp(bp2,Math.min(1,dt*20))}S.ball.rotation.x-=dt*(moving?10:0)}
+        else if(S.phase==='hold'||S.phase==='charge'){var bp;if(moving&&S.phase==='hold'){var bounce=Math.abs(Math.sin(S.dr*1.1));bp=new THREE.Vector3(.16,-.18-(1-bounce)*1.25,-.78).applyQuaternion(q).add(C.cam.position);bp.y=Math.max(BR,bp.y);if(bounce<.08&&!S.thud){S.thud=1;sfx.play('tick')}if(bounce>.3)S.thud=0}else{bp=new THREE.Vector3(.02,-.17+(S.phase==='charge'?S.pw*.1:0),-.74).applyQuaternion(q).add(C.cam.position)}S.ball.position.lerp(bp,Math.min(1,dt*18));S.ball.rotation.x-=dt*(moving?10:0)}
         if(S.phase==='fly'||S.phase==='loose'){var B=S.b,n=6;for(var s=0;s<n;s++){var h=dt/n;B.v.y-=9.8*h;B.p.addScaledVector(B.v,h);var dr=Math.hypot(B.p.x-H.x,B.p.z-H.z);
             var ringD=Math.hypot(dr-RIM,B.p.y-H.y);if(ringD<BR+.02){var nx=(dr-RIM),ny=(B.p.y-H.y),l=Math.hypot(nx,ny)||1,rx=(B.p.x-H.x)/(dr||1),rz=(B.p.z-H.z)/(dr||1),N3=new THREE.Vector3(rx*nx/l,ny/l,rz*nx/l),vn=B.v.dot(N3);if(vn<0){B.v.addScaledVector(N3,-1.6*vn);B.v.multiplyScalar(.8);sfx.play('tick')}B.p.addScaledVector(N3,(BR+.02-ringD))}
             if(B.p.z<H.z-.32+BR&&B.p.z>H.z-.6&&Math.abs(B.p.x-H.x)<.9&&B.p.y>2.87&&B.p.y<3.92&&B.v.z<0){B.v.z=-B.v.z*.6;B.p.z=H.z-.32+BR;sfx.play('hit')}
@@ -134,7 +148,7 @@
             if(Math.abs(B.p.x)>7.5){B.v.x=-B.v.x*.5;B.p.x=Math.sign(B.p.x)*7.5}if(B.p.z<HZ-1.9){B.v.z=-B.v.z*.5;B.p.z=HZ-1.9}
             B.prevY=B.p.y}
           S.ball.position.copy(B.p);S.ball.rotation.x-=dt*8;S.t+=dt;if(S.phase==='fly'&&S.t>1.8){if(!B.scored){S.streak=0;C.pop('RATÉ','#f1ece2','40px')}S.phase='loose';S.t=0}
-          if(S.phase==='loose'&&S.t>.5){/* la balle revient vers toi (passe) */var tgt=new THREE.Vector3(.02,-.17,-.74).applyQuaternion(C.cam.quaternion).add(C.cam.position);S.ball.position.lerp(tgt,Math.min(1,dt*5));B.p.copy(S.ball.position);B.v.set(0,0,0);if(S.ball.position.distanceTo(tgt)<.15){S.phase='hold'}}}
+          if(S.phase==='loose'&&S.t>.5){/* la balle revient vers toi (passe) */var tgt=S.me?new THREE.Vector3(S.px,1.25,S.pz):new THREE.Vector3(.02,-.17,-.74).applyQuaternion(C.cam.quaternion).add(C.cam.position);S.ball.position.lerp(tgt,Math.min(1,dt*5));B.p.copy(S.ball.position);B.v.set(0,0,0);if(S.ball.position.distanceTo(tgt)<.15){S.phase='hold'}}}
         if(S.swish>0){S.swish-=dt;S.net.scale.y=1+Math.sin(S.swish*30)*.18}
         S.cheer=Math.max(0,(S.cheer||0)-dt);var tn=performance.now()/1000;S.crowd.forEach(function(c){c.g.position.y=c.y+(S.cheer>0?Math.abs(Math.sin(tn*9+c.ph))*.35:Math.abs(Math.sin(tn*1.5+c.ph))*.04)});
         /* tableau */

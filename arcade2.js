@@ -4,6 +4,12 @@
   var sfx=PP.sfx,ag=PP.ag,INK='#141210',CR='#f1ece2',RED='#e2361b',YEL='#f3c623',BLU='#3fa9ff',GRN='#3fe09a';
   function lam(c,o){return new THREE.MeshLambertMaterial(Object.assign({color:c},o||{}))}
   function cvTex(w,h,fn,rx,ry){var c=document.createElement('canvas');c.width=w;c.height=h;fn(c.getContext('2d'),w,h);var t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;if(rx)t.repeat.set(rx,ry);return t}
+  /* le perso du joueur dans les jeux 3D (bowling, golf, arc) */
+  function persoModel(sc,scale){if(!PP.perso||!PP.perso.build)return null;var md=PP.perso.build(PP.perso.get());md.scale.setScalar(scale||1);sc.add(md);return {m:md,P:md.userData.parts}}
+  function pose(P,o){P.legs[0].rotation.x=o.l0||0;P.legs[1].rotation.x=o.l1||0;P.knees[0].rotation.x=o.k0||0;P.knees[1].rotation.x=o.k1||0;P.arms[0].rotation.x=o.a0||0;P.arms[1].rotation.x=o.a1||0;P.arms[0].rotation.z=o.z0||0;P.arms[1].rotation.z=o.z1||0;P.elbows[0].rotation.x=o.e0||0;P.elbows[1].rotation.x=o.e1||0;P.torso.rotation.x=o.tx||0;P.torso.rotation.y=o.ty||0;P.root.position.y=o.ry||0}
+  /* jauge de puissance qui monte et descend : on relâche au bon moment */
+  function gauge(C){var st=C.cv.parentNode,g=st.querySelector('.ag-gauge');if(!g){g=document.createElement('div');g.className='ag-gauge';g.innerHTML='<i></i><b></b><span>PUISSANCE</span>';st.appendChild(g)}return g}
+  function setGauge(C,v,show){var g=gauge(C);g.hidden=!show;if(show){g.querySelector('i').style.height=(v*100)+'%';g.querySelector('i').style.background=v>.85?'#e2361b':v>.55?'#f3c623':'#3fbf6a'}}
   function clearScene(C){while(C.scene.children.length)C.scene.remove(C.scene.children[0])}
   function lights(C,sh){C.scene.add(new THREE.HemisphereLight(0xfff4e6,0x40404a,.85));var s=new THREE.DirectionalLight(0xffffff,1.1);s.position.set(6,14,8);if(sh){s.castShadow=true;s.shadow.mapSize.set(1024,1024);var c=s.shadow.camera;c.left=c.bottom=-sh;c.right=c.top=sh;c.far=80}C.scene.add(s);return s}
 
@@ -18,7 +24,7 @@
     function score(rolls){var s=0,i=0,fr=[];for(var f=0;f<10;f++){if(rolls[i]==null)break;if(rolls[i]===10){if(rolls[i+2]==null){fr.push(null);break}s+=10+rolls[i+1]+rolls[i+2];i++}else{if(rolls[i+1]==null){fr.push(null);break}if(rolls[i]+rolls[i+1]===10){if(rolls[i+2]==null){fr.push(null);break}s+=10+rolls[i+2]}else s+=rolls[i]+rolls[i+1];i+=2}fr.push(s)}return {fr:fr,tot:s}}
     function frameOf(rolls){var i=0,f=0;while(f<9&&i<rolls.length){if(rolls[i]===10){i++}else{if(i+1>=rolls.length)return {f:f,b:1};i+=2}f++}if(f<9)return {f:f,b:0};var t=rolls.slice(i);return {f:9,b:t.length,t:t}}
     function gameDone(rolls){var fo=frameOf(rolls);if(fo.f<9)return false;var t=fo.t;if(t.length<2)return false;if(t.length===2)return t[0]+t[1]<10;return true}
-    function newRoll(C){S.ball={x:0,z:-.3,vx:0,vz:0,rolling:false,spin:0};S.phase='aim';S.power=0;S.aim=0;S.t=0;S.mx=null;S.mesh.position.set(0,BR,-.3)}
+    function newRoll(C){S.ball={x:0,z:-.3,vx:0,vz:0,rolling:false,spin:0};S.phase='aim';S.power=0;S.pdir=1;S.aim=0;S.t=0;S.mx=null;S.thr=0;S.mesh.position.set(0,BR,-.3);if(S.pz){S.pz.m.position.set(.16,0,.35);S.pz.m.rotation.y=0}}
     function pl(){return S.players[S.cur]}
     function knocked(){return S.pins.filter(function(p){return p.up&&p.down}).length}
     function finishRoll(C){var n=S.pins.filter(function(p){return p.up&&p.down}).length;var P=pl(),fo=frameOf(P.rolls),first=fo.b===0||(fo.f===9&&(fo.t.length===0||(fo.t.length===1&&fo.t[0]===10)||(fo.t.length===2&&fo.t[0]+fo.t[1]===10)));
@@ -47,16 +53,23 @@
         var floor=new THREE.Mesh(new THREE.PlaneGeometry(12,LEN+8),lam(0x2a1e2e));floor.rotation.x=-Math.PI/2;floor.position.set(0,-.12,-LEN/2);sc.add(floor);
         S.mesh=new THREE.Mesh(new THREE.SphereGeometry(BR,24,18),new THREE.MeshStandardMaterial({color:0x2a4fd0,roughness:.25,metalness:.1}));S.mesh.castShadow=true;sc.add(S.mesh);
         S.arrow=new THREE.Mesh(new THREE.ConeGeometry(.05,.3,8),new THREE.MeshBasicMaterial({color:0xf3c623}));S.arrow.rotation.x=-Math.PI/2;sc.add(S.arrow);
-        rackPins();newRoll(C);C.cam.position.set(0,1.1,1.6);C.cam.lookAt(0,0,-8);
-        C.keysText('Souris ou <kbd>←</kbd><kbd>→</kbd> : place la boule · maintiens clic ou <kbd>Espace</kbd> pour la puissance, relâche pour lancer (la flèche jaune donne la direction)');
+        S.pz=persoModel(sc,.62);rackPins();newRoll(C);C.cam.position.set(0,1.1,1.6);C.cam.lookAt(0,0,-8);
+        C.keysText('Souris ou <kbd>←</kbd><kbd>→</kbd> : place-toi · maintiens clic ou <kbd>Espace</kbd> : la jauge monte et descend, relâche au bon moment · la flèche jaune donne la direction');
         C.over('Bowling 3D','10 frames, 2 boules par frame. Strike et spare comptent comme au vrai bowling.'+(C.mode==='duel'?' Chacun son tour, J1 puis J2.':'')+'<br>Record : <b>'+C.best('pts')+'</b>','Jouer')},
       start:function(C){if(S.players.some(function(p){return p.rolls.length})){this.setup(C);C.hide()}},
       mouse:function(C,t,x){if(!C.running)return;S.mx=(x/960-.5);if(t==='down'&&S.phase==='aim'){S.phase='charge';S.power=0}if(t==='up'&&S.phase==='charge')throwB(C)},
       key:function(C,k,d){if(!C.running)return;if(k==='Space'){if(d&&S.phase==='aim'){S.phase='charge';S.power=0}else if(!d&&S.phase==='charge')throwB(C)}},
       step:function(C,dt){var B=S.ball;S.t+=dt;
         if(S.phase==='aim'||S.phase==='charge'){if(S.mx!=null)B.x+=((S.mx*1.3)-B.x)*Math.min(1,dt*10);if(C.keys.ArrowLeft)B.x-=dt*.6;if(C.keys.ArrowRight)B.x+=dt*.6;B.x=Math.max(-LANE/2+BR,Math.min(LANE/2-BR,B.x));S.aim=Math.sin(S.t*1.6)*.09;
-          if(S.phase==='charge')S.power=Math.min(1,S.power+dt*.8);S.mesh.position.set(B.x,BR,B.z);S.arrow.visible=true;S.arrow.position.set(B.x+Math.sin(S.aim)*.6,.02,B.z-.6);S.arrow.rotation.z=-S.aim}
+          if(S.phase==='charge'){S.power+=dt*1.25*S.pdir;if(S.power>=1){S.power=1;S.pdir=-1}if(S.power<=0){S.power=0;S.pdir=1}}S.arrow.visible=true;S.arrow.position.set(B.x+Math.sin(S.aim)*.6,.02,B.z-.6);S.arrow.rotation.z=-S.aim;
+          if(S.pz){S.pz.m.position.set(B.x+.16,0,.35);pose(S.pz.P,{a1:S.phase==='charge'?.5:.15,e1:-.2,k0:.15,k1:.15,ry:-.01});S.pz.m.updateMatrixWorld(true);var hp=new THREE.Vector3();S.pz.P.hands[1].getWorldPosition(hp);S.mesh.position.set(hp.x,Math.max(BR,hp.y-.05),hp.z)}else S.mesh.position.set(B.x,BR,B.z)}
         else S.arrow.visible=false;
+        setGauge(C,S.power,S.phase==='charge');
+        /* élan du perso : 3 pas, bras en arrière puis en avant, la boule part au bon moment */
+        if(S.phase==='throw'){S.thr+=dt;var u=S.thr/.75,pz=S.pz,P2=pz.P,st=Math.min(1,u);pz.m.position.z=.35-st*.55;var sw=u<.45?u/.45*1.5:1.5-(u-.45)/.3*2.4;
+          pose(P2,{a1:-sw,e1:.1,a0:sw*.4,l0:-Math.sin(u*Math.PI*2)*.5,l1:Math.sin(u*Math.PI*2)*.5,k0:.3+(u>.6?.5:0),k1:.2,tx:u>.5?.35:0,ry:u>.6?-.06:0});
+          pz.m.updateMatrixWorld(true);var hp2=new THREE.Vector3();P2.hands[1].getWorldPosition(hp2);S.mesh.position.set(hp2.x,Math.max(BR,hp2.y-.05),hp2.z);
+          if(u>=1){B.x=Math.max(-LANE/2+BR,Math.min(LANE/2-BR,hp2.x));B.z=hp2.z;var sp=4+S.power*7;B.vx=Math.sin(S.aim)*sp;B.vz=-Math.cos(S.aim)*sp;B.spin=(Math.random()-.5)*.25;S.phase='roll';S.t=0;sfx.play('hit')}}
         if(S.phase==='roll'){var n=4;for(var s=0;s<n;s++){var h=dt/n;B.x+=B.vx*h;B.z+=B.vz*h;B.vx+=B.spin*h;
             if(Math.abs(B.x)>LANE/2&&!B.gutter){B.gutter=true;B.vx=0;B.x=Math.sign(B.x)*(LANE/2+.1)}
             S.pins.forEach(function(p){if(!p.up)return;var dx=p.x-B.x,dz=p.z-B.z,d=Math.hypot(dx,dz);if(d<BR+PR&&!B.gutter){var nx=dx/d,nz=dz/d,rv=(B.vx-p.vx)*nx+(B.vz-p.vz)*nz;if(rv>0){var j=2*rv/(1/7+1/1.5);p.vx+=j/1.5*nx;p.vz+=j/1.5*nz;B.vx-=j/7*nx;B.vz-=j/7*nz;p.down=true;sfx.play('hit')}p.x=B.x+nx*(BR+PR)}});
@@ -66,11 +79,11 @@
           S.mesh.position.set(B.x,B.gutter?BR-.08:BR,B.z);S.mesh.rotation.x-=B.vz*dt/BR;
           if(B.z<-LEN-1.2||(S.t>9)){S.phase='settle';S.t=0}}
         if(S.phase==='settle'){S.pins.forEach(function(p){if(!p.up)return;p.vx*=Math.pow(.1,dt);p.vz*=Math.pow(.1,dt);p.x+=p.vx*dt;p.z+=p.vz*dt;if(p.down)p.tilt=Math.min(Math.PI/2,p.tilt+dt*6);p.m.position.set(p.x,p.tilt?.03:0,p.z);p.m.rotation.set((p.ax||1)*p.tilt,0,(p.az||0)*p.tilt)});if(S.t>1.2){S.phase='wait';finishRoll(C)}}
-        var cz=S.phase==='roll'?Math.max(-LEN+3,B.z+1.6):S.phase==='settle'||S.phase==='wait'?-LEN+3:1.6;C.cam.position.z+=(cz-C.cam.position.z)*Math.min(1,dt*3);C.cam.position.y+=((S.phase==='aim'||S.phase==='charge'?1.1:.8)-C.cam.position.y)*Math.min(1,dt*3);C.cam.lookAt(0,0,C.cam.position.z-9);
+        if(S.phase==='throw')S.aim=S.aimLock;var cz=S.phase==='roll'?Math.max(-LEN+3,B.z+1.6):S.phase==='settle'||S.phase==='wait'?-LEN+3:3.0;var pre=S.phase==='aim'||S.phase==='charge'||S.phase==='throw';C.cam.position.x+=((pre?-.42:0)-C.cam.position.x)*Math.min(1,dt*3);C.cam.position.z+=(cz-C.cam.position.z)*Math.min(1,dt*3);C.cam.position.y+=((S.phase==='aim'||S.phase==='charge'||S.phase==='throw'?1.9:.8)-C.cam.position.y)*Math.min(1,dt*3);C.cam.lookAt(0,pre?.15:0,C.cam.position.z-9);
         var P=pl(),sc=score(P.rolls),fo=frameOf(P.rolls);
         C.hud('<span>'+P.n+'</span><span>Frame <b>'+Math.min(10,fo.f+1)+'</b></span><span>Score <b>'+sc.tot+'</b></span>'+(S.players.length>1?'<span>'+S.players.map(function(p){return p.n+' '+score(p.rolls).tot}).join(' · ')+'</span>':'')+(S.phase==='charge'?'<span>Puissance <b>'+Math.round(S.power*100)+' %</b></span>':'')+(S.msg?'<span style="background:#e2361b;color:#fff">'+S.msg+'</span>':''))},
       draw:function(C){C.R.render(C.scene,C.cam)}});
-    function throwB(C){var B=S.ball,sp=4+S.power*7;B.vx=Math.sin(S.aim)*sp;B.vz=-Math.cos(S.aim)*sp;B.spin=(Math.random()-.5)*.25;S.phase='roll';S.t=0;sfx.play('ui')}
+    function throwB(C){if(!S.pz){var B=S.ball,sp=4+S.power*7;B.vx=Math.sin(S.aim)*sp;B.vz=-Math.cos(S.aim)*sp;B.spin=(Math.random()-.5)*.25;S.phase='roll';S.t=0;sfx.play('ui');return}S.phase='throw';S.thr=0;S.aimLock=S.aim;sfx.play('ui')}
   })();
 
   /* ================= MINI-GOLF 3D ================= */
@@ -99,7 +112,9 @@
       for(var f2=0;f2<60;f2++){var fl2=new THREE.Mesh(new THREE.SphereGeometry(.06,5,4),lam([0xe2361b,0xf3c623,0xffffff,0xb072e0][f2%4]));var fa=Math.random()*6.283,fr=rnd(5,9);fl2.position.set(Math.cos(fa)*fr+(mn[0]+mx[0])/2,.06,Math.sin(fa)*fr+(mn[1]+mx[1])/2);sc.add(fl2)}
       S.mesh=new THREE.Mesh(new THREE.SphereGeometry(BR,20,14),lam(0xffffff));S.mesh.castShadow=true;sc.add(S.mesh);
       S.aimL=new THREE.Mesh(new THREE.BoxGeometry(.04,.02,1),new THREE.MeshBasicMaterial({color:0xf3c623}));sc.add(S.aimL);
-      S.players.forEach(function(p){p.x=H.s[0]+(S.players.length>1?(p.i-(S.players.length-1)/2)*.35:0);p.z=H.s[1];p.vx=p.vz=0;p.in=false;p.st=0});S.cur=0;S.drag=null}
+      S.players.forEach(function(p){p.x=H.s[0]+(S.players.length>1?(p.i-(S.players.length-1)/2)*.35:0);p.z=H.s[1];p.vx=p.vz=0;p.in=false;p.st=0});S.cur=0;S.drag=null;S.swing=null;
+      /* ton perso avec son putter, à côté de la balle */
+      S.pz=persoModel(sc,.5);if(S.pz){var club=new THREE.Group(),sh2=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,1.0,6),lam(0x9a9aa0));sh2.position.y=-.5;club.add(sh2);var gr2=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.22,8),lam(0x141210));gr2.position.y=-.05;club.add(gr2);var hd2=new THREE.Mesh(new THREE.BoxGeometry(.22,.07,.08),lam(0x2a2a30));hd2.position.set(.06,-1.0,0);club.add(hd2);club.rotation.x=-.25;S.pz.P.hands[1].add(club);S.pz.ang=0}}
     function P(){return S.players[S.cur]}
     function hitWalls(b){S.walls.forEach(function(w){var cx=Math.max(w[0],Math.min(w[2],b.x)),cz=Math.max(w[1],Math.min(w[3],b.z)),dx=b.x-cx,dz=b.z-cz,d=Math.hypot(dx,dz);if(d<BR&&d>0){var nx=dx/d,nz=dz/d;b.x=cx+nx*BR;b.z=cz+nz*BR;var v=b.vx*nx+b.vz*nz;if(v<0){b.vx-=1.8*v*nx;b.vz-=1.8*v*nz;sfx.play('tick')}}});
       S.bumps.forEach(function(c){var dx=b.x-c[0],dz=b.z-c[1],d=Math.hypot(dx,dz);if(d<c[2]+BR){var nx=dx/d,nz=dz/d;b.x=c[0]+nx*(c[2]+BR);b.z=c[1]+nz*(c[2]+BR);var v=b.vx*nx+b.vz*nz;if(v<0){b.vx-=2.1*v*nx;b.vz-=2.1*v*nz;sfx.play('hit')}}});
@@ -113,15 +128,23 @@
         build(C);C.keysText('Clique sur ta balle et tire vers l\'arrière comme un lance-pierre, relâche pour jouer · plus tu tires loin, plus c\'est fort');
         C.over('Mini-golf 3D',HOLES.length+' trous avec murs, bumpers et moulin. Le moins de coups gagne.'+(n>1?' Chacun son tour.':'')+'<br>Record : <b>'+(C.best('coups')||'—')+'</b> coups','Jouer')},
       start:function(C){if(S.hole||S.players[0].tot){this.setup(C);C.hide()}},
-      mouse:function(C,t,x,y){if(!C.running)return;var p=P();if(t==='down'&&!S.moving){S.drag={x:x,y:y}}if(t==='move'&&S.drag){S.drag.cx=x;S.drag.cy=y}
-        if(t==='up'&&S.drag&&S.drag.cx!=null){var dx=S.drag.x-S.drag.cx,dy=S.drag.y-S.drag.cy,l=Math.min(220,Math.hypot(dx,dy));if(l>8){var ang=Math.atan2(dx,dy);var sp=l/220*7.5,dir=S.camYaw||0;p.vx=Math.sin(ang)*sp;p.vz=Math.cos(ang)*sp;var cs=Math.cos(dir),sn=Math.sin(dir),vx=p.vx*cs+p.vz*sn,vz=-p.vx*sn+p.vz*cs;p.vx=vx;p.vz=vz;p.st++;p.tot++;S.moving=true;sfx.play('hit')}S.drag=null}else if(t==='up')S.drag=null},
+      mouse:function(C,t,x,y){if(!C.running)return;var p=P();if(t==='down'&&!S.moving&&!S.swing){S.drag={x:x,y:y}}if(t==='move'&&S.drag){S.drag.cx=x;S.drag.cy=y}
+        if(t==='up'&&S.drag&&S.drag.cx!=null){var dx=S.drag.x-S.drag.cx,dy=S.drag.y-S.drag.cy,l=Math.min(220,Math.hypot(dx,dy));if(l>8){var ang=Math.atan2(dx,dy);var sp=l/220*7.5,dir=S.camYaw||0;p.vx=Math.sin(ang)*sp;p.vz=Math.cos(ang)*sp;var cs=Math.cos(dir),sn=Math.sin(dir),vx=p.vx*cs+p.vz*sn,vz=-p.vx*sn+p.vz*cs;p.vx=0;p.vz=0;p.st++;p.tot++;S.swing={t:0,vx:vx,vz:vz,done:false,pw:l/220}}S.drag=null}else if(t==='up')S.drag=null},
       step:function(C,dt){var H=HOLES[S.hole];S.tt=(S.tt||0)+dt;S.bumps.forEach(function(b,i){if(b[5]){b[0]=b[4]+Math.sin(S.tt*1.4+i)*1.1;b[3].position.x=b[0]}});if(S.mill){S.mill.a+=dt*1.4;S.mill.bl.rotation.z=S.mill.a}S.flag.rotation.y=Math.sin(performance.now()/400)*.3;
         if(S.moving){var p=P(),n=6;for(var s=0;s<n;s++){var h=dt/n;p.x+=p.vx*h;p.z+=p.vz*h;hitWalls(p);var dh=Math.hypot(p.x-H.h[0],p.z-H.h[1]),sp=Math.hypot(p.vx,p.vz);if(dh<HR&&sp<4.5){p.in=true;S.moving=false;sfx.play('win');S.msg=p.st===1?'TROU EN UN !':(p.st-H.par<=-1?'BIRDIE':p.st===H.par?'PAR':p.st+' coups');C.pop(S.msg,p.st===1?'#f3c623':'#f1ece2');setTimeout(function(){S.msg=''},1400);nextTurn(C);break}else if(dh<HR*1.8&&sp<6){p.vx+=(H.h[0]-p.x)*h*6;p.vz+=(H.h[1]-p.z)*h*6}}
           var f=Math.pow(.45,dt);p.vx*=f;p.vz*=f;if(Math.hypot(p.vx,p.vz)<.06&&!p.in){p.vx=p.vz=0;S.moving=false;if(p.st>=8){p.in=true;p.tot+=1;S.msg='Maximum atteint'}nextTurn(C)}}
+        if(S.swing){var sw=S.swing,pc=P();sw.t+=dt;if(!sw.done&&sw.t>=.28){sw.done=true;pc.vx=sw.vx;pc.vz=sw.vz;S.moving=true;sfx.play('hit')}if(sw.t>.8)S.swing=null}
         var cur=P();S.mesh.position.set(cur.x,BR,cur.z);S.mesh.material.color.setHex(cur.c);
+        /* le perso se place à côté de la balle, face à elle, et fait son swing */
+        if(S.pz){var Hh=HOLES[S.hole],dirX,dirZ;if(S.drag&&S.drag.cx!=null){var ddx=S.drag.x-S.drag.cx,ddy=S.drag.y-S.drag.cy;var aa=Math.atan2(ddx,ddy);dirX=Math.sin(aa);dirZ=Math.cos(aa)}else if(S.swing){var vl=Math.hypot(S.swing.vx,S.swing.vz)||1;dirX=S.swing.vx/vl;dirZ=S.swing.vz/vl}else{var hx=Hh.h[0]-cur.x,hz=Hh.h[1]-cur.z,hl=Math.hypot(hx,hz)||1;dirX=hx/hl;dirZ=hz/hl}
+          var nx=-dirZ,nz=dirX,want=Math.atan2(-nx,-nz);var da=want-S.pz.ang;da=Math.atan2(Math.sin(da),Math.cos(da));if(!S.moving)S.pz.ang+=da*Math.min(1,dt*10);
+          var fx=Math.cos(S.pz.ang),fz=-Math.sin(S.pz.ang);var px=-Math.sin(S.pz.ang),pzz=-Math.cos(S.pz.ang);
+          if(!S.moving||S.swing){S.pz.m.position.set(cur.x-px*.42,0,cur.z-pzz*.42);S.pz.m.rotation.y=S.pz.ang}
+          var back=S.drag&&S.drag.cx!=null?Math.min(1,Math.hypot(S.drag.x-S.drag.cx,S.drag.y-S.drag.cy)/220):0,swz=S.swing?(S.swing.t<.28?(S.swing.pw)*(1-S.swing.t/.28)*.9-(S.swing.t/.28)*.1:-.1-Math.min(1,(S.swing.t-.28)/.25)*.6):back*.9;
+          pose(S.pz.P,{a0:.42,a1:.42,z0:swz+.1,z1:swz-.1,e0:-.15,e1:-.15,tx:.25,k0:.18,k1:.18,ry:-.02})}
         S.players.forEach(function(q,i){if(!q.m&&S.players.length>1){q.m=new THREE.Mesh(new THREE.SphereGeometry(BR,16,12),lam(q.c));C.scene.add(q.m)}if(q.m){q.m.visible=i!==S.cur&&!q.in;q.m.position.set(q.x,BR,q.z);if(q.m.parent!==C.scene)C.scene.add(q.m)}});
         if(S.drag&&S.drag.cx!=null){var dx=S.drag.x-S.drag.cx,dy=S.drag.y-S.drag.cy,l=Math.min(220,Math.hypot(dx,dy)),a=Math.atan2(dx,dy);S.aimL.visible=true;S.aimL.scale.z=l/220*3+.2;S.aimL.rotation.y=a;S.aimL.position.set(cur.x+Math.sin(a)*(S.aimL.scale.z/2),.03,cur.z+Math.cos(a)*(S.aimL.scale.z/2))}else S.aimL.visible=false;
-        var tx=cur.x,tz=cur.z;C.cam.position.x+=(tx-C.cam.position.x)*Math.min(1,dt*2.5);C.cam.position.z+=((tz+6)-C.cam.position.z)*Math.min(1,dt*2.5);C.cam.position.y=5.2;C.cam.lookAt(C.cam.position.x,0,C.cam.position.z-7.5);S.camYaw=0;
+        var tx=cur.x,tz=cur.z;C.cam.position.x+=(tx-C.cam.position.x)*Math.min(1,dt*2.5);C.cam.position.z+=((tz+6.5)-C.cam.position.z)*Math.min(1,dt*2.5);C.cam.position.y=5.6;C.cam.lookAt(C.cam.position.x,0,C.cam.position.z-8);S.camYaw=0;
         C.hud('<span>Trou <b>'+(S.hole+1)+' / '+HOLES.length+'</b></span><span>Par <b>'+H.par+'</b></span>'+S.players.map(function(q,i){return '<span'+(i===S.cur?' style="background:#e2361b;color:#fff"':'')+'>'+q.n+' <b>'+q.tot+'</b></span>'}).join('')+(S.msg?'<span style="background:#f3c623">'+S.msg+'</span>':'')+(S.drag&&S.drag.cx!=null?'<span>Puissance <b>'+Math.round(Math.min(220,Math.hypot(S.drag.x-S.drag.cx,S.drag.y-S.drag.cy))/2.2)+' %</b></span>':''))},
       draw:function(C){C.R.render(C.scene,C.cam)}});
   })();
@@ -142,7 +165,7 @@
         S={n:0,tot:0,shots:C.mode==='duel'?12:10,cur:0,pts:[0,0],tg:targetMesh(),flags:[]};sc.add(S.tg);
         var fl=new THREE.Mesh(new THREE.PlaneGeometry(.8,.5),new THREE.MeshLambertMaterial({color:0xe2361b,side:THREE.DoubleSide}));fl.position.set(4,3.2,-15);sc.add(fl);var fp=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,3.5,6),lam(0xffffff));fp.position.set(3.6,1.75,-15);sc.add(fp);S.flag=fl;
         S.bow=new THREE.Group();var bw=new THREE.Mesh(new THREE.TorusGeometry(.42,.02,6,24,Math.PI*.9),lam(0x5a3a22));bw.rotation.z=Math.PI/2+Math.PI*.05;S.bow.add(bw);S.str=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,.42,0),new THREE.Vector3(0,0,0),new THREE.Vector3(0,-.42,0)]),new THREE.LineBasicMaterial({color:0xeeeeee}));S.bow.add(S.str);sc.add(S.bow);
-        S.nock=arrowMesh();sc.add(S.nock);newShot();C.cam.position.set(0,1.6,0);S.yaw=0;S.pitch=0;
+        S.nock=arrowMesh();sc.add(S.nock);newShot();C.cam.position.set(0,1.6,0);S.yaw=0;S.pitch=0;S.pz=persoModel(sc,.7);
         C.keysText('Bouge la souris pour viser · maintiens le clic pour bander l\'arc, relâche pour tirer · regarde le vent (drapeau et flèche du haut)');
         C.over('Tir à l\'arc 3D',S.shots+' flèches, cible de plus en plus loin et qui se met à bouger à partir de la 5e. Compense le vent et la chute de la flèche. Le centre jaune vaut 10.'+(C.mode==='duel'?' J1 et J2 tirent chacun leur tour.':'')+'<br>Record : <b>'+C.best('pts')+'</b>','Jouer')},
       start:function(C){if(S.n){this.setup(C);C.hide()}},
@@ -150,7 +173,12 @@
       step:function(C,dt){C.cam.rotation.order='YXZ';C.cam.rotation.y+=(S.yaw-C.cam.rotation.y)*Math.min(1,dt*8);C.cam.rotation.x+=(S.pitch-C.cam.rotation.x)*Math.min(1,dt*8);
         if(S.phase==='draw')S.draw=Math.min(1,S.draw+dt*.9);
         var f=new THREE.Vector3(0,0,-1).applyEuler(C.cam.rotation),r=new THREE.Vector3(1,0,0).applyEuler(C.cam.rotation),u=new THREE.Vector3(0,1,0).applyEuler(C.cam.rotation);
-        S.bow.position.copy(C.cam.position).addScaledVector(f,1.25).addScaledVector(r,-.08).addScaledVector(u,-.1);S.bow.rotation.copy(C.cam.rotation);S.bow.scale.setScalar(.6);
+        /* vue à l'épaule : ton perso tient l'arc, la caméra est derrière lui */
+        if(S.pz){var yaw=C.cam.rotation.y,pit=C.cam.rotation.x,P3=S.pz.P;S.pz.m.position.set(0,0,0);S.pz.m.rotation.y=yaw;var dr=S.phase==='draw'?S.draw:0;
+          pose(P3,{a0:1.52+pit,z0:.12,a1:.35+pit,z1:1.35,e1:2.25-dr*.75,e0:0,ty:.2,k0:.1,k1:.1});P3.head.rotation.y=-.15;
+          var base=new THREE.Vector3(0,1.55,0);C.cam.position.copy(base).addScaledVector(f,-2.7).addScaledVector(r,.8).addScaledVector(u,.32);
+          S.pz.m.updateMatrixWorld(true);var lh=new THREE.Vector3();P3.hands[0].getWorldPosition(lh);S.bow.position.copy(lh);S.bow.rotation.copy(C.cam.rotation);S.bow.scale.setScalar(.55);S.base=base}
+        else{S.bow.position.copy(C.cam.position).addScaledVector(f,1.25).addScaledVector(r,-.08).addScaledVector(u,-.1);S.bow.rotation.copy(C.cam.rotation);S.bow.scale.setScalar(.6)}
         var pull=S.phase==='draw'?S.draw*.28:0;S.str.geometry.setFromPoints([new THREE.Vector3(0,.42,0),new THREE.Vector3(0,0,pull),new THREE.Vector3(0,-.42,0)]);
         S.nock.visible=S.phase==='aim'||S.phase==='draw';S.nock.position.copy(S.bow.position).addScaledVector(f,.2-pull*.6).addScaledVector(r,.0);S.nock.rotation.copy(C.cam.rotation);S.nock.scale.setScalar(.6);
         S.flag.rotation.y=Math.sign(S.wind)*.6+Math.sin(performance.now()/200)*.2;S.flag.scale.x=.5+Math.min(1.5,Math.abs(S.wind)/2);
@@ -160,7 +188,9 @@
         if(S.phase==='show'){S.t-=dt;if(S.t<=0){S.n++;if(S.n>=S.shots)return end(C);if(C.mode==='duel')S.cur=S.n%2;newShot()}}
         C.hud((C.mode==='duel'?'<span>Tir <b>J'+(S.cur+1)+'</b></span><span>J1 <b>'+S.pts[0]+'</b> · J2 <b>'+S.pts[1]+'</b></span>':'<span>Score <b>'+S.tot+'</b></span>')+'<span>Flèche <b>'+Math.min(S.shots,S.n+1)+' / '+S.shots+'</b></span><span>Cible <b>'+S.dist+' m</b></span><span>Vent <b>'+(S.wind>0?'→':'←')+' '+Math.abs(S.wind).toFixed(1)+'</b></span>'+(S.phase==='draw'?'<span>Tension <b>'+Math.round(S.draw*100)+' %</b></span>':'')+(S.msg?'<span style="background:#f3c623">'+S.msg+'</span>':''))},
       draw:function(C){C.R.render(C.scene,C.cam)}});
-    function shoot(C){var f=new THREE.Vector3(0,0,-1).applyEuler(C.cam.rotation),sp=20+S.draw*42;var m=arrowMesh();C.scene.add(m);S.arrow={m:m,p:C.cam.position.clone().addScaledVector(f,.6),v:f.multiplyScalar(sp),prevZ:0};S.phase='fly';sfx.play('ui');S.msg=''}
+    function shoot(C){var f=new THREE.Vector3(0,0,-1).applyEuler(C.cam.rotation),sp=20+S.draw*42;var m=arrowMesh();C.scene.add(m);
+      if(S.pz){var o=S.bow.position.clone(),tt=(-S.dist-C.cam.position.z)/(f.z||-1),aim=C.cam.position.clone().addScaledVector(f,tt),d=aim.sub(o).normalize();S.arrow={m:m,p:o,v:d.multiplyScalar(sp),prevZ:0}}
+      else S.arrow={m:m,p:C.cam.position.clone().addScaledVector(f,.6),v:f.multiplyScalar(sp),prevZ:0};S.phase='fly';sfx.play('ui');S.msg=''}
     function hit(C,pts){S.phase='show';S.t=1.6;C.pop(pts?(pts===10?'MOUCHE !':'+'+pts):'RATÉ',pts>=9?'#f3c623':pts>=7?'#e2361b':pts?'#3fa9ff':'#f1ece2');if(pts===10)C.shake(6);if(C.mode==='duel')S.pts[S.cur]+=pts;else S.tot+=pts;S.msg=pts?(pts===10?'MOUCHE ! 10':pts+' points'):'Raté';sfx.play(pts>=8?'win':pts?'hit':'lose');if(!pts&&S.arrow){}}
     function end(C){C.stop();if(C.mode==='duel'){C.over(S.pts[0]===S.pts[1]?'Égalité':(S.pts[0]>S.pts[1]?'J1':'J2')+' gagne !','J1 <b>'+S.pts[0]+'</b> – <b>'+S.pts[1]+'</b> J2','Rejouer');return}var nb=C.best('pts',S.tot);if(S.tot>=70)C.win();C.over('Fin du tir','Score : <b>'+S.tot+'</b> / 100'+(nb?' · nouveau record !':''),'Rejouer')}
   })();
