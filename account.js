@@ -16,7 +16,7 @@
     {id:'snake',n:'Paquet Snake',rec:function(){var s=PP.store('sn-best');return s?s+' pts':'—'},win:'—'},
     {id:'imp',n:'Mot imposteur',rec:function(){return '—'},win:'—'},
     {id:'prob',n:'Le plus probable',rec:function(){return '—'},win:'—'}
-  ];
+  ].concat((window.ARCADE_LIST||[]).map(function(g){return {id:g.id,n:g.n,rec:function(){var k=Object.keys(localStorage).filter(function(x){return x.indexOf(PP.key('ag-'+g.id+'-'))===0})[0];return k?localStorage.getItem(k):'—'},win:'Partie gagnée'}}));
   function profiles(){try{return JSON.parse(localStorage.getItem('pp-profiles'))||[]}catch(e){return []}}
   function saveProfiles(l){try{localStorage.setItem('pp-profiles',JSON.stringify(l))}catch(e){}}
   function h(s){var x=0;for(var i=0;i<s.length;i++)x=(x*31+s.charCodeAt(i))|0;return String(x)}
