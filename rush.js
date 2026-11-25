@@ -31,13 +31,14 @@
       var edge=new THREE.Mesh(new THREE.BoxGeometry(w+.1,.12,4.1),new THREE.MeshBasicMaterial({color:Math.random()<.5?0x3fa9ff:0xff3fb5}));edge.position.y=hgt/2;m.add(edge);
     })}
     // joueur
-    player=new THREE.Group();
+    player=new THREE.Group();var fill=new THREE.DirectionalLight(0xfff1e0,.9);fill.position.set(-3,5,8);scene.add(fill);
+    if(PP.perso&&PP.perso.build){mkPerso()}else{
     var suit=new THREE.MeshStandardMaterial({color:0x3fa9ff,roughness:.4,emissive:0x0a2a55}),dark=new THREE.MeshStandardMaterial({color:0x141210}),skin=new THREE.MeshStandardMaterial({color:0xf2d2b6});
     parts.body=new THREE.Mesh(new THREE.BoxGeometry(.7,.9,.45),suit);parts.body.position.y=1.15;player.add(parts.body);
     parts.head=new THREE.Mesh(new THREE.BoxGeometry(.5,.5,.5),skin);parts.head.position.y=1.9;player.add(parts.head);
     var visor=new THREE.Mesh(new THREE.BoxGeometry(.52,.16,.1),new THREE.MeshBasicMaterial({color:0xff3fb5}));visor.position.set(0,1.95,-.27);player.add(visor);
     function limb(x,yy,mat,h){var g=new THREE.Group();g.position.set(x,yy,0);var m=new THREE.Mesh(new THREE.BoxGeometry(.24,h,.24),mat);m.position.y=-h/2;g.add(m);player.add(g);return g}
-    parts.la=limb(-.48,1.55,suit,.7);parts.ra=limb(.48,1.55,suit,.7);parts.ll=limb(-.18,.72,dark,.72);parts.rl=limb(.18,.72,dark,.72);
+    parts.la=limb(-.48,1.55,suit,.7);parts.ra=limb(.48,1.55,suit,.7);parts.ll=limb(-.18,.72,dark,.72);parts.rl=limb(.18,.72,dark,.72);}
     var sh=new THREE.Mesh(new THREE.CircleGeometry(.5,20),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.4}));sh.rotation.x=-Math.PI/2;sh.position.y=.01;parts.shadow=sh;scene.add(sh);
     scene.add(player);
     ready=true;return true;
@@ -61,8 +62,11 @@
     if(open.length&&Math.random()<.75){var cl=PP.pick(open);for(var k=0;k<5;k++)mkObs('coin',cl,z-2-k*1.6)}
   }
 
+  /* le coureur = le perso du joueur (Mon perso) */
+  var model=null,P=null,avKey='';
+  function mkPerso(){var a=PP.perso.get(),k=JSON.stringify(a);if(model&&k===avKey)return;if(model)player.remove(model);avKey=k;model=PP.perso.build(a);P=model.userData.parts;player.add(model)}
   function reset(){
-    if(!init())return;
+    if(!init())return;if(P)mkPerso();
     objs.forEach(function(o){scene.remove(o.m)});objs=[];sparks.forEach(function(s){scene.remove(s.m)});sparks=[];
     lane=1;laneX=0;jumpT=0;slideT=0;y=0;speed=14;dist=0;coins=0;spawnZ=-30;dead=false;runT=0;
     for(var z=-45;z>-90;z-=14)spawnRow(z);spawnZ=-90;
@@ -112,9 +116,16 @@
     var sl=slideT>0,ph=runT*speed*.55;
     player.position.set(laneX,y,0);
     player.rotation.z=(LX[lane]-laneX)*-.12;
+    if(P){var s2=Math.sin(ph),air=y>0;
+      model.rotation.x=sl?1.05:(air?-.12:-.18);model.position.y=sl?.22:Math.abs(Math.cos(ph))*.07;model.position.z=sl?-.3:0;
+      if(sl){P.legs[0].rotation.x=P.legs[1].rotation.x=-1.0;P.knees[0].rotation.x=P.knees[1].rotation.x=.25;P.arms[0].rotation.x=P.arms[1].rotation.x=-2.3;P.arms[0].rotation.z=.25;P.arms[1].rotation.z=-.25;P.elbows.forEach(function(e){e.rotation.x=-.3})}
+      else if(air){P.legs[0].rotation.x=-1.1;P.knees[0].rotation.x=1.5;P.legs[1].rotation.x=.5;P.knees[1].rotation.x=.9;P.arms[0].rotation.x=-2.6;P.arms[1].rotation.x=-2.6;P.arms[0].rotation.z=.35;P.arms[1].rotation.z=-.35;P.elbows.forEach(function(e){e.rotation.x=-.4})}
+      else{P.legs[0].rotation.x=s2*.95;P.legs[1].rotation.x=-s2*.95;P.knees[0].rotation.x=Math.max(0,s2)*1.5+.15;P.knees[1].rotation.x=Math.max(0,-s2)*1.5+.15;
+        P.arms[0].rotation.x=-s2*.9;P.arms[1].rotation.x=s2*.9;P.arms[0].rotation.z=P.arms[1].rotation.z=0;P.elbows.forEach(function(e){e.rotation.x=-1.3})}
+    }else{
     parts.body.scale.y=sl?.5:1;parts.body.position.y=sl?.55:1.15;parts.head.position.y=sl?1.05:1.9;
     var sw=y>0?.6:Math.sin(ph)*.9;parts.la.rotation.x=sw;parts.ra.rotation.x=-sw;parts.ll.rotation.x=y>0?-.8:-sw;parts.rl.rotation.x=y>0?.4:sw;
-    parts.la.position.y=parts.ra.position.y=sl?.8:1.55;parts.ll.visible=parts.rl.visible=!sl;
+    parts.la.position.y=parts.ra.position.y=sl?.8:1.55;parts.ll.visible=parts.rl.visible=!sl;}
     parts.shadow.position.set(laneX,.01,0);parts.shadow.scale.setScalar(1-y*.25);
     camera.position.x+=((laneX*.6)-camera.position.x)*.12;camera.position.y=3.4+y*.25;camera.position.z=6.2;
     camera.lookAt(laneX*.4,1.2,-8);
