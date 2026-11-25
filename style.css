@@ -636,3 +636,14 @@ body.fs-mode::after{content:"";position:fixed;inset:0;background:#000;z-index:99
 .fx-cross{transition:transform .08s,opacity .15s}
 .pz-btns .primary{background:#e2361b;color:#fff;border:2px solid #e2361b;font:700 14px 'IBM Plex Mono',monospace;padding:11px 16px;cursor:pointer}.pz-btns .primary:hover{background:#fff;color:#141210;border-color:#fff}
 .tg-photo.loading::after{z-index:2}
+
+#tg-timer{background:#141210!important;color:#f1ece2!important}#tg-timer.hot{background:#e2361b!important;animation:tgHot .5s infinite alternate}@keyframes tgHot{to{transform:scale(1.08)}}
+.tg-photo.idle img{filter:blur(14px) grayscale(.4);opacity:.5}.tg-photo.idle::after{content:"Règle ta partie →";position:absolute;z-index:3;color:#f1ece2;font:400 clamp(22px,3vw,34px)/1.1 'Anton',sans-serif;letter-spacing:.03em;text-transform:uppercase;text-align:center;padding:0 20px}
+.tg-cfg label{display:grid;grid-template-columns:1fr 1.3fr;align-items:center;gap:10px;padding:8px 0;border-top:1px solid rgba(20,18,16,.15);font:700 12px 'IBM Plex Mono',monospace}
+.tg-cfg select{font:600 13px 'IBM Plex Mono',monospace;padding:6px 8px;border:2px solid #141210;background:#fff;color:#141210;width:100%}
+.tg-two{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center}.tg-two em{font-style:normal;opacity:.6}
+.tg-avail,.tg-note{font:500 12px 'IBM Plex Mono',monospace;margin:8px 0;opacity:.8}.tg-avail b{color:#e2361b}
+.tg-cfg .primary{width:100%;margin-top:4px}
+.tg-late{margin:0 0 6px;font:700 13px 'IBM Plex Mono',monospace;color:#e2361b}
+.tg-board div.me span{font-weight:800;color:#e2361b}.tg-board div.wait{opacity:.55}
+.tg-side.cfg .tg-yearbox,.tg-side.cfg .tg-mapbox,.tg-side.cfg .tg-hint,.tg-side.cfg #tg-ok{display:none}

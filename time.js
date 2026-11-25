@@ -4,7 +4,7 @@
   'use strict';
   var $=PP.$,esc=PP.esc,sfx=PP.sfx,net=PP.net,PH=(PP.TIME_PHOTOS||[]).slice(),MINY=1860,MAXY=2025;
   var map=null,mapReady=false,marker=null,pins=[],guess=null,locked=false,year=1950,sub=null,lines=[];
-  var S={rounds:null,ri:0,score:0},H={rounds:null,ri:0,ans:{},tot:{},open:false},online=false;
+  
   function dist(a,b){var r=Math.PI/180,dLa=(b[0]-a[0])*r,dLo=(b[1]-a[1])*r,x=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin(dLo/2)*Math.sin(dLo/2);return 2*6371*Math.asin(Math.sqrt(x))}
   function locPts(d){return d<25?5000:Math.round(5000*Math.exp(-d/1500))}
   function yearPts(dy){return Math.round(5000*Math.pow(Math.max(0,1-dy/25),1.5))}
@@ -36,7 +36,7 @@
   /* ---------- Manche ---------- */
   function showPhoto(p){
     var im=$('tg-img');$('tg-photo').classList.add('loading');im.onload=function(){$('tg-photo').classList.remove('loading')};im.onerror=function(){$('tg-photo').classList.remove('loading')};im.src=p.img;$('tg-photo').style.setProperty('--bg','url("'+p.img.replace(/"/g,'%22')+'")');
-    locked=false;clearMap();setYear(1950);$('tg-res').innerHTML='';$('tg-cap').textContent='';check();$('tg-side').classList.remove('done');setTimeout(function(){map.resize()},60);
+    locked=false;clearMap();setYear(Math.round((MINY+MAXY)/2));$('tg-res').innerHTML='';$('tg-cap').textContent='';check();$('tg-side').classList.remove('done');setTimeout(function(){map.resize()},60);
   }
   function result(p,g,y){
     var d=g?dist(g,p.ll):null,lp=g?locPts(d):0,dy=Math.abs(y-p.y),yp=yearPts(dy);return {d:d,lp:lp,dy:dy,yp:yp,tot:lp+yp};
@@ -49,64 +49,94 @@
     setTimeout(function(){fit(pts)},80);
   }
 
-  /* ---------- Solo ---------- */
-  function soloNew(){S.rounds=PP.shuffle(PH).slice(0,5);S.ri=0;S.score=0;soloRound()}
-  function soloRound(){$('tg-round').textContent='Manche '+(S.ri+1)+' / 5';$('tg-score').textContent=fmt(S.score)+' pts';showPhoto(S.rounds[S.ri])}
-  function soloAnswer(){
-    var p=S.rounds[S.ri],r=result(p,guess,year);S.score+=r.tot;sfx.play(r.tot>7000?'win':'ui');$('tg-score').textContent=fmt(S.score)+' pts';
-    reveal(p,[{g:guess,name:'toi'}]);var last=S.ri===4;
-    $('tg-res').innerHTML='<div class="tg-card"><div class="tg-pts"><b>+'+fmt(r.tot)+'</b><span>points</span></div><div class="tg-rows"><div><span>Année</span><b>'+year+'</b><em>'+(r.dy===0?'pile !':(r.dy+' an'+(r.dy>1?'s':'')+' d\'écart'))+'</em><i>+'+fmt(r.yp)+'</i></div><div><span>Lieu</span><b>'+km(r.d)+'</b><em>'+esc(p.p)+'</em><i>+'+fmt(r.lp)+'</i></div></div><button type="button" class="primary" id="tg-next">'+(last?'Score final':'Photo suivante')+'</button></div>';
-    $('tg-next').onclick=function(){
-      if(!last){S.ri++;soloRound();return}
-      var best=PP.store('tg-best'),nb=S.score>best;if(nb){PP.store('tg-best',S.score);PP.refreshHi()}if(S.score>=35000)PP.stat('time','win');
-      $('tg-res').innerHTML='<div class="tg-card final"><span class="lbl">Score final</span><div class="tg-big">'+fmt(S.score)+'<small> / 50 000</small></div><p>'+(nb?'Nouveau record !':'Record : '+fmt(Math.max(best,S.score)))+'</p><button type="button" class="primary" id="tg-again">Rejouer</button></div>';
-      $('tg-again').onclick=soloNew;
-    };
+  /* ---------- Réglages de partie (solo et salon) ---------- */
+  var CFG={n:5,from:1860,to:2025,t:0};
+  try{Object.assign(CFG,JSON.parse(localStorage.getItem(PP.key('tg-cfg')))||{})}catch(e){}
+  function pool(c){return PH.map(function(p,i){return i}).filter(function(i){return PH[i].y>=c.from&&PH[i].y<=c.to})}
+  function opts(list,cur,fmtf){return list.map(function(v){return '<option value="'+v+'"'+(v==cur?' selected':'')+'>'+(fmtf?fmtf(v):v)+'</option>'}).join('')}
+  function cfgHtml(online){
+    var ys=[];for(var y=1860;y<=2020;y+=10)ys.push(y);    var to=[];for(var y2=1869;y2<2025;y2+=10)to.push(y2);to.push(2025);
+    var n=pool(CFG).length;
+    return '<div class="tg-card tg-cfg"><span class="lbl">'+(online?'Salon '+esc(net.code)+' · '+net.players.length+' joueur'+(net.players.length>1?'s':''):'Nouvelle partie')+'</span>'+
+      '<label>Manches<select data-c="n">'+opts([3,5,8,10,15],CFG.n)+'</select></label>'+
+      '<label>Période<span class="tg-two"><select data-c="from">'+opts(ys,CFG.from)+'</select><em>à</em><select data-c="to">'+opts(to,CFG.to)+'</select></span></label>'+
+      '<label>Temps par photo<select data-c="t">'+opts([0,20,30,45,60,90,120],CFG.t,function(v){return v?(v<60?v+' s':(v/60)+' min'):'Illimité'})+'</select></label>'+
+      '<p class="tg-avail">'+(n<CFG.n?'<b>Seulement '+n+' photos</b> dans cette période : la partie en fera '+n+'.':n+' photos possibles dans cette période.')+'</p>'+
+      (online?'<p class="tg-note">Chacun joue à son rythme. À la fin, tu vois ton score et celui des autres dès qu\'ils ont fini.</p>':'')+
+      '<button type="button" class="primary" id="tg-go"'+(online&&net.players.length<2||n<1?' disabled':'')+'>'+(online?'Lancer pour tout le monde':'Commencer')+'</button></div>';
   }
-  $('tg-ok').addEventListener('click',function(){
-    if(locked||!guess)return;
-    if(online){locked=true;$('tg-ok').disabled=true;$('tg-hint').textContent='Réponse envoyée, on attend les autres.';var a={ll:guess,y:year};if(net.isHost){H.ans.host=a;hostCheck()}else net.send({t:'tg-a',a:a});return}
-    soloAnswer();
-  });
+  function bindCfg(online,go){
+    document.querySelectorAll('.tg-cfg [data-c]').forEach(function(s){s.onchange=function(){CFG[s.dataset.c]=+s.value;if(CFG.from>CFG.to){if(s.dataset.c==='from')CFG.to=Math.min(2025,CFG.from+9);else CFG.from=Math.max(1860,CFG.to-9)}
+      try{localStorage.setItem(PP.key('tg-cfg'),JSON.stringify(CFG))}catch(e){}$('tg-res').innerHTML=cfgHtml(online);bindCfg(online,go)}});
+    $('tg-go').onclick=go;
+  }
+  function idle(online){
+    G=null;stopTimer();locked=true;$('tg-ok').disabled=true;$('tg-side').classList.add('cfg');$('tg-photo').classList.add('idle');var rp=PH[Math.random()*PH.length|0];$('tg-img').src=rp.img;$('tg-photo').style.setProperty('--bg','url("'+rp.img+'")');$('tg-cap').textContent='';$('tg-hint').textContent='';
+    $('tg-round').textContent=online?'Salon '+net.code:'Quand et où';$('tg-score').textContent='';
+    $('tg-res').innerHTML=cfgHtml(online);bindCfg(online,function(){
+      var ids=PP.shuffle(pool(CFG)).slice(0,CFG.n),c={n:ids.length,from:CFG.from,to:CFG.to,t:CFG.t};if(!ids.length)return;
+      if(online){B={};net.players.forEach(function(p){B[p.name]={s:0,r:0,done:false}});net.broadcast({t:'tg-go',ids:ids,cfg:c});boardSend()}
+      startGame(ids,c,online)});
+  }
+
+  /* ---------- Partie : chacun à son rythme ---------- */
+  var G=null,B={},tmr=null;
+  function stopTimer(){if(tmr){clearInterval(tmr);tmr=null}$('tg-timer').textContent='';$('tg-timer').classList.remove('hot')}
+  function startGame(ids,c,on){
+    G={ids:ids,cfg:c,ri:0,score:0,online:on,res:[]};MINY=c.from;MAXY=c.to;$('tg-range').min=MINY;$('tg-range').max=MAXY;$('tg-photo').classList.remove('idle');$('tg-side').classList.remove('cfg');round();
+  }
+  function round(){
+    $('tg-round').textContent='Manche '+(G.ri+1)+' / '+G.ids.length;$('tg-score').textContent=fmt(G.score)+' pts';showPhoto(PH[G.ids[G.ri]]);stopTimer();
+    if(G.cfg.t){var end=Date.now()+G.cfg.t*1000;function tick(){var s=Math.max(0,Math.ceil((end-Date.now())/1000));$('tg-timer').textContent=s+' s';$('tg-timer').classList.toggle('hot',s<=5);if(s<=0){stopTimer();if(!locked)answer(true)}}tick();tmr=setInterval(tick,250)}
+  }
+  function answer(timeout){
+    if(locked)return;stopTimer();var p=PH[G.ids[G.ri]],r=result(p,guess,year);G.score+=r.tot;G.res.push(r.tot);
+    sfx.play(r.tot>7000?'win':'ui');$('tg-score').textContent=fmt(G.score)+' pts';reveal(p,[{g:guess,name:'toi'}]);
+    var last=G.ri===G.ids.length-1;
+    if(G.online)progress(G.ri+1,G.score,last);
+    $('tg-res').innerHTML='<div class="tg-card">'+(timeout?'<p class="tg-late">Temps écoulé !</p>':'')+'<div class="tg-pts"><b>+'+fmt(r.tot)+'</b><span>points</span></div><div class="tg-rows"><div><span>Année</span><b>'+year+'</b><em>'+(r.dy===0?'pile !':(r.dy+' an'+(r.dy>1?'s':'')+' d\'écart'))+'</em><i>+'+fmt(r.yp)+'</i></div><div><span>Lieu</span><b>'+(r.d==null?'—':km(r.d))+'</b><em>'+esc(p.p)+'</em><i>+'+fmt(r.lp)+'</i></div></div><button type="button" class="primary" id="tg-next">'+(last?'Voir mon score':'Photo suivante')+'</button></div>';
+    $('tg-next').onclick=function(){if(!last){G.ri++;round();return}finish()};
+  }
+  function finish(){
+    var max=G.ids.length*10000,html='<div class="tg-card final"><span class="lbl">Ton score</span><div class="tg-big">'+fmt(G.score)+'<small> / '+fmt(max)+'</small></div>';
+    if(!G.online){var best=PP.store('tg-best'),nb=G.cfg.n===5&&G.score>best;if(nb){PP.store('tg-best',G.score);PP.refreshHi()}if(G.score>=max*.7)PP.stat('time','win');
+      html+='<p>'+(nb?'Nouveau record !':G.cfg.n===5?'Record (5 manches) : '+fmt(Math.max(best,G.score)):G.ids.length+' manches · '+G.cfg.from+'–'+G.cfg.to)+'</p><div class="row"><button type="button" class="primary" id="tg-again">Rejouer</button><button type="button" class="ghost" id="tg-set">Changer les réglages</button></div></div>';
+      $('tg-res').innerHTML=html;$('tg-again').onclick=function(){startGame(PP.shuffle(pool(G.cfg)).slice(0,G.cfg.n),G.cfg,false)};$('tg-set').onclick=function(){idle(false)};return}
+    html+='<span class="lbl" style="margin-top:10px;display:block">Classement</span><div class="tg-board" id="tg-live"></div>'+(net.isHost?'<button type="button" class="primary" id="tg-again">Nouvelle partie</button>':'<p class="wait">Les scores arrivent quand les autres finissent</p>')+'</div>';
+    $('tg-res').innerHTML=html;drawBoard();if(net.isHost)$('tg-again').onclick=function(){idle(true)};
+  }
+  /* ---------- Classement en direct (l'hôte rassemble, tout le monde l'affiche) ---------- */
+  function progress(r,s,done){var m={t:'tg-p',r:r,s:s,done:done};if(net.isHost)hostGot(net.me.name,m);else net.send(m)}
+  function hostGot(name,m){if(!B[name])B[name]={s:0,r:0,done:false};B[name].s=m.s;B[name].r=m.r;B[name].done=!!m.done;boardSend()}
+  function boardSend(){net.broadcast({t:'tg-b',b:B,n:G?G.ids.length:0});drawBoard()}
+  function drawBoard(){
+    var el=$('tg-live');if(!el)return;var n=G?G.ids.length:0;
+    var rows=Object.keys(B).map(function(k){return {n:k,s:B[k].s,r:B[k].r,d:B[k].done}}).sort(function(a,b){return (b.d-a.d)||(b.s-a.s)});
+    var fin=rows.filter(function(r){return r.d}),top=fin.length?fin.slice().sort(function(a,b){return b.s-a.s})[0]:null;
+    if(fin.length===rows.length&&top&&top.n===net.me.name&&!drawBoard.won){drawBoard.won=1;PP.stat('time','win')}
+    el.innerHTML=rows.map(function(r,k){return '<div class="'+(r.n===net.me.name?'me':'')+(r.d?'':' wait')+'"><b>'+(r.d?k+1:'…')+'</b><span>'+esc(r.n)+'</span><em>'+(r.d?'fini':'manche '+Math.min(n,r.r+1)+' / '+n)+'</em><i>'+(r.d?fmt(r.s):'')+'</i></div>'}).join('');
+  }
+  $('tg-ok').addEventListener('click',function(){if(locked||!guess||!G)return;answer(false)});
 
   /* ---------- Salon ---------- */
-  function hostLobby(){
-    H.rounds=null;H.tot={};$('tg-round').textContent='Salon '+net.code;$('tg-score').textContent='';
-    $('tg-res').innerHTML='<div class="tg-card"><p><b>'+net.players.length+' joueurs</b> · 5 photos. Chacun devine l\'année et le lieu sur son appareil, les points s\'additionnent.</p><button type="button" class="primary" id="tg-launch"'+(net.players.length<2?' disabled':'')+'>Lancer</button></div>';
-    $('tg-launch').onclick=function(){H.rounds=PP.shuffle(PH.map(function(p,i){return i})).slice(0,5);H.ri=0;H.tot={};hostRound()};
-  }
-  function hostRound(){H.ans={};H.open=true;var i=H.rounds[H.ri];net.broadcast({t:'tg-r',r:H.ri,i:i});roundUI(H.ri,i);hostStatus()}
-  function roundUI(r,i){$('tg-round').textContent='Manche '+(r+1)+' / 5';showPhoto(PH[i]);$('tg-score').textContent=''}
-  function hostStatus(){$('tg-res').innerHTML='<div class="tg-card"><p>'+Object.keys(H.ans).length+' / '+net.players.length+' ont répondu.</p><button type="button" class="ghost" id="tg-force">Terminer la manche</button></div>';$('tg-force').onclick=hostReveal}
-  function hostCheck(){if(!H.open)return;hostStatus();if(Object.keys(H.ans).length>=net.players.length)hostReveal()}
-  function hostReveal(){
-    if(!H.open)return;H.open=false;var i=H.rounds[H.ri],p=PH[i];
-    var rows=net.players.map(function(pl){var a=H.ans[pl.id],r=a?result(p,a.ll,a.y):{tot:0};H.tot[pl.name]=(H.tot[pl.name]||0)+r.tot;return {name:pl.name,g:a?a.ll:null,y:a?a.y:null,d:r.d,tot:r.tot}});
-    var m={t:'tg-res',i:i,rows:rows,tot:H.tot,last:H.ri===4};net.broadcast(m);showRes(m,true);
-  }
-  function showRes(m,isHost){
-    var p=PH[m.i];sfx.play('win');reveal(p,m.rows);
-    var rows=m.rows.slice().sort(function(a,b){return b.tot-a.tot});
-    var h='<div class="tg-card"><div class="tg-board">'+rows.map(function(r,k){return '<div><b>'+(k+1)+'</b><span>'+esc(r.name)+'</span><em>'+(r.y==null?'pas de réponse':r.y+' · '+km(r.d))+'</em><i>+'+fmt(r.tot)+'</i></div>'}).join('')+'</div>';
-    h+=isHost?'<button type="button" class="primary" id="tg-hnext">'+(m.last?'Classement final':'Photo suivante')+'</button>':'<p class="wait">L\'hôte passe à la suite</p>';
-    $('tg-res').innerHTML=h+'</div>';$('tg-score').textContent=fmt(m.tot[net.me.name]||0)+' pts';
-    if(isHost)$('tg-hnext').onclick=function(){if(H.ri>=4)return hostEnd();H.ri++;hostRound()};
-  }
-  function endHtml(tot){var r=Object.keys(tot).map(function(n){return {n:n,s:tot[n]}}).sort(function(a,b){return b.s-a.s});if(r.length&&r[0].n===net.me.name)PP.stat('time','win');return '<div class="tg-card final"><span class="lbl">Classement</span><div class="tg-board">'+r.map(function(x,k){return '<div><b>'+(k+1)+'</b><span>'+esc(x.n)+'</span><em></em><i>'+fmt(x.s)+'</i></div>'}).join('')+'</div>'}
-  function hostEnd(){net.broadcast({t:'tg-end',tot:H.tot});$('tg-res').innerHTML=endHtml(H.tot)+'<button type="button" class="primary" id="tg-again">Rejouer</button></div>';$('tg-again').onclick=hostLobby}
   function listen(){
     if(sub)return;
     sub=net.on(function(m,from){
       if(PP.cur()!=='time')return;
-      if(net.isHost){if(m.t==='tg-a'&&H.open&&!H.ans[from]){H.ans[from]=m.a;hostCheck()}if(m.t==='players'&&!H.rounds)hostLobby()}
-      else{if(m.t==='tg-r')roundUI(m.r,m.i);if(m.t==='tg-res')showRes(m,false);if(m.t==='tg-end')$('tg-res').innerHTML=endHtml(m.tot)+'<p class="wait">L\'hôte peut relancer</p></div>'}
+      if(net.isHost){
+        if(m.t==='tg-p'){var pl=net.players.filter(function(p){return p.id===from})[0];if(pl)hostGot(pl.name,m)}
+        if(m.t==='players'){if(!G)idle(true);else{net.players.forEach(function(p){if(!B[p.name])B[p.name]={s:0,r:0,done:false}});boardSend()}}
+      }else{
+        if(m.t==='tg-go'){B={};drawBoard.won=0;startGame(m.ids,m.cfg,true)}
+        if(m.t==='tg-b'){B=m.b;drawBoard()}
+      }
     });
   }
   PP.games.time={
-    open:function(){if(!initMap())return;setTimeout(function(){map.resize()},60);online=net.inRoom();
-      if(online){listen();if(net.isHost)hostLobby();else{$('tg-round').textContent='Salon '+net.code;$('tg-res').innerHTML='<div class="tg-card"><p class="wait">L\'hôte lance la partie</p></div>'}return}
-      if(!S.rounds)soloNew();else soloRound()},
-    close:function(){if(sub){sub();sub=null}}
+    open:function(){if(!initMap())return;setTimeout(function(){map.resize()},60);var online=net.inRoom();
+      if(online){listen();if(net.isHost){if(!G||!G.online)idle(true)}else if(!G||!G.online){G=null;$('tg-photo').classList.add('idle');$('tg-side').classList.add('cfg');locked=true;$('tg-round').textContent='Salon '+net.code;$('tg-score').textContent='';$('tg-res').innerHTML='<div class="tg-card"><p class="wait">L\'hôte règle la partie et la lance</p></div>'}return}
+      if(!G||G.online)idle(false)},
+    close:function(){stopTimer();if(sub){sub();sub=null}}
   };
-  PP._tg=function(){return {S:S,setGuess:function(g){guess=g;check()},setYear:setYear,map:function(){return map}}};
+  PP._tg=function(){return {G:function(){return G},B:function(){return B},setGuess:function(g){guess=g;check()},setYear:setYear,map:function(){return map},answer:answer}};
 })();
