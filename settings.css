@@ -37,3 +37,5 @@
 @media (max-width:720px){header nav{display:flex!important;gap:0}header nav button{padding:6px 7px!important;font-size:12px!important}header nav [data-go=menu],header nav [data-go=room]{display:none}}
 .stage .lockhint{pointer-events:none}[data-resume].nudge{animation:nudge .45s cubic-bezier(.2,.9,.3,1.6)}@keyframes nudge{25%{transform:translateX(-6px) scale(1.06)}50%{transform:translateX(6px) scale(1.06)}75%{transform:translateX(-3px)}}
 html.pp-rtl main.wrap,html.pp-rtl header .wrap,html.pp-rtl footer{direction:rtl}html.pp-rtl .stage,html.pp-rtl .stage-bar,html.pp-rtl .keys{direction:ltr}.st-lang{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
+#v-surv .pz-restart{display:none}
+.pz-btns .pz-restart{background:#d4a32a!important;color:#141210!important;border:2px solid #d4a32a!important}.pz-btns .pz-restart:hover{background:#f1ece2!important;border-color:#f1ece2!important}

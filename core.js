@@ -127,12 +127,15 @@ window.PP=(function(){
   }
   function pauseHtml(){
     function rng(k,l,min,max,step,unit){return '<label class="pz-row"><span>'+l+'</span><input type="range" data-set="'+k+'" min="'+min+'" max="'+max+'" step="'+step+'"><em data-val="'+k+'"></em></label>'}
-    return '<div class="pz"><div class="pz-l"><b>PAUSE</b><div class="pz-btns"><button type="button" class="primary" data-resume>Reprendre</button><button type="button" class="pz-quit" data-quit>Quitter le jeu</button></div><p class="pz-hint">Clique sur Reprendre pour rejouer</p></div>'+
+    return '<div class="pz"><div class="pz-l"><b>PAUSE</b><div class="pz-btns"><button type="button" class="primary" data-resume>Reprendre</button><button type="button" class="ink pz-restart" data-restart>Recommencer</button><button type="button" class="pz-quit" data-quit>Quitter le jeu</button></div><p class="pz-hint">Clique sur Reprendre pour rejouer</p></div>'+
       '<div class="pz-set"><h4>Réglages</h4>'+rng('vol','Volume',0,100,5)+rng('sens','Sensibilité souris',30,250,5)+rng('fov','Champ de vision (3D)',60,100,1)+
       '<label class="pz-row"><span>Qualité (3D)</span><select data-set="q"><option value="auto">Auto</option><option value="haute">Haute</option><option value="basse">Basse (plus fluide)</option></select><em></em></label>'+
       '<label class="pz-row chk"><span>Inverser la souris (haut/bas)</span><input type="checkbox" data-set="invY"><em></em></label>'+
       '<label class="pz-row chk"><span>Afficher les images par seconde</span><input type="checkbox" data-set="fpsMeter"><em></em></label></div></div>';
   }
+  /* Recommencer : on ferme le jeu, on le rouvre à neuf et on relance la partie (tout est remis à zéro) */
+  function restartGame(){var v=current;setPause(false);go('menu');go(v);
+    setTimeout(function(){var bs=[].slice.call(document.querySelectorAll('#v-'+v+' .overlay:not([hidden]) button.primary, #v-'+v+' .overlay:not([hidden]) button.ink'));var b=bs.filter(function(x){return !x.hidden&&x.offsetParent&&!/online|skins/.test(x.id)})[0];if(b)b.click()},90)}
   function fmtSet(k,v){return k==='vol'||k==='sens'?v+' %':k==='fov'?v+'°':''}
   function syncSettings(root){(root||document).querySelectorAll('[data-set]').forEach(function(i){var k=i.dataset.set;if(i.type==='checkbox')i.checked=!!SET[k];else i.value=SET[k]});(root||document).querySelectorAll('[data-val]').forEach(function(e){e.textContent=fmtSet(e.dataset.val,SET[e.dataset.val])})}
   function bindSettings(root){syncSettings(root);root.querySelectorAll('[data-set]').forEach(function(i){var k=i.dataset.set;i.addEventListener('input',function(){var v=i.type==='checkbox'?i.checked:i.type==='range'?+i.value:i.value;setSetting(k,v);syncSettings()});i.addEventListener('change',function(){var v=i.type==='checkbox'?i.checked:i.type==='range'?+i.value:i.value;setSetting(k,v);syncSettings()})})}
@@ -162,6 +165,7 @@ window.PP=(function(){
     ov.addEventListener('mousedown',function(e){e.stopPropagation()});ov.addEventListener('click',function(e){e.stopPropagation()});
     ov.querySelector('[data-resume]').addEventListener('click',function(e){e.stopPropagation();setPause(false);document.dispatchEvent(new CustomEvent('pp-resume'))});
     ov.querySelector('[data-quit]').addEventListener('click',function(e){e.stopPropagation();setPause(false);go('menu')});
+    ov.querySelector('[data-restart]').addEventListener('click',function(e){e.stopPropagation();restartGame()});
     bindSettings(ov);
     bar.querySelector('[data-fs]').addEventListener('click',function(){toggleFs(st)});
     var tb=document.createElement('div');tb.className='fs-tools';tb.innerHTML='<button type="button" data-pause>Pause</button><button type="button" data-fsx>Quitter le plein écran</button>';st.appendChild(tb);
