@@ -10,7 +10,12 @@ window.ARCADE_LIST=[
   {id:'golf',n:'Mini-golf 3D',sub:'3D · 6 trous, moulin et bumpers',pl:'1–4',cat:'pc solo 3d',modes:[['solo','Solo','Le moins de coups'],['duel','2 joueurs','Chacun son tour'],['trio','3 joueurs','Chacun son tour'],['quad','4 joueurs','Chacun son tour']]},
   {id:'arch',n:'Tir à l\'arc 3D',sub:'3D · vent et distance',pl:'1–2',cat:'pc solo 3d',modes:[['solo','Solo','10 flèches'],['duel','2 joueurs','Chacun son tour']]},
   {id:'tanks',n:'Tanks',sub:'Duel · obus qui rebondissent',pl:'1–2',cat:'pc solo',modes:[['solo','Solo','Contre l\'ordinateur'],['duel','2 joueurs','Même clavier']]},
-  {id:'navale',n:'Bataille navale',sub:'Stratégie · coule la flotte',pl:'1–2',cat:'tel solo',modes:[['solo','Solo','Contre l\'ordinateur'],['online','En ligne','Contre un pote du salon']]}
+  {id:'navale',n:'Bataille navale',sub:'Stratégie · coule la flotte',pl:'1–2',cat:'tel solo',modes:[['solo','Solo','Contre l\'ordinateur'],['online','En ligne','Contre un pote du salon']]},
+  {id:'typing',n:'Course de frappe',sub:'Clavier · tape plus vite que les autres',pl:'1–8',cat:'pc tel solo',modes:[['solo','Solo','Contre 3 bots'],['online','En ligne','Tout le salon']]},
+  {id:'quiz',n:'Quiz',sub:'Party · culture générale chrono',pl:'1–12',cat:'tel solo',modes:[['solo','Solo','10 questions'],['online','En ligne','Tout le salon répond']]},
+  {id:'memory',n:'Memory',sub:'Cartes · retrouve les paires',pl:'1–2',cat:'pc solo',modes:[['solo','Solo','Le moins de coups'],['duel','2 joueurs','Chacun son tour']]},
+  {id:'mines',n:'Démineur',sub:'Réflexion · évite les mines',pl:'1',cat:'solo',modes:[['easy','Facile','12 × 8, 12 mines'],['mid','Moyen','16 × 10, 26 mines'],['hard','Difficile','20 × 11, 45 mines']]},
+  {id:'pong',n:'Pong néon',sub:'Arcade · duel de raquettes',pl:'1–2',cat:'pc solo',modes:[['solo','Solo','Contre l\'ordinateur'],['duel','2 joueurs','Même clavier']]}
 ];
 (function(){
   var tiles=document.getElementById('tiles'),anchor=document.getElementById('v-geo');if(!tiles||!anchor)return;
