@@ -1443,7 +1443,7 @@
   $('fps-online').addEventListener('click',function(){mode='br';goOnline()});
   function start(){
     mode='zombie';
-    if(introBusy||!init())return;introBusy=true;online=false;auth=true;UI.chat&&(UI.chat.hidden=true);
+    if(introBusy||!init())return;introBusy=true;online=false;mobFull(true);auth=true;UI.chat&&(UI.chat.hidden=true);
     /* 1. tirage de la carte (roulette) */
     var row=$('fps-ov').querySelector('.row'),msg=$('fps-msg'),maps=Object.keys(MAPS),target=PP.pick(maps),steps=12+Math.floor(Math.random()*3),i0=Math.floor(Math.random()*maps.length),n=0;
     row.hidden=true;$('fps-skins').hidden=true;$('fps-title').textContent='Tirage de la carte';msg.className='fps-roll';

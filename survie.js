@@ -1730,8 +1730,8 @@
   function lock(){if(cv.requestPointerLock&&matchMedia('(hover:hover)').matches)try{var r=cv.requestPointerLock();if(r&&r.catch)r.catch(function(){if(running&&!menusOpen()){paused=true;$('sv-lockhint').hidden=false}})}catch(e){}}
   function unlock(){if(document.pointerLockElement===cv&&document.exitPointerLock)document.exitPointerLock()}
   var tl=null;
-  cv.addEventListener('touchstart',function(e){var t=e.touches[0];tl={x:t.clientX,y:t.clientY}},{passive:true});
-  cv.addEventListener('touchmove',function(e){if(!tl||!P)return;var t=e.touches[0];P.yaw-=(t.clientX-tl.x)*.006;P.pitch=Math.max(-1.4,Math.min(1.4,P.pitch-(t.clientY-tl.y)*.006));tl={x:t.clientX,y:t.clientY};e.preventDefault()},{passive:false});
+  cv.addEventListener('touchstart',function(e){var t=e.targetTouches[0]||e.changedTouches[0];tl={x:t.clientX,y:t.clientY}},{passive:true});
+  cv.addEventListener('touchmove',function(e){if(!tl||!P)return;var t=e.targetTouches[0]||e.changedTouches[0];P.yaw-=(t.clientX-tl.x)*.006;P.pitch=Math.max(-1.4,Math.min(1.4,P.pitch-(t.clientY-tl.y)*.006));tl={x:t.clientX,y:t.clientY};e.preventDefault()},{passive:false});
   PP.held('sv-pad',{},function(k){if(k==='A'){mouseDown=true;attack()}if(k==='E')interact();if(k==='F2')eat();if(k==='F'||k==='B'||k==='L'||k==='R')keys[k]=true},function(k){if(k==='A')mouseDown=false;if(k==='F'||k==='B'||k==='L'||k==='R')keys[k]=false});
 
   function start(fresh){
