@@ -203,7 +203,7 @@
     function markSunk(F,cells){cells.forEach(function(q){for(var dx=-1;dx<=1;dx++)for(var dy=-1;dy<=1;dy++){var a=q[0]+dx,b=q[1]+dy;if(a>=0&&b>=0&&a<N&&b<N&&!F.shots[a][b])F.shots[a][b]=3}})}
     PP.arcade({id:'navale',
       setup:function(C){S={me:place(),op:C.mode==='solo'?place():{b:empty(),ships:SH.map(function(l){return {len:l,cells:[],hits:0}}),shots:empty()},turn:0,ai:{q:[]},over:false,count:0,msg:'',hover:null,sunkOp:0};
-        if(C.mode==='online'){S.ready={};S.turn=C.net.isHost?0:1;C.listen(function(m){if(m.t!=='rel')return;var d=m.d;
+        if(C.mode==='online'){var ids=C.net.players.map(function(p){return p.id}),role=ids.indexOf(C.net.me.id);if(role>1){C.over('Bataille navale','Cette partie se joue à deux : les deux premiers du salon s\'affrontent.',false);return}S.ready={};S.turn=C.net.isHost?0:1;C.listen(function(m){if(m.t!=='rel')return;var d=m.d;
             if(d.t==='nv-shot'){var r=shootAt(S.me,d.x,d.y);if(r&&r.sunk)markSunk(S.me,r.sunk);C.net.relay({t:'nv-res',x:d.x,y:d.y,hit:r&&r.hit,sunk:r&&r.sunk});sfx.play(r&&r.hit?'hit':'tick');if(allSunk(S.me)){C.net.relay({t:'nv-win'});end(C,false);return}S.turn=r&&r.hit?1:0;S.msg=S.turn?'Touché, il rejoue':'À toi de tirer'}
             if(d.t==='nv-res'){S.op.shots[d.x][d.y]=d.hit?2:1;if(d.sunk){S.sunkOp++;markSunk(S.op,d.sunk);d.sunk.forEach(function(q){S.op.shots[q[0]][q[1]]=4})}S.turn=d.hit?0:1;S.msg=d.hit?(d.sunk?'Coulé ! Rejoue':'Touché ! Rejoue'):'Dans l\'eau…';sfx.play(d.hit?'hit':'tick')}
             if(d.t==='nv-win')end(C,true)})}

@@ -14,10 +14,16 @@
     {id:'geo',name:'Devine où',desc:'Le plus proche gagne la manche',min:2},
     {id:'imp',name:'Mot imposteur',desc:'Chacun son mot sur son téléphone',min:3},
     {id:'prob',name:'Le plus probable',desc:'Votes entre potes',min:3},
-    {id:'snake',name:'Paquet Snake',desc:'2 à 4 serpents',min:2,max:4}
+    {id:'snake',name:'Paquet Snake',desc:'2 à 4 serpents',min:2,max:4},
+    {id:'draw',name:'Dessine et devine',desc:'Un dessine, les autres devinent',min:2},
+    {id:'quiz',name:'Quiz',desc:'Culture générale, le plus rapide marque',min:2},
+    {id:'typing',name:'Course de frappe',desc:'Tape la phrase le plus vite',min:2},
+    {id:'reflex',name:'Réflexes',desc:'Appuie dès que ça devient rouge',min:2},
+    {id:'c4',name:'Quatre en ligne',desc:'Aligne 4 jetons',min:2,max:2},
+    {id:'navale',name:'Bataille navale',desc:'Coule la flotte d\'en face',min:2,max:2}
   ];
 
-  var GN={party:'Dernier Debout',time:'Quand et où',surv:'Survie','fps-br':'Bunker · battle royale',fps:'Bunker 3D',sumo:'Sumo Arena',foot:'Foot 2v2',kart:'Pixel Kart',run:'Néon Rush',geo:'Devine où',imp:'Mot imposteur',prob:'Le plus probable',snake:'Paquet Snake'},curGame=null,lobby=PP.lobby;
+  var GN={party:'Dernier Debout',time:'Quand et où',surv:'Survie','fps-br':'Bunker · battle royale',fps:'Bunker 3D',sumo:'Sumo Arena',foot:'Foot 2v2',kart:'Pixel Kart',run:'Néon Rush',geo:'Devine où',imp:'Mot imposteur',prob:'Le plus probable',snake:'Paquet Snake',draw:'Dessine et devine',quiz:'Quiz',typing:'Course de frappe',reflex:'Réflexes',c4:'Quatre en ligne',navale:'Bataille navale'},curGame=null,lobby=PP.lobby;
   function beat(){if(net.inRoom()&&net.isHost&&lobby)lobby.register({code:net.code,host:net.me.name,n:net.players.length,game:curGame})}
   setInterval(beat,8000);
   PP.setRoomGame=function(g){curGame=g;beat()};
