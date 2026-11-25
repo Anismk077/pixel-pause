@@ -1023,9 +1023,11 @@
   function heal(){if(inv.bandage>0&&P.hp<100){inv.bandage--;P.hp=Math.min(100,P.hp+35);msg('Bandage : +35 vie');sfx.play('pickup')}else if(inv.eau>0){inv.eau--;P.water=Math.min(100,P.water+40);msg('Tu bois une bouteille');sfx.play('ui')}else msg('Ni bandage ni eau');hudInv()}
   function hurt(d){d*=[1,.7,.45][inv.armure||0];P.hp-=d;lastHurt=performance.now();var h=$('sv-hurt');h.classList.remove('on');void h.offsetWidth;h.classList.add('on');sfx.play('hurt');if(P.hp<=0)die()}
   function die(){
+    if(P.dying)return;P.dying=true;setTimeout(function(){P.dying=false},500);
+    if(P.boat){P.boat.v=0;P.boat=null}P.under=null;P.swim=false;P.vy=0;
     sfx.play('lose');var best=PP.store('sv-best');if(day>best){PP.store('sv-best',day);PP.refreshHi()}
-    if(P.spawn){var lost={};['bois','pierre','fer','baies','viande','cuite','conserve','cuir'].forEach(function(k){var n=Math.floor((inv[k]||0)/2);if(n){lost[k]=n;inv[k]-=n}});dropAt(P.x,P.z,lost);P.x=P.spawn.x;P.z=P.spawn.z;P.hp=60;P.food=Math.max(P.food,40);P.water=Math.max(P.water,40);msg('Tu te réveilles dans ton lit. Ton sac est resté là où tu es tombé.');save();return}
-    if(online){var lost2={};['bois','pierre','fer','baies','viande','cuite','conserve','cuir'].forEach(function(k){var n=Math.floor((inv[k]||0)/2);if(n){lost2[k]=n;inv[k]-=n}});dropAt(P.x,P.z,lost2);var rs=Object.keys(remotes).map(function(k){return remotes[k]}).filter(function(r){return r.hp>0})[0],sp=rs?{x:rs.x+2,z:rs.z+2}:findSpawn();P.x=sp.x;P.z=sp.z;P.hp=60;P.food=Math.max(P.food,40);P.water=Math.max(P.water,40);msg('Tu réapparais près de tes potes. Ton sac est resté là où tu es tombé.');return}
+    if(P.spawn){var lost={};['bois','pierre','fer','baies','viande','cuite','conserve','cuir'].forEach(function(k){var n=Math.floor((inv[k]||0)/2);if(n){lost[k]=n;inv[k]-=n}});dropAt(P.x,P.z,lost);P.x=P.spawn.x;P.z=P.spawn.z;P.y=groundAt(P.x,P.z);P.hp=60;P.food=Math.max(P.food,40);P.water=Math.max(P.water,40);msg('Tu te réveilles dans ton lit. Ton sac est resté là où tu es tombé.');save();return}
+    if(online){var lost2={};['bois','pierre','fer','baies','viande','cuite','conserve','cuir'].forEach(function(k){var n=Math.floor((inv[k]||0)/2);if(n){lost2[k]=n;inv[k]-=n}});dropAt(P.x,P.z,lost2);var rs=Object.keys(remotes).map(function(k){return remotes[k]}).filter(function(r){return r.hp>0})[0],sp=rs?{x:rs.x+2,z:rs.z+2}:findSpawn();P.x=sp.x;P.z=sp.z;P.y=groundAt(P.x,P.z);P.hp=60;P.food=Math.max(P.food,40);P.water=Math.max(P.water,40);msg('Tu réapparais près de tes potes. Ton sac est resté là où tu es tombé.');return}
     running=false;cancelAnimationFrame(raf);unlock();exitFull();try{localStorage.removeItem(PP.key('survie2'))}catch(e){}
     $('sv-title').textContent='Tu es mort';$('sv-msg').textContent='Tu as survécu '+day+' jour'+(day>1?'s':'')+' et rempli '+goalI+' objectif'+(goalI>1?'s':'')+' sur '+GOALS.length+'. Construis un lit pour réapparaître la prochaine fois.';$('sv-start').textContent='Nouvelle île';$('sv-cont').hidden=true;$('sv-ov').hidden=false;
   }
@@ -1356,7 +1358,7 @@
 
   /* ---------- Interface ---------- */
   function hudBars(){
-    [['hp',P.hp],['food',P.food],['water',P.water],['stam',P.stam]].forEach(function(b){var el=$('sv-'+b[0]);el.style.width=Math.max(0,b[1])+'%';el.parentNode.parentNode.classList.toggle('low',b[1]<25)});
+    [['hp',Math.max(0,P.hp)],['food',P.food],['water',P.water],['stam',P.stam]].forEach(function(b){var el=$('sv-'+b[0]);el.style.width=Math.max(0,b[1])+'%';el.parentNode.parentNode.classList.toggle('low',b[1]<25)});
     var hrs=dayT*24,hh=Math.floor(hrs),mm=Math.floor((hrs-hh)*6)*10;
     $('sv-clock').innerHTML='JOUR '+day+' · '+('0'+hh).slice(-2)+':'+('0'+mm).slice(-2)+(isNight()?(bloodNight()?' · <b class="blood">NUIT DE SANG</b>':' · <b>NUIT</b>'):'')+(rescueT>0?' · secours dans '+rescueT+' j':'');
     $('sv-goal').innerHTML='<small>OBJECTIF '+(goalI+1)+' / '+GOALS.length+'</small>'+esc(GOALS[goalI].t);
