@@ -1,0 +1,119 @@
+/* Bunker 3D — interface v2 : barre d'armes au centre (style battle royale), vie + armure, pièces, invites d'achat, armurerie */
+#v-fps .fx-ui{--ink:#141210;--paper:#f1ece2;--gold:#d4a32a;--red:#e2361b;font-family:'IBM Plex Mono',monospace;color:var(--paper)}
+#v-fps .fx-ui kbd{font:700 11px 'IBM Plex Mono',monospace;background:var(--paper);color:var(--ink);border:0;border-bottom:2px solid #9b9384;border-radius:3px;padding:1px 6px;line-height:1.4}
+
+/* viseur : 4 traits qui s'écartent selon la précision (--g) + point central */
+#v-fps .fx-cross{width:0;height:0;--g:10px;transition:opacity .12s}
+#v-fps .fx-cross i{position:absolute;background:var(--paper);box-shadow:0 0 0 1px rgba(0,0,0,.55);transition:transform .07s}
+#v-fps .fx-cross i:nth-child(1){left:-1px;top:auto;bottom:var(--g);width:2px;height:8px}
+#v-fps .fx-cross i:nth-child(2){left:-1px;bottom:auto;top:var(--g);width:2px;height:8px}
+#v-fps .fx-cross i:nth-child(3){top:-1px;left:auto;right:var(--g);width:8px;height:2px}
+#v-fps .fx-cross i:nth-child(4){top:-1px;right:auto;left:var(--g);width:8px;height:2px}
+#v-fps .fx-cross b{position:absolute;left:-2px;top:-2px;width:4px;height:4px;border-radius:50%;background:var(--paper);box-shadow:0 0 0 1px rgba(0,0,0,.55)}
+
+/* vague en haut à gauche */
+#v-fps .fx-top{left:14px;top:12px;background:none;padding:0;display:grid;grid-template-columns:auto auto;column-gap:8px;align-items:end;text-shadow:0 2px 0 rgba(0,0,0,.5)}
+#v-fps .fx-top b{font:400 clamp(34px,5.5vw,54px)/.85 Anton,Impact,sans-serif;color:var(--red);grid-row:span 2}
+#v-fps .fx-top span{font:700 11px 'IBM Plex Mono',monospace;letter-spacing:.14em}
+#v-fps .fx-top small{font:600 11px 'IBM Plex Mono',monospace;opacity:.85;white-space:nowrap}
+#v-fps .fx-top:not(:has(b)){background:var(--ink);padding:6px 10px;display:block;font-size:12px}
+
+/* vie + armure en bas à gauche */
+#v-fps .fx-hp{left:14px;bottom:14px;background:none;padding:0;min-width:0;width:clamp(150px,24%,230px);display:flex;flex-direction:column;gap:5px}
+#v-fps .fx-bar{display:grid;grid-template-columns:auto 1fr;align-items:center;column-gap:8px;background:rgba(20,18,16,.78);padding:5px 9px;border-left:4px solid #6fd16a}
+#v-fps .fx-bar span{font-size:9px;letter-spacing:.14em;opacity:.75;grid-column:1/-1}
+#v-fps .fx-bar b{font:400 22px/1 Anton,Impact,sans-serif;margin:0;min-width:34px}
+#v-fps .fx-bar i{display:block;height:7px;background:#3a3631;margin:0}
+#v-fps .fx-bar em{display:block;height:100%;background:#6fd16a;transition:width .25s}
+#v-fps .fx-bar.low{border-left-color:var(--red)}#v-fps .fx-bar.low em{background:var(--red)}#v-fps .fx-bar.low b{color:#ff8a70;animation:fxLow .7s ease-in-out infinite alternate}
+#v-fps .fx-arm{border-left-color:#4aa3ff}#v-fps .fx-arm em{background:#4aa3ff}
+#v-fps .fx-arm.off{opacity:.35}
+@keyframes fxLow{to{opacity:.45}}
+
+/* munitions au-dessus de la barre d'armes */
+#v-fps .fx-ammo{right:auto;left:50%;bottom:calc(14px + clamp(50px,7.4vw,66px) + 8px);transform:translateX(-50%);background:none;padding:0;text-align:center;text-shadow:0 2px 0 rgba(0,0,0,.6);pointer-events:none}
+#v-fps .fx-ammo b{display:flex;align-items:baseline;justify-content:center;gap:6px;font:400 clamp(24px,3.4vw,34px)/1 Anton,Impact,sans-serif}
+#v-fps .fx-ammo b i{font-style:normal}#v-fps .fx-ammo b i.low{color:#ff6a4a}
+#v-fps .fx-ammo b small{font:600 13px 'IBM Plex Mono',monospace;opacity:.7;display:inline;margin:0}
+#v-fps .fx-ammo span{font-size:11px;opacity:.85;letter-spacing:.06em;display:block;margin-top:2px}
+
+/* barre d'armes au centre */
+#v-fps .fx-slots{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:6px;pointer-events:auto}
+#v-fps .fx-slot{all:unset;box-sizing:border-box;position:relative;width:clamp(64px,9.6vw,92px);height:clamp(50px,7.4vw,66px);background:rgba(20,18,16,.72);border:2px solid rgba(241,236,226,.25);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .15s,border-color .15s,background .15s;--t:#9b9384}
+#v-fps .fx-slot::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--t)}
+#v-fps .fx-slot.t1{--t:#5fc95a}#v-fps .fx-slot.t2{--t:#a46cf0}#v-fps .fx-slot.t3{--t:#e8b531}
+#v-fps .fx-slot svg{width:78%;height:auto;fill:var(--paper);opacity:.85}
+#v-fps .fx-slot kbd{position:absolute;left:3px;top:3px;font-size:9px;padding:0 4px}
+#v-fps .fx-slot small{position:absolute;left:0;right:0;top:calc(100% + 3px);text-align:center;font-size:9px;opacity:0;white-space:nowrap;transition:opacity .15s}
+#v-fps .fx-slot.on{border-color:var(--paper);background:rgba(241,236,226,.16);transform:translateY(-6px)}
+#v-fps .fx-slot.on svg{opacity:1}
+#v-fps .fx-slot.empty{border-style:dashed;cursor:default;opacity:.55}#v-fps .fx-slot.empty::after{display:none}
+
+/* pièces en haut à droite, sous la mini-carte */
+#v-fps .fx-coins{left:auto;right:12px;bottom:auto;top:170px;background:var(--ink);color:var(--paper);display:flex;align-items:center;gap:7px;padding:5px 10px;font:400 20px/1 Anton,Impact,sans-serif;letter-spacing:.02em}
+#v-fps .fx-coins i{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe58a,#d4a32a 60%,#8a6410);box-shadow:0 0 0 2px #8a6410 inset}
+#v-fps .fx-pops{position:absolute;right:14px;top:200px;width:120px;height:80px;pointer-events:none}
+#v-fps .fx-pops span{position:absolute;right:0;top:0;font:400 20px Anton,Impact,sans-serif;color:#ffd75a;text-shadow:0 2px 0 rgba(0,0,0,.6);animation:fxPop .95s ease-out forwards}
+#v-fps .fx-pops span.neg{color:#ff7a5a}
+@keyframes fxPop{0%{opacity:0;transform:translate(10px,6px) scale(.8)}15%{opacity:1;transform:translate(0,0) scale(1.15)}30%{transform:scale(1)}100%{opacity:0;transform:translateY(-46px)}}
+#v-fps .fx-feed{top:206px}
+
+/* invite d'action (porte, armurerie) */
+#v-fps .fx-prompt{position:absolute;left:50%;top:62%;transform:translate(-50%,8px);display:flex;align-items:center;gap:10px;background:rgba(20,18,16,.85);padding:8px 12px;font-size:13px;opacity:0;transition:opacity .15s,transform .15s;pointer-events:none;white-space:nowrap;border-bottom:3px solid var(--gold)}
+#v-fps .fx-prompt.on{opacity:1;transform:translate(-50%,0)}
+#v-fps .fx-prompt b{color:#fff}
+#v-fps .fx-prompt em{font:400 18px/1 Anton,Impact,sans-serif;font-style:normal;color:var(--gold);display:flex;align-items:center;gap:5px}
+#v-fps .fx-prompt em::before{content:"";width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe58a,#d4a32a 60%,#8a6410)}
+#v-fps .fx-prompt em.no{color:#ff7a5a}
+
+/* glissade : traits de vitesse sur les bords */
+#v-fps .fx-slidefx{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .2s;background:repeating-linear-gradient(90deg,transparent 0 46px,rgba(255,255,255,.06) 46px 48px);-webkit-mask:radial-gradient(ellipse at center,transparent 45%,#000 80%);mask:radial-gradient(ellipse at center,transparent 45%,#000 80%)}
+#v-fps .fx-slidefx.on{opacity:1}
+
+/* armurerie */
+#v-fps .fx-shop{position:absolute;inset:clamp(8px,3%,26px);z-index:8;background:rgba(241,236,226,.97);color:#141210;border:2px solid #141210;padding:clamp(10px,2vw,18px);overflow:auto;pointer-events:auto;text-align:left;animation:shopIn .22s cubic-bezier(.2,.8,.2,1)}
+#v-fps .fx-shop[hidden]{display:none}
+@keyframes shopIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+#v-fps .sh-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+#v-fps .sh-head>b{font:400 clamp(24px,3.4vw,34px)/1 Anton,Impact,sans-serif;text-transform:uppercase;flex:1}
+#v-fps .sh-pts{display:flex;align-items:center;gap:6px;background:#141210;color:#f1ece2;padding:5px 10px;font:400 20px/1 Anton,Impact,sans-serif}
+#v-fps .sh-pts i{width:13px;height:13px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe58a,#d4a32a 60%,#8a6410)}
+#v-fps .sh-x{font:600 12px 'IBM Plex Mono',monospace;padding:7px 10px}
+#v-fps .sh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+#v-fps .sh-extra{margin-top:10px}
+#v-fps .sh-card{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:4px;background:#fff;border:2px solid #141210;padding:10px;position:relative;transition:transform .12s,box-shadow .12s;--t:#9b9384}
+#v-fps .sh-card.t1{--t:#3f9a3a}#v-fps .sh-card.t2{--t:#7c46c8}#v-fps .sh-card.t3{--t:#c48d10}
+#v-fps .sh-card svg{width:100%;height:34px;fill:#141210}
+#v-fps .sh-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--t)}
+#v-fps .sh-card b{font:600 14px 'Inter Tight',sans-serif}
+#v-fps .sh-card>span{font:500 11px 'IBM Plex Mono',monospace;opacity:.75}
+#v-fps .sh-st{display:grid;grid-template-columns:auto 1fr;gap:3px 6px;align-items:center;font:600 9px 'IBM Plex Mono',monospace;opacity:.8}
+#v-fps .sh-st i{display:block;height:5px;background:#e1dbcf}#v-fps .sh-st em{display:block;height:100%;background:#141210}
+#v-fps .sh-card>em{font:400 18px/1 Anton,Impact,sans-serif;font-style:normal;color:#141210;display:flex;align-items:center;gap:5px;margin-top:2px}
+#v-fps .sh-card>em::before{content:"";width:11px;height:11px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe58a,#d4a32a 60%,#8a6410)}
+#v-fps .sh-card small{font:500 10px 'IBM Plex Mono',monospace;color:#e2361b}
+#v-fps .sh-card:hover{transform:translate(-2px,-2px);box-shadow:4px 4px 0 #141210}
+#v-fps .sh-card.no{opacity:.5}#v-fps .sh-card.no>em{color:#e2361b}
+#v-fps .sh-card.shake{animation:shShake .3s}
+@keyframes shShake{25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-2px)}}
+
+@media (max-width:700px){
+  #v-fps .fx-coins{top:112px;font-size:16px}#v-fps .fx-pops{top:136px}#v-fps .fx-feed{top:140px}
+  #v-fps .fx-hp{width:130px}#v-fps .fx-bar b{font-size:16px}
+}
+/* au téléphone en plein écran : rien sous les pouces */
+#v-fps .ft-full .fx-slots{bottom:auto;top:46px;transform:translateX(-50%) scale(.72);transform-origin:top center}
+#v-fps .ft-full .fx-ammo{bottom:auto!important;top:6px!important;left:50%!important;right:auto!important;transform:translateX(-50%)!important}
+#v-fps .ft-full .fx-ammo b{font-size:20px}#v-fps .ft-full .fx-ammo span{display:none}
+#v-fps .ft-full .fx-hp{left:auto!important;right:50%!important;bottom:auto!important;top:auto!important;transform:none!important}
+#v-fps .ft-full .fx-hp{position:absolute;left:calc(3% + 56px)!important;right:auto!important;top:10px!important;width:120px;gap:3px}
+#v-fps .ft-full .fx-bar{padding:3px 7px}#v-fps .ft-full .fx-bar b{font-size:14px;min-width:24px}#v-fps .ft-full .fx-bar span{display:none}
+#v-fps .ft-full #fx-top{display:none}
+#v-fps .ft-full #fx-coins{display:flex!important;top:110px;font-size:14px;padding:3px 7px}
+#v-fps .ft-full .fx-prompt{top:44%}
+#v-fps .ft-full .fx-slots{top:40px}
+#v-fps .stage.ft-full .fx-mini{width:104px;height:104px;top:10px;right:10px}
+#v-fps .ft-full #fx-coins{top:120px!important;right:10px}
+.ft-use{right:4%;bottom:calc(12% + min(40vmin,190px))}
+.ft-sw{right:calc(5% + min(38vmin,180px));bottom:12%}
+.ft-slide{left:calc(4% + min(30vmin,150px) + 10px);bottom:8%}

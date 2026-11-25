@@ -1,0 +1,73 @@
+/* Pixel Pause — animations légères (apparitions, survols, transitions de pages).
+   Tout est rangé sous .pp-anim, ajouté par anim.js sauf si le visiteur a demandé moins d'animations. */
+
+/* ---------- Titre de l'accueil : lettres qui montent une par une ---------- */
+.pp-anim .mast-title .ch{display:inline-block;font-style:normal;animation:ppChar .7s cubic-bezier(.2,.9,.25,1.15) backwards;animation-delay:calc(var(--i) * 45ms + 80ms);transition:transform .25s cubic-bezier(.2,.9,.3,1.4),color .2s}
+.pp-anim .mast-title .ch:hover{transform:translateY(-8%) rotate(-4deg);color:var(--acc)}
+@keyframes ppChar{from{opacity:0;transform:translateY(60%) rotate(6deg)}to{opacity:1;transform:none}}
+.pp-anim .mast-title span{display:inline-block;animation:ppDot 2.6s ease-in-out 1.2s infinite}
+@keyframes ppDot{0%,62%,100%{transform:none}70%{transform:translateY(-22%) scale(1.15)}78%{transform:translateY(4%) scaleY(.85)}86%{transform:none}}
+.pp-anim .mast-side{animation:ppRise .7s cubic-bezier(.2,.8,.2,1) .45s backwards}
+.pp-anim .mast{position:relative}
+.pp-anim .mast::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:2px;background:var(--acc);transform-origin:left;animation:ppLine 1.1s cubic-bezier(.7,0,.2,1) .3s both}
+@keyframes ppLine{0%{transform:scaleX(0)}55%{transform:scaleX(1);transform-origin:left}56%{transform-origin:right}100%{transform:scaleX(0);transform-origin:right}}
+.pp-anim .filters{animation:ppRise .6s cubic-bezier(.2,.8,.2,1) .6s backwards}
+
+/* ---------- Liste des jeux : apparition au scroll ---------- */
+.pp-anim .row-game{animation:none;opacity:0;transform:translateY(26px);transition:opacity .6s ease,transform .7s cubic-bezier(.2,.8,.2,1),background-size .32s cubic-bezier(.7,0,.2,1),color .2s,padding .25s}
+.pp-anim .row-game.in{opacity:1;transform:none}
+/* survol : l'encre remplit la ligne de gauche à droite */
+.pp-anim .row-game{background:linear-gradient(var(--text),var(--text)) no-repeat 0 0/0 100%}
+.pp-anim .row-game:hover,.pp-anim .row-game:focus-visible{background:linear-gradient(var(--text),var(--text)) no-repeat 0 0/100% 100%}
+.pp-anim .row-game .rg-n{display:inline-block;transition:transform .3s cubic-bezier(.2,.9,.3,1.4),color .2s}
+.pp-anim .row-game:hover .rg-n{transform:translateX(4px) scale(1.25);color:var(--acc)}
+.pp-anim .row-game .rg-pl{transition:transform .3s cubic-bezier(.2,.9,.3,1.4)}
+.pp-anim .row-game:hover .rg-pl{transform:translateX(-6px)}
+.pp-anim .row-game:active{transform:scale(.99)}
+
+/* ---------- Changement de page ---------- */
+.pp-curtain{position:fixed;inset:0;z-index:9500;pointer-events:none;background:var(--acc);color:var(--bg);display:flex;align-items:center;justify-content:center;visibility:hidden;clip-path:inset(0 0 0 0)}
+.pp-curtain b{font:400 clamp(44px,11vw,150px)/.9 var(--display);text-transform:uppercase;letter-spacing:.005em;text-align:center;padding:0 5vw}
+.pp-curtain.go{visibility:visible;animation:ppWipe .62s cubic-bezier(.75,0,.2,1) both}
+.pp-curtain.go b{animation:ppTitle .62s cubic-bezier(.75,0,.2,1) both}
+@keyframes ppWipe{0%{clip-path:inset(0 0 0 0);opacity:.6}12%{opacity:1}38%{clip-path:inset(0 0 0 0)}100%{clip-path:inset(0 0 100% 0)}}
+@keyframes ppTitle{0%{transform:translateY(30px);opacity:0}25%,45%{transform:none;opacity:1}100%{transform:translateY(-60px);opacity:0}}
+/* contenu de la nouvelle page qui arrive en cascade */
+.pp-anim .view.on>:not(.cursor-img):not(.glist):not(.mast):not(.filters){animation:ppRise .55s cubic-bezier(.2,.8,.2,1) backwards}
+.pp-anim .view.on>:nth-child(1){animation-delay:.18s}
+.pp-anim .view.on>:nth-child(2){animation-delay:.24s}
+.pp-anim .view.on>:nth-child(3){animation-delay:.3s}
+.pp-anim .view.on>:nth-child(4){animation-delay:.36s}
+.pp-anim .view.on>:nth-child(5){animation-delay:.42s}
+.pp-anim .view.on>:nth-child(n+6){animation-delay:.48s}
+.pp-anim #v-menu .filters{animation-delay:.6s}
+@keyframes ppRise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.pp-anim .modes .mode{animation:ppRise .5s cubic-bezier(.2,.8,.2,1) backwards}
+.pp-anim .modes .mode:nth-child(2){animation-delay:.05s}.pp-anim .modes .mode:nth-child(3){animation-delay:.1s}.pp-anim .modes .mode:nth-child(4){animation-delay:.15s}
+
+/* ---------- En-tête : ombre au scroll, soulignement animé, barre de progression ---------- */
+header{transition:box-shadow .25s}
+header.pp-scrolled{box-shadow:0 6px 0 -4px rgba(20,18,16,.12)}
+.pp-anim header{animation:ppDrop .6s cubic-bezier(.2,.8,.2,1) backwards}
+@keyframes ppDrop{from{transform:translateY(-100%)}to{transform:none}}
+.pp-anim header nav button{background:linear-gradient(var(--acc),var(--acc)) no-repeat 50% 100%/0 2px;transition:background-size .25s cubic-bezier(.2,.8,.2,1),color .2s}
+.pp-anim header nav button:hover{text-decoration:none;background:linear-gradient(var(--acc),var(--acc)) no-repeat 50% 100%/calc(100% - 16px) 2px;color:var(--acc)}
+.pp-anim .logo{transition:letter-spacing .3s cubic-bezier(.2,.8,.2,1)}
+.pp-anim .logo:hover{letter-spacing:.05em}
+.pp-anim .logo span{display:inline-block;transition:transform .3s cubic-bezier(.2,.9,.3,1.6)}
+.pp-anim .logo:hover span{transform:translateY(-20%) scale(1.4)}
+.pp-prog{position:absolute;left:0;bottom:-2px;height:2px;width:100%;background:var(--acc);transform:scaleX(0);transform-origin:left;pointer-events:none}
+
+/* ---------- Boutons : petite ombre d'encre au survol ---------- */
+@media (hover:hover){
+  .pp-anim button.primary,.pp-anim button.ink,.pp-anim button.line,.pp-anim button.ghost{transition:transform .15s,box-shadow .15s,background .15s,color .15s,border-color .15s}
+  .pp-anim button.primary:hover,.pp-anim button.ink:hover,.pp-anim button.line:hover,.pp-anim button.ghost:hover{transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--line)}
+  .pp-anim button.primary:active,.pp-anim button.ink:active,.pp-anim button.line:active,.pp-anim button.ghost:active{transform:none;box-shadow:0 0 0 var(--line)}
+  .pp-anim .mode:hover{box-shadow:4px 4px 0 var(--line)}
+}
+
+/* ---------- Pied de page ---------- */
+.pp-anim footer .wrap{opacity:0;transform:translateY(12px);transition:opacity .6s,transform .6s cubic-bezier(.2,.8,.2,1)}
+.pp-anim footer .wrap.in{opacity:1;transform:none}
+
+@media (prefers-reduced-motion:reduce){.pp-curtain{display:none}}
