@@ -16,12 +16,13 @@
 <link rel="stylesheet" href="anim.css?v=1.0">
 <link rel="stylesheet" href="fps-ui.css?v=1.6">
 <link rel="stylesheet" href="settings.css?v=1.6">
+<link rel="stylesheet" href="social.css?v=1.2">
 </head>
 <body>
 <header><div class="wrap">
   <a class="logo" href="#" data-go="menu">Pixel Pause<span>.</span></a>
   <div class="roombar" id="roombar" hidden><span class="dot"></span><span id="roombar-txt"></span><button class="mini" id="roombar-leave" type="button">Quitter</button></div>
-  <nav><button type="button" data-go="menu">Jeux</button><button type="button" data-go="room">Salon</button><button type="button" data-go="account" id="nav-acc">Compte</button><button type="button" data-go="settings">Paramètres</button></nav>
+  <nav><button type="button" data-go="menu">Jeux</button><button type="button" data-go="room">Salon</button><button type="button" data-go="perso">Mon perso</button><button type="button" data-go="account" id="nav-acc">Compte</button><button type="button" data-go="settings">Paramètres</button></nav>
 </div></header>
 
 <main class="wrap">
@@ -51,6 +52,12 @@
 <section class="view" id="v-account">
   <h2>Compte</h2>
   <div id="acc-box"></div>
+  <p class="back"><button type="button" class="ghost" data-go="menu">← Retour aux jeux</button></p>
+</section>
+
+<section class="view" id="v-perso">
+  <h2>Mon perso</h2>
+  <div id="perso-box"></div>
   <p class="back"><button type="button" class="ghost" data-go="menu">← Retour aux jeux</button></p>
 </section>
 
@@ -270,18 +277,19 @@
 <script src="arcade-list.js?v=9.5"></script>
 <script src="core.js?v=8.4"></script>
 <script src="sfx.js?v=7.0"></script>
-<script src="net.js?v=8.8"></script>
+<script src="net.js?v=9.0"></script>
 <script src="mp.js?v=7.0"></script>
 <script src="lobby.js?v=7.0"></script>
-<script src="room.js?v=9.0"></script>
+<script src="perso.js?v=1.0"></script>
+<script src="room.js?v=9.1"></script>
 <script src="cloud.js?v=8.1"></script>
-<script src="account.js?v=8.2"></script>
+<script src="account.js?v=8.3"></script>
 <script src="langs.js?v=1.0"></script>
-<script src="settings.js?v=1.8"></script>
+<script src="settings.js?v=1.9"></script>
 <script src="imposteur.js?v=7.0"></script>
 <script src="probable.js?v=7.0"></script>
 <script src="snake.js?v=7.0"></script>
-<script src="fps.js?v=11.2"></script>
+<script src="fps.js?v=11.3"></script>
 <script src="party.js?v=8.4"></script>
 <script src="sumo.js?v=8.4"></script>
 <script src="foot.js?v=9.1"></script>

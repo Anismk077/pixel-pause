@@ -684,8 +684,8 @@
     while(vscene.children.length>3)vscene.remove(vscene.children[3]);
     var gg=new THREE.Group(),gun=gunModel(P.gun,GUN_SKINS[skins.gun].c),GD=GUNS[P.gun];gg.add(gun);gg.userData.gun=gun;
     /* bras et mains : gants, doigts repliés sur la poignée, manches de la tenue */
-    var tc=new THREE.Color(CH_SKINS[skins.ch].c),glove=new THREE.MeshStandardMaterial({color:0x2a2724,roughness:.85}),knuck=new THREE.MeshStandardMaterial({color:0x3a3632,roughness:.7}),
-      sleeve=new THREE.MeshStandardMaterial({color:tc.getHex(),roughness:.9}),cuff=new THREE.MeshStandardMaterial({color:tc.clone().multiplyScalar(.55).getHex(),roughness:.9}),skinM=new THREE.MeshStandardMaterial({color:0xc98f68,roughness:.65});
+    var PA=PP.perso?PP.perso.get():null,tc=new THREE.Color(PA?PA.topCol:CH_SKINS[skins.ch].c),glove=new THREE.MeshStandardMaterial({color:0x2a2724,roughness:.85}),knuck=new THREE.MeshStandardMaterial({color:0x3a3632,roughness:.7}),
+      sleeve=new THREE.MeshStandardMaterial({color:tc.getHex(),roughness:.9}),cuff=new THREE.MeshStandardMaterial({color:tc.clone().multiplyScalar(.55).getHex(),roughness:.9}),skinM=new THREE.MeshStandardMaterial({color:PA?PA.skin:0xc98f68,roughness:.65});
     function limb(par,a,dir,len,r,mat){var d=new THREE.Vector3(dir[0],dir[1],dir[2]).normalize(),m=new THREE.Mesh(new THREE.CapsuleGeometry(r,len,4,12),mat);m.position.set(a[0]+d.x*len/2,a[1]+d.y*len/2,a[2]+d.z*len/2);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d);par.add(m);return m}
     function seg(par,x,y,z,len,r,ax){var m=new THREE.Mesh(new THREE.CapsuleGeometry(r,len,3,8),glove);m.position.set(x,y,z);if(ax==='z')m.rotation.x=Math.PI/2;else if(ax==='x')m.rotation.z=Math.PI/2;par.add(m);return m}
     // main droite sur la poignée

@@ -26,6 +26,7 @@
     GAMES.forEach(function(g){tot.p+=PP.store('st-'+g.id+'-parties');tot.w+=PP.store('st-'+g.id+'-win')});
     var x='<div class="acc-top"><div><span class="lbl">Compte</span><div class="acc-name">'+(cur?esc(cur):'Invité')+'</div><p class="muted">'+(cur?'Tes records, tes stats, tes skins et ta survie sont rangés dans ce compte.':'Tu joues sans compte. Crée-en un pour garder tes records et ta survie à ton nom.')+'</p></div>'+
       '<div class="acc-big"><div><b>'+tot.p+'</b><span>parties</span></div><div><b>'+tot.w+'</b><span>victoires</span></div><div><b>'+PP.store('st-surv-kills')+'</b><span>créatures abattues</span></div></div></div>';
+    if(PP.perso)x+='<div class="panel acc-perso">'+PP.perso.img(PP.perso.get(),84,'perso-pic big')+'<div><h3 class="t">Mon perso</h3><p class="muted">Ton personnage : on le voit dans les salons et il est utilisé dans les jeux 3D. Il est gardé dans ce compte.</p><button type="button" class="primary" data-go="perso">Personnaliser mon perso</button></div></div>';
     var CL=PP.cloud;
     if(CL&&CL.state!=='off'){
       x+='<div class="panel cloud-box"><h3 class="t">Compte en ligne</h3>';
