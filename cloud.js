@@ -101,8 +101,14 @@ window.PP_CLOUD_CFG=window.PP_CLOUD_CFG||{apiKey:'AIzaSyBM4-trHYAvg0bPShkUOhJAIt
   function push(force){
     if(!C.user||!C.local)return Promise.resolve();var d=snapshot(C.local),js=JSON.stringify(d);if(!force&&js===lastSent)return Promise.resolve();lastSent=js;var t=Date.now();
     var o={d:d,t:t,name:C.name,email:C.user.email||''},ref=db.collection('users').doc(C.user.uid);
-    return ref.update(o).catch(function(e){if(e&&e.code==='not-found')return ref.set(o,{merge:true});throw e}).then(function(){localStorage.setItem(prefix(C.local)+'cloud-t',t);C.lastSync=t;C.state='sync';emit()}).catch(function(e){C.state='error';C.err=C.msg(e);emit()});
+    return ref.update(o).catch(function(e){if(e&&e.code==='not-found')return ref.set(o,{merge:true});throw e}).then(function(){localStorage.setItem(prefix(C.local)+'cloud-t',t);C.lastSync=t;if(C.state!=='checking')C.state='sync';emit()}).catch(function(e){C.state='error';C.err=C.msg(e);emit()});
   }
+  /* sauvegarde immédiate : chaque changement du profil part en ligne (regroupé, au plus toutes les 3 s) */
+  var soonT=null,lastPush=0;
+  C.saveSoon=function(){if(!C.user||!C.local)return;clearTimeout(soonT);soonT=setTimeout(function(){lastPush=Date.now();push(false)},Math.max(800,3000-(Date.now()-lastPush)))};
+  try{var oSet=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){oSet.call(this,k,v);try{if(C.local&&this===window.localStorage&&String(k).indexOf('pp-p-'+C.local+'-')===0&&!/cloud-t$/.test(k))C.saveSoon()}catch(e){}}}catch(e){}
+  document.addEventListener('pp-perso',function(){if(socialOn)setTimeout(presence,300)});
+  window.addEventListener('pagehide',function(){push(false)});
   function schedule(){clearInterval(pushT);pushT=setInterval(function(){push(false);if(C.user&&!C.verified&&document.visibilityState==='visible')C.checkVerified().then(function(ok){if(ok)PP.toast&&PP.toast('Adresse mail confirmée','ok')})},20000)}
   document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')push(false)});
 
