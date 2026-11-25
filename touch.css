@@ -1,0 +1,41 @@
+/* Pixel Pause — téléphone et tablette */
+.pp-touch .mode.kb-only{display:none!important}
+.vpad{display:none}
+.pp-touch .vpad{display:flex}
+.pad .pd-acts{display:contents}
+
+/* écrans de jeu plus lisibles au téléphone */
+@media (max-width:720px){
+  .pp-touch .stage .overlay{padding:12px;gap:8px}
+  .pp-touch .stage .overlay h3{font-size:clamp(22px,7vw,34px)!important;margin:0}
+  .pp-touch .stage .overlay p{font-size:12.5px;line-height:1.4;max-width:34ch;margin:0}
+  .pp-touch .stage .overlay button{padding:12px 22px;font-size:15px}
+  .pp-touch .modes{gap:8px}
+  .pp-touch .mode{padding:10px 12px}
+  .pp-touch .stage-bar{gap:8px}.pp-touch .stage-bar button{flex:1;padding:12px}
+  .pp-touch .pad{gap:8px;margin-top:10px}
+  .pp-touch .pad button{min-width:64px;min-height:58px;font-size:20px}
+  .pp-touch .keys{font-size:11px;opacity:.7}
+}
+
+/* manette par-dessus le jeu en plein écran */
+.pp-touch.fs-mode .view.on .pad.pad-ov{position:fixed;left:0;right:0;bottom:0;z-index:9998;display:grid!important;margin:0;max-width:none;pointer-events:none;background:none;
+  grid-template-columns:repeat(3,clamp(46px,13vmin,64px)) 1fr auto;grid-template-rows:repeat(2,clamp(46px,13vmin,64px));grid-template-areas:". u . . a" "l d r . a";gap:6px;
+  padding:0 max(18px,env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px))}
+.pad.pad-ov button{pointer-events:auto;min-width:0!important;min-height:0!important;width:100%;height:100%;padding:0;border-radius:50%!important;background:rgba(20,18,16,.42)!important;border:2px solid rgba(241,236,226,.55)!important;color:#fff!important;font-size:18px;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.pad.pad-ov button:active,.pad.pad-ov button.on{background:rgba(226,54,27,.7)!important}
+.pad.pad-ov .pd-u{grid-area:u}.pad.pad-ov .pd-d{grid-area:d}.pad.pad-ov .pd-l{grid-area:l}.pad.pad-ov .pd-r{grid-area:r}
+.pad.pad-ov .pd-acts{grid-area:a;display:flex;flex-direction:column-reverse;align-items:flex-end;justify-content:flex-start;gap:8px}
+.pad.pad-ov .pd-acts button{width:clamp(64px,19vmin,96px);height:clamp(64px,19vmin,96px);font:800 13px var(--mono)}
+.pad.pad-ov .pd-acts button.fire{background:rgba(226,54,27,.82)!important;border-color:#f1ece2!important}
+.pp-touch .stage.fs-on .fs-tools{top:max(8px,env(safe-area-inset-top,0px))}
+.pp-touch .stage.fs-on .fs-tools button{padding:9px 12px;font-size:12px}
+/* téléphone en hauteur : on conseille de le tourner */
+.pp-touch .stage.fs-on.rot-hint::after{content:'Tourne ton téléphone pour jouer en grand ⟳';position:fixed;left:50%;top:22%;transform:translateX(-50%);z-index:20;background:rgba(20,18,16,.88);color:#f1ece2;font:600 13px var(--mono);padding:10px 14px;white-space:nowrap;pointer-events:none;animation:rotHint 4.5s ease forwards}
+@media (orientation:landscape){.pp-touch .stage.fs-on.rot-hint::after{display:none}}
+@keyframes rotHint{0%,80%{opacity:1}100%{opacity:0}}
+/* le panneau du salon reste accessible en plein écran */
+.pp-touch.fs-mode .room-dock{top:max(8px,env(safe-area-inset-top,0px));bottom:auto;right:8px}
+.pp-touch.fs-mode .rd-btn{padding:7px 10px;font-size:11px}
+.pp-touch .keys.kb-hint{display:none}
+.stage.fs-on{animation:none!important}
