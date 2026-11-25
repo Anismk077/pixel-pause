@@ -3,7 +3,6 @@
   'use strict';
   var $=PP.$,esc=PP.esc,net=PP.net,sfx=PP.sfx,box=$('room-box');
   var ONLINE=[
-    {id:'fps',name:'Zone Morte',desc:'Battle royale, des bots complètent',min:1},
     {id:'party',name:'Dernier Debout',desc:'Épreuves éliminatoires, bots en renfort',min:1,max:8},
     {id:'surv',name:'Survie',desc:'La même île pour tout le salon',min:1},
     {id:'sumo',name:'Sumo Arena',desc:'Pousse les autres dans le vide',min:2,max:4},

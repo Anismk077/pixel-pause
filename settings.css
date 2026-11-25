@@ -39,3 +39,4 @@
 html.pp-rtl main.wrap,html.pp-rtl header .wrap,html.pp-rtl footer{direction:rtl}html.pp-rtl .stage,html.pp-rtl .stage-bar,html.pp-rtl .keys{direction:ltr}.st-lang{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
 #v-surv .pz-restart{display:none}
 .pz-btns .pz-restart{background:#d4a32a!important;color:#141210!important;border:2px solid #d4a32a!important}.pz-btns .pz-restart:hover{background:#f1ece2!important;border-color:#f1ece2!important}
+.pp-update{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:99999;background:#141210;color:#f1ece2;border:2px solid #e2361b;box-shadow:5px 5px 0 #e2361b;font:600 14px "IBM Plex Mono",monospace;padding:12px 18px;cursor:pointer;animation:updIn .4s cubic-bezier(.2,.9,.3,1.3)}.pp-update:hover{background:#e2361b}@keyframes updIn{from{transform:translate(-50%,40px);opacity:0}to{transform:translateX(-50%);opacity:1}}

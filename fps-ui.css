@@ -186,3 +186,46 @@
 #v-fps .stage .fx-mini{border-radius:12px;border:2px solid rgba(241,236,226,.85);box-shadow:0 8px 22px rgba(0,0,0,.45)}#v-fps .stage .fx-mini.big{width:min(82%,400px);border-radius:16px;box-shadow:0 0 0 3000px rgba(10,9,8,.55),0 16px 40px rgba(0,0,0,.6);animation:mapIn .22s cubic-bezier(.2,.8,.2,1)}@keyframes mapIn{from{opacity:0;transform:translate(50%,-46%) scale(.94)}to{opacity:1;transform:translate(50%,-50%)}}
 #v-fps .stage .fx-mini.big{width:auto;height:min(88%,400px);max-width:90%;aspect-ratio:1;z-index:7}
 #v-fps .fx-shop{left:0;right:0;margin:0 auto;width:min(1080px,94%);top:clamp(8px,4%,40px);bottom:clamp(8px,4%,40px);border-radius:14px}#v-fps .fs-on .fx-shop,#v-fps .stage.ft-full .fx-shop{top:6%;bottom:6%}#v-fps .fs-on .sh-grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}#v-fps .fs-on .sh-ico{height:80px}#v-fps .fs-on .sh-card b{font-size:17px}#v-fps .fs-on .sh-head b{font-size:46px}
+
+/* ===== Armurerie v3 : style du site (papier, encre, une seule couleur rouge, bords nets, pas de dégradés) ===== */
+#v-fps .fx-shop{background:#f1ece2;color:#141210;border:2px solid #141210;border-radius:0;box-shadow:8px 8px 0 rgba(20,18,16,.85);-webkit-backdrop-filter:none;backdrop-filter:none}
+#v-fps .sh-head{border-bottom:2px solid #141210}
+#v-fps .sh-head::after{display:none}
+#v-fps .sh-head small{color:#6b645a;opacity:1}
+#v-fps .sh-head b{font-size:clamp(30px,4vw,52px);color:#141210}
+#v-fps .sh-pts{background:#141210;color:#f1ece2;border-radius:0}
+#v-fps .sh-x{color:#141210;border:2px solid #141210;background:transparent}
+#v-fps .sh-x:hover{background:#141210;color:#f1ece2}
+#v-fps .sh-sec{color:#141210;opacity:1;border-bottom:1.5px solid #141210;padding-bottom:4px}
+#v-fps .sh-card{background:#fbf8f2;border:2px solid #141210;border-radius:0;color:#141210;box-shadow:none}
+#v-fps .sh-card::before{display:none}
+#v-fps .sh-card:hover{transform:translate(-3px,-3px);border-color:#141210;box-shadow:5px 5px 0 #141210}
+#v-fps .sh-ico{background:none;border-bottom:1.5px dashed #c9c1b2;margin:2px 0 6px;height:56px}
+#v-fps .sh-card .sh-ico svg{fill:#141210;filter:none}
+#v-fps .sh-card:hover .sh-ico svg{fill:#e2361b;transform:translateX(4px)}
+#v-fps .sh-rar{color:#6b645a}
+#v-fps .sh-card.t3 .sh-rar,#v-fps .sh-card.t4 .sh-rar{color:#e2361b}
+#v-fps .sh-badge{background:#141210;color:#f1ece2;border-radius:0}
+#v-fps .sh-card b{color:#141210}
+#v-fps .sh-card>span:not(.sh-rar):not(.sh-badge):not(.sh-st){color:#6b645a;opacity:1}
+#v-fps .sh-st{color:#6b645a}
+#v-fps .sh-st i{background:#e1dbcf;border-radius:0;height:6px}
+#v-fps .sh-st em{background:#141210;border-radius:0}
+#v-fps .sh-card:hover .sh-st em{background:#e2361b}
+#v-fps .sh-price{background:#141210;color:#f1ece2!important;border-radius:0}
+#v-fps .sh-card:hover .sh-price{background:#e2361b}
+#v-fps .sh-card.no{filter:none;opacity:.55}
+#v-fps .sh-card.no .sh-price{background:transparent;color:#e2361b!important;border:1.5px solid #e2361b}
+#v-fps .sh-card.x .sh-xi{background:#141210;border-radius:0}
+#v-fps .sh-card.x .sh-xi svg{fill:#f1ece2}
+#v-fps .sh-card.own:not(.x){border-style:dashed}
+#v-fps .sh-card.bought{animation:boughtB .45s cubic-bezier(.2,.9,.3,1.4)}
+@keyframes boughtB{0%{transform:scale(.95);background:#e2361b}100%{transform:none}}
+#v-fps .sh-stamp{color:#e2361b;border-color:#e2361b;background:#f1ece2}
+#v-fps .sh-card small{color:#e2361b}
+
+/* pièces à gauche, sous la vague */
+#v-fps .fx-coins{left:14px!important;right:auto!important;top:74px!important;bottom:auto!important}
+#v-fps .fx-pops{left:150px;right:auto;top:72px}
+#v-fps .fx-pops span{left:0;right:auto}
+#v-fps .ft-full #fx-coins{left:calc(3% + 56px)!important;top:64px!important}

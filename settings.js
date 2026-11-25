@@ -22,7 +22,7 @@
     'Démineur':'Minesweeper','Réflexion · évite les mines':'Puzzle · avoid the mines','Pong néon':'Neon Pong','Arcade · duel de raquettes':'Arcade · paddle duel','Avion 3D':'Plane 3D','3D · vole dans les anneaux':'3D · fly through the rings',
     'Labyrinthe 3D':'Maze 3D','3D · trouve la sortie':'3D · find the exit','3D · paniers à 2 et 3 points':'3D · 2 and 3 point shots','Dessine et devine':'Draw and Guess','Party · un dessine, les autres devinent':'Party · one draws, the others guess',
     'Billard':'Pool','Adresse · pleines contre rayées':'Skill · solids against stripes','Fun · gave-le de burgers jusqu\'à la ruine':'Fun · stuff him with burgers until he is broke',
-    '← Retour aux jeux':'← Back to games','Pause':'Pause','Plein écran':'Fullscreen','Quitter le plein écran':'Exit fullscreen','Reprendre':'Resume','Quitter le jeu':'Quit game','Échap : reprendre':'Esc: resume','Clique sur Reprendre pour rejouer':'Click Resume to play again','Recommencer':'Restart','OUVRIR':'OPEN','PAS ENCORE DÉBLOQUÉE':'NOT UNLOCKED YET','M : fermer':'M: close','Armes':'Weapons','Équipement':'Gear','Possédée':'Owned','Acheté !':'Bought!','Commune':'Common','Épique':'Epic','Lourde':'Heavy','Légendaire':'Legendary',
+    '← Retour aux jeux':'← Back to games','Pause':'Pause','Plein écran':'Fullscreen','Quitter le plein écran':'Exit fullscreen','Reprendre':'Resume','Quitter le jeu':'Quit game','Échap : reprendre':'Esc: resume','Clique sur Reprendre pour rejouer':'Click Resume to play again','Recommencer':'Restart','Nouvelle version disponible · Recharger':'New version available · Reload','OUVRIR':'OPEN','PAS ENCORE DÉBLOQUÉE':'NOT UNLOCKED YET','M : fermer':'M: close','Armes':'Weapons','Équipement':'Gear','Possédée':'Owned','Acheté !':'Bought!','Commune':'Common','Épique':'Epic','Lourde':'Heavy','Légendaire':'Legendary',
     'Réglages':'Settings','Volume':'Volume','Sensibilité souris':'Mouse sensitivity','Champ de vision (3D)':'Field of view (3D)','Qualité (3D)':'Quality (3D)','Inverser la souris (haut/bas)':'Invert mouse (up/down)',
     'Afficher les images par seconde':'Show frames per second','Haute':'High','Basse (plus fluide)':'Low (smoother)','Jouer':'Play','Rejouer':'Play again','Partie en ligne':'Online match',
     'Salon en ligne':'Online room','Rejoindre un salon':'Join a room','Code à 3 chiffres':'3-digit code','Ton pseudo':'Your nickname','Rejoindre':'Join','Annuler':'Cancel',
@@ -121,4 +121,13 @@
     if(PP.cloud&&PP.cloud.on)PP.cloud.on(function(c){if(c.ratings&&!cloudRT)c.ratings(function(d){cloudRT=d;paint()});else paint()});
   }
   PP.ratings={paint:paint,stats:stats};
+})();
+
+/* Bandeau « nouvelle version » : le site vérifie s'il a été mis à jour et propose de recharger (évite de rester sur l'ancienne version en cache) */
+(function(){
+  function sig(t){return (t.match(/\.(?:js|css)\?v=[\d.]+/g)||[]).join('|')}
+  var mine=null;
+  function show(){if(document.getElementById('pp-update'))return;var b=document.createElement('button');b.id='pp-update';b.type='button';b.className='pp-update';b.textContent=(PP.t?PP.t('Nouvelle version disponible · Recharger'):'Nouvelle version disponible · Recharger');b.onclick=function(){location.href=location.pathname+'?u='+Date.now()+location.hash};document.body.appendChild(b)}
+  function check(){if(mine===null)mine=sig(document.documentElement.innerHTML);if(!window.fetch||!mine)return;fetch(location.pathname+'?vcheck='+Date.now(),{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){var s=sig(t);if(s&&s!==mine)show()}).catch(function(){})}
+  setTimeout(check,5000);setInterval(check,120000);
 })();
