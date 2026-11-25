@@ -32,7 +32,7 @@ window.ARCADE_LIST=[
   var n=tiles.querySelectorAll('.row-game').length;
   ARCADE_LIST.forEach(function(g){
     n++;var b=document.createElement('button');b.type='button';b.className='row-game';b.dataset.go=g.id;b.dataset.cat=g.cat;
-    b.innerHTML='<span class="rg-n">'+(n<10?'0':'')+n+'</span><span class="rg-name">'+g.n+'</span><span class="rg-sub">'+g.sub+'</span><span class="rg-pl">'+g.pl+'<small>joueur'+(g.pl==='1'?'':'s')+'</small></span><img class="rg-img" src="'+(g.img||('thumb-'+g.id+'.jpg?v=8.1'))+'" alt="" loading="lazy">';
+    b.innerHTML='<span class="rg-n">'+(n<10?'0':'')+n+'</span><span class="rg-name">'+g.n+'</span><span class="rg-sub">'+g.sub+'</span><span class="rg-pl">'+g.pl+'<small>joueur'+(g.pl==='1'?'':'s')+'</small></span><img class="rg-img" src="'+(g.img||('thumb-'+g.id+'.jpg?v=8.2'))+'" alt="" loading="lazy">';
     tiles.appendChild(b);
     var s=document.createElement('section');s.className='view';s.id='v-'+g.id;
     s.innerHTML='<h2>'+g.n+'</h2><div class="modes ag-modes">'+g.modes.map(function(m,i){return '<button type="button" class="mode'+(i?'':' on')+'" data-m="'+m[0]+'"><b>'+m[1]+'</b><span>'+m[2]+'</span></button>'}).join('')+'</div>'+
