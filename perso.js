@@ -40,6 +40,16 @@ PP.perso=(function(){
     else if(motif==='flamme'){var cols=['#e2361b','#f08a1c','#f3c623'];cols.forEach(function(cc,j){g.fillStyle=cc;g.beginPath();g.moveTo(0,256);for(var x=0;x<=512;x+=32){g.quadraticCurveTo(x+16,256-(120-j*30)-Math.sin(x*.07+j)*24,x+32,256-(40-j*10))}g.lineTo(512,256);g.closePath();g.fill()})}
     else if(motif==='coeur'){g.fillStyle='#e2361b';g.beginPath();g.moveTo(cx,cy+34);g.bezierCurveTo(cx-60,cy-6,cx-28,cy-48,cx,cy-18);g.bezierCurveTo(cx+28,cy-48,cx+60,cy-6,cx,cy+34);g.fill()}
     var t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;texCache[k]=t;return t}
+  /* cheveux : mèches dessinées (stries claires et foncées, reflet) */
+  function hairTex(T,col){var k='h'+col;if(texCache[k])return texCache[k];var c=document.createElement('canvas');c.width=256;c.height=256;var g=c.getContext('2d'),b=new T.Color(col);g.fillStyle=col;g.fillRect(0,0,256,256);
+    for(var i=0;i<260;i++){var x=Math.random()*256,lt=Math.random()<.5,a=.08+Math.random()*.16;g.strokeStyle=lt?'rgba(255,255,255,'+a+')':'rgba(0,0,0,'+(a*1.4)+')';g.lineWidth=1+Math.random()*2;g.beginPath();g.moveTo(x,0);var w=(Math.random()-.5)*14;g.bezierCurveTo(x+w,80,x-w,170,x+w*.5,256);g.stroke()}
+    var gr=g.createLinearGradient(0,0,0,256);gr.addColorStop(0,'rgba(255,255,255,0)');gr.addColorStop(.3,'rgba(255,255,255,.16)');gr.addColorStop(.42,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,256,256);
+    var t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;t.wrapS=t.wrapT=T.RepeatWrapping;texCache[k]=t;return t}
+  /* tissus : maille (pulls, t-shirts), jean (sergé en diagonale) */
+  function fabTex(T,col,kind){var k='f'+kind+col;if(texCache[k])return texCache[k];var c=document.createElement('canvas');c.width=c.height=128;var g=c.getContext('2d'),b=new T.Color(col),lum=b.r*.3+b.g*.55+b.b*.15;g.fillStyle=col;g.fillRect(0,0,128,128);
+    if(kind==='jean'){for(var i=-128;i<256;i+=4){g.strokeStyle='rgba(255,255,255,'+(.05+Math.random()*.05)+')';g.lineWidth=1.2;g.beginPath();g.moveTo(i,0);g.lineTo(i+128,128);g.stroke()}for(var j=0;j<300;j++){g.fillStyle='rgba(255,255,255,'+(Math.random()*.06)+')';g.fillRect(Math.random()*128,Math.random()*128,2,1)}}
+    else{for(var y=0;y<128;y+=3){g.fillStyle='rgba('+(lum>.5?'0,0,0':'255,255,255')+','+(.04+Math.random()*.03)+')';g.fillRect(0,y,128,1)}for(var j2=0;j2<400;j2++){g.fillStyle='rgba('+(lum>.5?'0,0,0':'255,255,255')+','+(Math.random()*.05)+')';g.fillRect(Math.random()*128,Math.random()*128,1,1)}}
+    var t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(2,2);texCache[k]=t;return t}
   /* contour noir façon dessin animé : une copie un peu plus grosse, vue de dos */
   var OUT=null;
   function outline(T,root){if(!OUT)OUT=new T.MeshBasicMaterial({color:0x17120e,side:T.BackSide});var list=[];
@@ -56,8 +66,8 @@ PP.perso=(function(){
     var g=new T.Group(),root=new T.Group();g.add(root);
     function M(c,r,m){return new T.MeshStandardMaterial({color:c,roughness:r==null?.75:r,metalness:m||0})}
     function shade(c,k){return new T.Color(c).multiplyScalar(k)}
-    var skin=M(a.skin,.55),top=M(a.topCol,.85),topD=M(shade(a.topCol,.72),.85),bot=M(a.botCol,.85),botD=M(shade(a.botCol,.6),.8),shoe=M(a.shoeCol,.45),sole=M(0xf4f1ea,.6),
-      hair=M(a.hairCol,.8),acc=M(a.accCol,.35,.1),white=M(0xffffff,.3),dark=new T.MeshBasicMaterial({color:0x141210}),iris=M(a.eyes,.3),lip=M(shade(a.skin,.62),.6);
+    var skin=M(a.skin,.55),top=new T.MeshStandardMaterial({map:fabTex(T,a.topCol,'knit'),roughness:.88}),topD=M(shade(a.topCol,.72),.85),bot=new T.MeshStandardMaterial({map:fabTex(T,a.botCol,a.botType==='jean'?'jean':'knit'),roughness:.85}),botD=M(shade(a.botCol,.6),.8),shoe=M(a.shoeCol,.45),sole=M(0xf4f1ea,.6),
+      hair=new T.MeshStandardMaterial({map:hairTex(T,a.hairCol),roughness:.55}),acc=M(a.accCol,.35,.1),white=M(0xffffff,.3),dark=new T.MeshBasicMaterial({color:0x141210}),iris=M(a.eyes,.3),lip=M(shade(a.skin,.62),.6);
     var shell=a.top==='debardeur'||a.top==='tshirt';
     function m(geo,mat,x,y,z,par){var o=new T.Mesh(geo,mat);o.position.set(x||0,y||0,z||0);o.castShadow=true;(par||root).add(o);return o}
     function lathe(pts,mat,par,y,sz){var o=m(new T.LatheGeometry(pts.map(function(p){return new T.Vector2(p[0],p[1])}),28),mat,0,y||0,0,par);o.scale.z=sz||.72;return o}
@@ -83,8 +93,12 @@ PP.perso=(function(){
     var printed=new T.MeshStandardMaterial({map:topTex(T,a.top==='veste'?'#f1ece2':a.topCol,a.motif),roughness:.85});
     lathe(tp,printed,torso,0,.7);
     if(bt!=='short'||true){var buckle=m(new T.BoxGeometry(.06,.04,.02),M(0xc9a24a,.3,.6),0,.09,-.165,torso);buckle.userData.noOut=true}
-    if(a.top==='veste'){[-1,1].forEach(function(s){var p=m(new T.BoxGeometry(.15,.6,.04),top,s*.13,.4,-.17,torso);p.rotation.y=s*.12;var c=m(new T.BoxGeometry(.07,.16,.03),topD,s*.11,.66,-.17,torso);c.rotation.z=s*.5});m(new T.CylinderGeometry(.205,.205,.06,22,1,true),topD,0,.1,0,torso).scale.z=.72}
+    if(a.top==='veste'){[-1,1].forEach(function(s){var p=m(new T.BoxGeometry(.15,.6,.04),top,s*.13,.4,-.17,torso);p.rotation.y=s*.12;var c=m(new T.BoxGeometry(.07,.16,.03),topD,s*.11,.66,-.17,torso);c.rotation.z=s*.5;
+        var pc=m(new T.BoxGeometry(.08,.012,.01),topD,s*.13,.28,-.195,torso);pc.rotation.y=s*.12;pc.userData.noOut=true});
+      var zp=m(new T.BoxGeometry(.012,.56,.012),M(0xb9b4aa,.3,.7),-.06,.4,-.198,torso);zp.userData.noOut=true;var zt=m(new T.BoxGeometry(.02,.035,.01),M(0xb9b4aa,.3,.7),-.06,.62,-.205,torso);zt.userData.noOut=true;
+      m(new T.CylinderGeometry(.205,.205,.06,22,1,true),topD,0,.1,0,torso).scale.z=.72}
     if(a.top==='sweat'){var hood=m(new T.TorusGeometry(.155,.05,10,24),top,0,.74,.06,torso);hood.rotation.x=Math.PI/2.3;hood.scale.set(1,1,.8);
+      var hin=m(new T.SphereGeometry(.15,18,10,0,Math.PI*2,0,Math.PI/2),topD,0,.76,.1,torso);hin.scale.set(1,.5,.7);hin.rotation.x=-.5;
       var pk=m(new T.BoxGeometry(.24,.12,.03),topD,0,.24,-.165,torso);pk.rotation.x=.08;
       [-1,1].forEach(function(s){m(new T.CylinderGeometry(.008,.008,.14,6),white,s*.05,.6,-.18,torso)});
       m(new T.CylinderGeometry(.205,.2,.06,22,1,true),topD,0,.11,0,torso).scale.z=.72}
@@ -126,9 +140,16 @@ PP.perso=(function(){
     else if(hz==='afro'){cap(.215,.55);[[0,.17,0],[.13,.12,.02],[-.13,.12,.02],[.08,.15,.12],[-.08,.15,.12],[0,.1,.16],[.15,.03,.08],[-.15,.03,.08],[0,.16,-.08],[.1,.17,-.05],[-.1,.17,-.05]].forEach(function(p){m(new T.SphereGeometry(.12,14,10),hair,p[0],p[1],p[2],head)})}
     else if(hz==='crete'){cap(.207,.5,M(new T.Color(a.hairCol).lerp(new T.Color(a.skin),.55),.95));for(var i=0;i<5;i++){var cn=m(new T.ConeGeometry(.05,.2-Math.abs(i-2)*.025,8),hair,0,.2-Math.abs(i-2)*.015,-.12+i*.07,head);cn.rotation.x=-.3+i*.15}}
     else{cap(.218,hz==='long'?.62:.56);
-      var fr=m(new T.SphereGeometry(.13,16,10),hair,hz==='meche'?.05:0,.155,-.125,head);fr.scale.set(hz==='meche'?1.2:1.35,.36,.62);fr.rotation.z=hz==='meche'?-.45:0;
-      if(hz==='meche'){var fr2=m(new T.SphereGeometry(.07,12,8),hair,.155,.08,-.1,head);fr2.scale.set(.55,1.1,.7)}
-      if(hz==='long'){var bk=m(new T.CapsuleGeometry(.17,.26,8,18),hair,0,-.14,.07,head);bk.scale.set(1.18,1,.62);[-1,1].forEach(function(s){var sd=m(new T.CapsuleGeometry(.05,.22,6,10),hair,s*.17,-.1,-.04,head);sd.rotation.z=s*.08})}
+      /* frange en mèches : plusieurs pointes au lieu d'un bloc */
+      var nT=hz==='meche'?5:6;for(var f=0;f<nT;f++){var u=f/(nT-1)-.5,tf=m(new T.ConeGeometry(.048,.12,8),hair,u*.27+(hz==='meche'?.04:0),.115-Math.abs(u)*.035,-.17+Math.abs(u)*.055,head);
+        tf.rotation.x=Math.PI+.42;tf.rotation.z=hz==='meche'?-.55-u*.2:u*.5;tf.scale.set(1.25,1,.6)}
+      var fb=m(new T.SphereGeometry(.13,16,10),hair,hz==='meche'?.03:0,.175,-.1,head);fb.scale.set(1.3,.32,.7);
+      /* pattes sur les côtés */
+      [-1,1].forEach(function(s){var pb=m(new T.BoxGeometry(.03,.085,.045),hair,s*.188,-.005,-.045,head);pb.rotation.z=-s*.06});
+      if(hz==='meche'){var fr2=m(new T.ConeGeometry(.05,.18,8),hair,.15,.07,-.13,head);fr2.rotation.set(Math.PI-.3,0,-.35);fr2.scale.set(1,1,.6)}
+      if(hz==='long'){var bk=m(new T.CapsuleGeometry(.17,.26,8,18),hair,0,-.14,.07,head);bk.scale.set(1.18,1,.62);
+        for(var q3=0;q3<5;q3++){var uu=q3/4-.5,st3=m(new T.ConeGeometry(.05,.16,8),hair,uu*.3,-.38+Math.abs(uu)*.05,.08,head);st3.rotation.x=Math.PI;st3.scale.set(1,1,.6)}
+        [-1,1].forEach(function(s){var sd=m(new T.CapsuleGeometry(.05,.24,6,10),hair,s*.175,-.11,-.04,head);sd.rotation.z=s*.08;var sp2=m(new T.ConeGeometry(.045,.1,8),hair,s*.18,-.3,-.04,head);sp2.rotation.x=Math.PI})}
       if(hz==='chignon'){m(new T.SphereGeometry(.085,16,12),hair,0,.19,.13,head);m(new T.TorusGeometry(.05,.014,6,14),acc,0,.16,.1,head).rotation.x=1}}
     /* accessoires */
     var ac=a.acc;

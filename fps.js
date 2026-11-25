@@ -303,9 +303,9 @@
     reset(m.seed);items.slice().forEach(function(it){removeItem(it.id)});m.items.forEach(function(a){addItem(a[1],a[2],a[3],a[0])});
     m.doors.forEach(function(i){openDoor(DOORS[i],true)});wave=m.w;lastWaveSeen=wave;waveLeft=0;P.pts=D().pts;
     var a=Math.random()*6.28;if(!solid(m.hx+Math.cos(a)*1.5,m.hz+Math.sin(a)*1.5)){P.x=m.hx+Math.cos(a)*1.5;P.z=m.hz+Math.sin(a)*1.5}
-    $('fps-ov').hidden=true;UI.chat.hidden=false;running=true;paused=false;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);lock();mobFull(true);
+    $('fps-ov').hidden=true;UI.chat.hidden=true;running=true;paused=false;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);lock();mobFull(true);
     cdT=m.cd||0;cdShown=-1;center(m.cd?'':'TU REJOINS LA PARTIE');setTimeout(function(){if(UI.center.textContent==='TU REJOINS LA PARTIE')center('')},1800);sfx.play('go');hud();
-    addFeed('Vague '+(wave||1)+' · '+MAPS[mapId]);sys('Appuie sur T pour écrire à l\'équipe');
+    addFeed('Vague '+(wave||1)+' · '+MAPS[mapId]);
   }
   /* zombies chez les invités : on suit ce que dit l'hôte */
   function applyZ(m){
@@ -1498,7 +1498,7 @@
     if(ac==='next'&&!e.repeat&&P)cycle(1);if(ac==='prev'&&!e.repeat&&P&&P.prev&&P.guns[P.prev])switchGun(P.prev);
     if(k==='Tab'){e.preventDefault();if(P)cycle(1)}
     if(ac==='map'&&!e.repeat)bigMap=!bigMap;
-    if((k==='t'||k==='Enter')&&online){e.preventDefault();openChat()}
+    if((k==='t'||k==='Enter')&&online&&!coop){e.preventDefault();openChat()}
   });
   document.addEventListener('keyup',function(e){var ac=action(e);if(MV[ac])keys[MV[ac]]=false;if(ac==='sprint')keys.SH=false;if(ac==='slide')keys.C=false});
   PP.fpsBinds={def:BIND_DEF,get:B};
@@ -1560,7 +1560,7 @@
   $('fps-online').addEventListener('click',function(){mode='br';goOnline()});
   function start(){
     mode='zombie';
-    if(introBusy||!init())return;if(coop&&!net.isHost)return;introBusy=true;online=coop;mobFull(true);auth=true;overSent=false;UI.chat&&(UI.chat.hidden=!coop);
+    if(introBusy||!init())return;if(coop&&!net.isHost)return;introBusy=true;online=coop;mobFull(true);auth=true;overSent=false;UI.chat&&(UI.chat.hidden=true);
     /* 1. tirage de la carte (roulette) */
     var row=$('fps-ov').querySelector('.row'),msg=$('fps-msg'),maps=Object.keys(MAPS),target=PP.pick(maps),steps=12+Math.floor(Math.random()*3),i0=Math.floor(Math.random()*maps.length),n=0;
     row.hidden=true;$('fps-skins').hidden=true;$('fps-title').textContent='Tirage de la carte';msg.className='fps-roll';
@@ -1608,7 +1608,7 @@
       /* nouveau salon = score remis à zéro */if(net.inRoom()&&fpsRoom!==net.code){fpsRoom=net.code;online=false;running=false;cancelAnimationFrame(raf);round=null;TSC=[0,0];kills=0;Object.keys(remotes).forEach(function(k){if(remotes[k].m&&scene)scene.remove(remotes[k].m)});remotes={}}
       /* dans un salon : Zone Morte en équipe (le chef lance, les autres rejoignent) */
       if(net.inRoom()){mode='zombie';$('fps-maps').hidden=true;$('fps-modes').hidden=true;
-        if(running&&coop)return;coop=true;online=true;auth=net.isHost;UI.chat.hidden=false;
+        if(running&&coop)return;coop=true;online=true;auth=net.isHost;UI.chat.hidden=true;
         if(auth){menu();$('fps-title').textContent='Zone Morte en équipe';$('fps-msg').textContent='Tu es le chef : lance la partie, tout le salon arrive avec toi. Si un pote tombe, relève-le avec E.';return}
         menu();$('fps-title').textContent='Zone Morte en équipe';$('fps-msg').textContent='Le chef choisit la carte et la difficulté, la partie démarre toute seule.';$('fps-start').hidden=true;net.send({t:'zc-hello'});return}
       coop=false;
