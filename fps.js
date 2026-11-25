@@ -398,7 +398,7 @@
     if(online&&g.pel===1){var fd=fwd();tracer(new THREE.Vector3(P.x+Math.cos(P.yaw)*.22+fd.x*.6,EYE+P.y-.18+fd.y*.6,P.z-Math.sin(P.yaw)*.22+fd.z*.6),trEnd||origin.clone().addScaledVector(fd,60))}
     if(hitAny){stats.hits++;UI.hitm.classList.remove('on','kill');void UI.hitm.offsetWidth;UI.hitm.classList.add('on');if(lastKill&&performance.now()-lastKill<60)UI.hitm.classList.add('kill')}
     if(a.mag===0&&a.res>0)setTimeout(function(){if(P&&P.guns[P.gun]===a&&a.mag===0)reload()},250);
-    lastInput=performance.now();hud();
+    hud();
   }
   /* équipes en ligne : rouge contre bleu (alternance dans l'ordre du salon), pas de tir ami */
   var TSC=[0,0],fpsRoom=null;
@@ -470,7 +470,7 @@
     var now=performance.now();
     // joueur
     if(!dead){
-      var afk=online&&now-lastInput>20000;if(afk!==P.afk){P.afk=afk;if(afk)addFeed('Tu es AFK : un bot joue pour toi')}
+      var afk=online&&now-lastInput>45000;if(afk!==P.afk){P.afk=afk;if(afk)addFeed('Tu es AFK : un bot joue pour toi');else{keys={};mouseDown=false;addFeed('Tu reprends la main');center('');sendAcc=0}}
       if(P.afk)autopilot(dt);
       var sp=(keys.SH&&!aiming?8.5:5.5)*(aiming?.6:1)*dt,fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw),mx=0,mz=0;
       var kF=keys.F||pk.F,kB=keys.B||pk.B,kL=keys.L||pk.L,kR=keys.R||pk.R;if(kF){mx+=fx;mz+=fz}if(kB){mx-=fx;mz-=fz}if(kL){mx+=fz;mz-=fx}if(kR){mx-=fz;mz+=fx}
@@ -752,6 +752,8 @@
   function loop(t){var dt=last?Math.min(.05,(t-last)/1000):0;last=t;if(running){if(!paused||online)step(dt);if(running)render();raf=requestAnimationFrame(loop)}}
 
   /* ---------- Entrées ---------- */
+  /* la moindre touche, clic ou mouvement de souris sur la page te sort du mode AFK */
+  ['keydown','mousedown','mousemove','touchstart','wheel'].forEach(function(ev){document.addEventListener(ev,function(){if(PP.cur()==='fps')lastInput=performance.now()},{passive:true,capture:true})});
   var KM={z:'F',w:'F',ArrowUp:'F',s:'B',ArrowDown:'B',q:'L',a:'L',ArrowLeft:'L',d:'R',ArrowRight:'R'};
   document.addEventListener('keydown',function(e){
     if(PP.cur()!=='fps'||chatOpen)return;if(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName))return;
