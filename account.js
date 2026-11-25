@@ -6,7 +6,7 @@
   var GAMES=[
     {id:'surv',n:'Survie',rec:function(){var d=PP.store('sv-best');return d?d+' jour'+(d>1?'s':''):'—'},win:'Sauvé par l\'hélico'},
     {id:'party',n:'Dernier Debout',rec:function(){return '—'},win:'Dernier debout'},
-    {id:'fps',n:'Bunker 3D',rec:function(){var z=PP.store('fps-zombie'),b=PP.store('fps-br');return (z?z+' zombies':'—')+(b?' · top '+b+' en BR':'')},win:'Battle royale gagnée'},
+    {id:'fps',n:'Zone Morte',rec:function(){var z=PP.store('fps-zombie'),b=PP.store('fps-br');return (z?z+' zombies':'—')+(b?' · top '+b+' en BR':'')},win:'Battle royale gagnée'},
     {id:'sumo',n:'Sumo Arena',rec:function(){return '—'},win:'Match gagné'},
     {id:'foot',n:'Foot 2v2',rec:function(){return '—'},win:'Match gagné'},
     {id:'kart',n:'Pixel Kart',rec:function(){var t=PP.store('kt-best');return t?PP.fmtTime(t/1000):'—'},win:'Course gagnée'},

@@ -47,4 +47,7 @@ window.PP_CLOUD_CFG=window.PP_CLOUD_CFG||null;
   C.email=function(addr){localStorage.setItem('pp-cloud-email',addr);return auth.sendSignInLinkToEmail(addr,{url:location.origin+location.pathname+'#account',handleCodeInApp:true})};
   C.logout=function(){push(true);setTimeout(function(){auth.signOut().then(function(){localStorage.setItem('pp-profile','');location.hash='account';location.reload()})},400)};
   C.syncNow=function(){push(true)};
+  /* avis des joueurs : une note (1 à 5) par compte et par jeu, lisible par tous */
+  C.rate=function(id,n){if(!db||!C.user)return;var o={};o['u:'+C.user.uid]=n;db.collection('ratings').doc(id).set(o,{merge:true}).catch(function(){})};
+  C.ratings=function(cb){if(!db)return;db.collection('ratings').get().then(function(s){var d={};s.forEach(function(doc){d[doc.id]=doc.data()});cb(d)}).catch(function(){})};
 })();

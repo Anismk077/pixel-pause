@@ -169,7 +169,7 @@ window.PP=(function(){
   function enterFs(st){
     if(fsStage)exitFs(true);fsStage=st;st.classList.add('fs-on');document.body.classList.add('fs-mode');
     var el=document.documentElement,r=el.requestFullscreen||el.webkitRequestFullscreen;fsReal=false;
-    if(r){try{var p=r.call(el);fsReal=true;if(p&&p.catch)p.catch(function(){fsReal=false})}catch(x){fsReal=false}}
+    if(r){try{var p=r.call(el);fsReal=true;if(p&&p.then)p.then(kbLock,function(){fsReal=false});else kbLock()}catch(x){fsReal=false}}
     setTimeout(fsChanged,60);fsChanged();
   }
   function exitFs(keepReal){
@@ -177,8 +177,12 @@ window.PP=(function(){
     if(!keepReal&&fsEl()){var x=document.exitFullscreen||document.webkitExitFullscreen;if(x)try{var p=x.call(document);if(p&&p.catch)p.catch(function(){})}catch(e){}}
     fsChanged();
   }
+  /* en plein écran, Échap sert à la pause (il faut le maintenir pour sortir du plein écran) quand le navigateur le permet (Chrome, Edge) */
+  function kbLock(){try{if(navigator.keyboard&&navigator.keyboard.lock)navigator.keyboard.lock(['Escape']).catch(function(){})}catch(e){}}
+  function kbUnlock(){try{if(navigator.keyboard&&navigator.keyboard.unlock)navigator.keyboard.unlock()}catch(e){}}
   function toggleFs(st){if(fsStage===st)exitFs();else enterFs(st)}
-  function onRealFs(){if(!fsEl()&&fsStage&&fsReal){fsReal=false;exitFs(true)}else fsChanged()}
+  /* si le navigateur sort quand même du plein écran (Safari, Firefox), on met le jeu en pause au lieu de le laisser tourner */
+  function onRealFs(){if(!fsEl()){kbUnlock();if(fsStage&&fsReal){fsReal=false;exitFs(true);if(!paused&&canPause())setPause(true)}else fsChanged()}else fsChanged()}
   document.addEventListener('fullscreenchange',onRealFs);document.addEventListener('webkitfullscreenchange',onRealFs);
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&fsStage&&!fsEl()&&!document.pointerLockElement&&!paused&&!canPause())exitFs()});
   PP_fs={toggle:toggleFs,exit:exitFs,isOn:function(st){return fsStage===st}};

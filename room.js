@@ -3,7 +3,7 @@
   'use strict';
   var $=PP.$,esc=PP.esc,net=PP.net,sfx=PP.sfx,box=$('room-box');
   var ONLINE=[
-    {id:'fps',name:'Bunker 3D',desc:'Battle royale, des bots complètent',min:1},
+    {id:'fps',name:'Zone Morte',desc:'Battle royale, des bots complètent',min:1},
     {id:'party',name:'Dernier Debout',desc:'Épreuves éliminatoires, bots en renfort',min:1,max:8},
     {id:'surv',name:'Survie',desc:'La même île pour tout le salon',min:1},
     {id:'sumo',name:'Sumo Arena',desc:'Pousse les autres dans le vide',min:2,max:4},
@@ -23,7 +23,7 @@
     {id:'navale',name:'Bataille navale',desc:'Coule la flotte d\'en face',min:2,max:2}
   ];
 
-  var GN={party:'Dernier Debout',time:'Quand et où',surv:'Survie','fps-br':'Bunker · battle royale',fps:'Bunker 3D',sumo:'Sumo Arena',foot:'Foot 2v2',kart:'Pixel Kart',run:'Néon Rush',geo:'Devine où',imp:'Mot imposteur',prob:'Le plus probable',snake:'Paquet Snake',draw:'Dessine et devine',quiz:'Quiz',typing:'Course de frappe',reflex:'Réflexes',c4:'Quatre en ligne',navale:'Bataille navale'},curGame=null,lobby=PP.lobby;
+  var GN={party:'Dernier Debout',time:'Quand et où',surv:'Survie','fps-br':'Zone Morte · battle royale',fps:'Zone Morte',sumo:'Sumo Arena',foot:'Foot 2v2',kart:'Pixel Kart',run:'Néon Rush',geo:'Devine où',imp:'Mot imposteur',prob:'Le plus probable',snake:'Paquet Snake',draw:'Dessine et devine',quiz:'Quiz',typing:'Course de frappe',reflex:'Réflexes',c4:'Quatre en ligne',navale:'Bataille navale'},curGame=null,lobby=PP.lobby;
   /* les salons sont privés : on ne les affiche plus dans une liste publique, on rejoint avec le code ou le lien */
   function beat(){}
   setInterval(beat,8000);
