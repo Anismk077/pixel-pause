@@ -30,7 +30,7 @@
   }
   function setup(){
     players.forEach(function(p){scene.remove(p.mesh)});players=[];
-    for(var i=0;i<4;i++)players.push(mkPlayer(i,i>=humans));
+    for(var i=0;i<(mp.on()?Math.max(2,humans):4);i++)players.push(mkPlayer(i,i>=humans));
     players.forEach(function(p){p.score=0});round=0;newRound();
   }
   function newRound(){

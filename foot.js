@@ -46,7 +46,7 @@
   }
   function setup(){
     players.forEach(function(p){scene.remove(p.mesh)});players=[];
-    for(var i=0;i<4;i++)players.push(mkPlayer(i,i>=humans));
+    for(var i=0;i<(mp.on()?Math.max(2,humans):4);i++)players.push(mkPlayer(i,i>=humans));
     time=DUR;score=[0,0];kickoff();hud();
   }
   function kickoff(){
@@ -87,7 +87,7 @@
       var bob=Math.sin(Date.now()/80)*(sp>1?.06:0);p.mesh.children[0].position.y=.85+bob;
     });
     // collisions joueurs
-    for(var i=0;i<4;i++)for(var j=i+1;j<4;j++){var a=players[i],c=players[j],dx2=c.x-a.x,dz2=c.z-a.z,d2=Math.hypot(dx2,dz2);if(d2<1&&d2>0){var ov=(1-d2)/2;a.x-=dx2/d2*ov;a.z-=dz2/d2*ov;c.x+=dx2/d2*ov;c.z+=dz2/d2*ov}}
+    for(var i=0;i<players.length;i++)for(var j=i+1;j<players.length;j++){var a=players[i],c=players[j],dx2=c.x-a.x,dz2=c.z-a.z,d2=Math.hypot(dx2,dz2);if(d2<1&&d2>0){var ov=(1-d2)/2;a.x-=dx2/d2*ov;a.z-=dz2/d2*ov;c.x+=dx2/d2*ov;c.z+=dz2/d2*ov}}
     // balle
     var bf=Math.pow(.35,dt);b.vx*=bf;b.vz*=bf;b.vy-=22*dt;b.y+=b.vy*dt;if(b.y<.5){b.y=.5;b.vy=Math.abs(b.vy)*.4}
     b.x+=b.vx*dt;b.z+=b.vz*dt;

@@ -53,7 +53,8 @@
   /* ---------- Joueurs ---------- */
   function makePlayers(){
     players.forEach(function(p){scene.remove(p.m)});players=[];
-    for(var i=0;i<12;i++){
+    /* en salon : uniquement les joueurs du salon, sans bots */
+    for(var i=0;i<(mp.on()?Math.max(2,humans):12);i++){
       var human=i<humans,col=human?COLS[i%COLS.length]:BOTC[i%BOTC.length],nm=human?(mp.on()&&net.players[i]?net.players[i].name:'J'+(i+1)):BOTN[i%BOTN.length];
       var m=blob(col,i*7+3);if(human)m.add(tag(nm,col));scene.add(m);
       players.push({i:i,human:human,bot:!human,name:nm,col:col,m:m,x:0,y:0,z:0,vx:0,vy:0,vz:0,face:Math.PI,g:false,st:'in',cp:0,anim:Math.random()*6,ai:{t:0,lane:(Math.random()-.5)*8,jt:0,skill:.75+Math.random()*.25}});
@@ -410,7 +411,7 @@
   PP._pa=function(){return {obs:function(){return obs},T:function(){return T},players:players,ri:function(){return ri},phase:function(){return phase},tiles:tiles,setRound:function(r){ri=r;startRound()},force:function(r,id){var s0=STAGES[r];STAGES[r]=[id];ri=r;startRound();STAGES[r]=s0}}};
   PP.games.party={
     open:function(){if(!init())return;if(!players.length){humans=1;ri=0;sched=['race','hex','arena'];makePlayers();buildRace();startPositions()}render();$('pa-start').hidden=false;$('pa-title').textContent='Dernier Debout';$('pa-start').textContent='Jouer';$('pa-msg').textContent='12 blobs, 3 épreuves tirées au sort parmi 6 : une course, une survie, puis une finale. Les bots complètent. Le dernier debout gagne.';$('pa-ov').hidden=false;
-      if(mp.lobby('pa','Dernier Debout'))$('pa-msg').textContent=net.isHost?net.players.length+' joueurs dans le salon, les bots complètent jusqu\'à 12. ZQSD ou flèches pour bouger, Espace pour sauter.':'L\'hôte va lancer. ZQSD ou flèches pour bouger, Espace pour sauter.'},
+      if(mp.lobby('pa','Dernier Debout'))$('pa-msg').textContent=net.isHost?net.players.length+' joueurs dans le salon, sans bots. ZQSD ou flèches pour bouger, Espace pour sauter.':'L\'hôte va lancer. ZQSD ou flèches pour bouger, Espace pour sauter.'},
     close:function(){if(running){running=false;cancelAnimationFrame(raf)}}
   };
 })();
