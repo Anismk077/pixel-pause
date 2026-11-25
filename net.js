@@ -132,6 +132,6 @@ PP.net=(function(){
 
   return {relay:relay,slot:slot,host:host,join:join,leave:leave,send:send,all:all,to:to,broadcast:broadcast,on:on,
     get code(){return code},get isHost(){return isHost},get me(){return me},get players(){return players},
-    inRoom:inRoom,ready:ready,setGate:function(f){gate=f},handover:handover,kick:kick,setAvatar:function(a){myAv=a;players.forEach(function(p){if(p.id===me.id)p.av=a})},get migrating(){return migrating},onStatus:function(f){statusCb=f},
+    inRoom:inRoom,ready:ready,setGate:function(f){gate=f},alive:function(){return !!(peer&&!peer.disconnected&&!peer.destroyed)},handover:handover,kick:kick,setAvatar:function(a){myAv=a;players.forEach(function(p){if(p.id===me.id)p.av=a})},get migrating(){return migrating},onStatus:function(f){statusCb=f},
     inviteLink:function(){return location.origin+location.pathname+'?salon='+code}};
 })();

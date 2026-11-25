@@ -60,12 +60,14 @@
   function publish(){clearTimeout(pubT);pubT=setTimeout(publishNow,400)}
   function publishNow(){
     if(!C||!C.db)return;var db=C.db;
-    if(net.inRoom()&&net.isHost&&rs.vis!=='invite'){
+    if(net.inRoom()&&net.isHost&&rs.vis!=='invite'&&(!net.alive||net.alive())){
       var d={code:net.code,name:(rs.name||defName()).slice(0,28),host:net.me.name,hostUid:myUid(),vis:rs.vis,acc:!!rs.acc,n:net.players.length,game:curGame||null,pl:net.players.slice(0,8).map(function(p){return {n:p.name,av:p.av||null}}),t:Date.now()};
       lastPub=net.code;db.collection('rooms').doc(net.code).set(d).catch(function(){});
     }else if(lastPub){db.collection('rooms').doc(lastPub).delete().catch(function(){});lastPub=''}
   }
-  setInterval(function(){if(net.inRoom()&&net.isHost&&rs.vis!=='invite')publishNow()},15000);
+  setInterval(function(){if(net.inRoom()&&net.isHost&&rs.vis!=='invite')publishNow()},10000);
+  /* la liste se nettoie toute seule : un salon qui ne donne plus signe de vie disparaît */
+  var dead={};setInterval(function(){if(PP.cur()==='room'&&!net.inRoom())lists()},5000);
   window.addEventListener('pagehide',function(){if(lastPub&&C&&C.db)C.db.collection('rooms').doc(lastPub).delete()});
   /* tes amis voient dans quel salon tu es (sauf salon privé) */
   function shareRoom(){if(!C||!C.setRoom)return;C.setRoom(net.inRoom()&&rs.vis!=='invite'?{code:net.code,name:rs.name||'',n:net.players.length}:null)}
@@ -149,7 +151,7 @@
     return '<div class="rl-card"><div class="rl-av">'+pls.map(function(p){return pic(p,34)}).join('')+(r.n>5?'<span>+'+(r.n-5)+'</span>':'')+'</div><div class="rl-i"><b>'+esc(r.name||('Salon de '+r.host))+'</b><small>'+(tag?'<i class="tg-f">'+esc(tag)+'</i> ':'')+esc(r.host)+' · '+r.n+' '+T(r.n>1?'joueurs':'joueur')+(r.game?' · '+esc(GN[r.game]||r.game):'')+(r.acc?' · '+T('comptes seulement'):'')+'</small></div><button type="button" class="primary mini" data-join="'+esc(r.code)+'">'+T('Rejoindre')+'</button></div>'}
   function lists(){
     var el=$('rl-lists');if(!el)return;var now=Date.now(),fu=C&&C.friendUids?C.friendUids():[],seen={};
-    var live=dir.filter(function(r){return r.t>now-45000});
+    var live=dir.filter(function(r){return r.t>now-35000&&!dead[r.code]});
     var fr=live.filter(function(r){return r.hostUid&&fu.indexOf(r.hostUid)>=0});fr.forEach(function(r){seen[r.code]=1});
     (C&&C.friends||[]).forEach(function(f){var p=f.prof;if(f.status==='friends'&&p&&p.room&&p.room.code&&!seen[p.room.code]&&C.statusOf(p)!=='off'){seen[p.room.code]=1;fr.push({code:p.room.code,name:p.room.name,host:p.name,n:p.room.n||1,pl:[{n:p.name,av:p.av}],via:p.name})}});
     var pub=live.filter(function(r){return r.vis==='public'&&!seen[r.code]});
@@ -158,7 +160,9 @@
     el.innerHTML=h;el.querySelectorAll('[data-join]').forEach(function(b){b.onclick=function(){joinCode(b.dataset.join,b)}});
   }
   function joinCode(code,b){var n=(C&&C.name)||($('room-name')&&$('room-name').value.trim())||PP.myName()||'Joueur';PP.setName(n);if(b){b.disabled=true;b.textContent=T('Connexion…')}
-    net.join(code,n,function(err){if(err){if(b){b.disabled=false;b.textContent=T('Rejoindre')}PP.toast(err,'warn');return}sfx.play('win');render()})}
+    net.join(code,n,function(err){if(err){if(b){b.disabled=false;b.textContent=T('Rejoindre')}
+      /* salon fermé : on le retire de la liste pour tout le monde */
+      if(/Aucun salon|impossible/i.test(err)){dead[code]=1;if(C&&C.db)C.db.collection('rooms').doc(code).delete().catch(function(){});lists();PP.toast(T('Ce salon est fermé, il est retiré de la liste'),'warn')}else PP.toast(err,'warn');return}sfx.play('win');render()})}
   function watchDir(){if(dirUn||!C||!C.whenReady)return;C.whenReady(function(db){if(dirUn)return;dirUn=db.collection('rooms').where('t','>',Date.now()-60000).onSnapshot(function(s){dir=[];s.forEach(function(d){dir.push(d.data())});dir.sort(function(a,b){return b.n-a.n});lists()},function(){})})}
   function unwatchDir(){if(dirUn){dirUn();dirUn=null}}
   function onlineTxt(){var n=PP.site&&PP.site.online;return n?'<b>'+n+'</b> '+T(n>1?'joueurs en ligne sur le site':'joueur en ligne sur le site'):T('Joueurs en ligne…')}
