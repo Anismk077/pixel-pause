@@ -1,4 +1,4 @@
-/* Pixel Pause ‚Äî Marzouker : nourris-le de burgers, il grossit jusqu'√† devenir m√©ga gros‚Ä¶ et finit pauvre */
+/* Pixel Pause — Marzouker : nourris-le de burgers, il grossit jusqu'à devenir méga gros… et finit pauvre */
 (function(){
   'use strict';
   var sfx=PP.sfx,INK='#141210',CR='#f1ece2',RED='#e2361b',YEL='#f3c623',GRN='#3fe09a';
@@ -10,7 +10,7 @@
     salade:{kg:-5,eur:0,p:.14,r:28},
     piece:{kg:0,eur:6,p:.08,r:22}
   };
-  var STAGES=[[0,'Normal'],[95,'Gros'],[130,'Tr√®s gros'],[175,'M√©ga gros'],[230,'Giga gros'],[300,'Plan√©taire']];
+  var STAGES=[[0,'Normal'],[95,'Gros'],[130,'Très gros'],[175,'Méga gros'],[230,'Giga gros'],[300,'Planétaire']];
   function stageOf(kg){var s=0;STAGES.forEach(function(st,i){if(kg>=st[0])s=i});return s}
   function pickType(){var r=Math.random(),a=0,k;for(k in ITEMS){a+=ITEMS[k].p;if(r<a)return k}return 'burger'}
   function reset(){S={x:480,kg:70,eur:100,items:[],spawn:.6,t:0,speed:1,mouth:0,face:0,stage:0,over:false,poor:false,eaten:0,shake:0,crumbs:[],max:70,tgt:null}}
@@ -31,10 +31,10 @@
   function salade(g,x,y,r){g.save();g.translate(x,y);var s=r/28;g.scale(s,s);g.fillStyle='#e8e2d4';g.beginPath();g.ellipse(0,10,28,10,0,0,7);g.fill();
     ['#58b84a','#3f9a3a','#79cf5e'].forEach(function(c,i){g.fillStyle=c;for(var k=0;k<4;k++){g.beginPath();g.ellipse(-16+k*11,0-i*4,10,7,(k-1.5)*.5,0,7);g.fill()}});
     g.fillStyle='#e2361b';g.beginPath();g.arc(-6,-6,4,0,7);g.arc(8,-3,4,0,7);g.fill();g.restore()}
-  function piece(g,x,y,r){g.fillStyle='#d4a32a';g.beginPath();g.arc(x,y,r,0,7);g.fill();g.fillStyle=YEL;g.beginPath();g.arc(x,y,r*.78,0,7);g.fill();g.fillStyle='#8a6a10';g.font='800 '+(r*.9|0)+'px "IBM Plex Mono",monospace';g.textAlign='center';g.textBaseline='middle';g.fillText('‚Ç¨',x,y+1);g.textBaseline='alphabetic'}
+  function piece(g,x,y,r){g.fillStyle='#d4a32a';g.beginPath();g.arc(x,y,r,0,7);g.fill();g.fillStyle=YEL;g.beginPath();g.arc(x,y,r*.78,0,7);g.fill();g.fillStyle='#8a6a10';g.font='800 '+(r*.9|0)+'px "IBM Plex Mono",monospace';g.textAlign='center';g.textBaseline='middle';g.fillText('€',x,y+1);g.textBaseline='alphabetic'}
   function item(g,o){if(o.t==='burger')burger(g,o.x,o.y,o.r);else if(o.t==='maxi')burger(g,o.x,o.y,o.r,true);else if(o.t==='frites')frites(g,o.x,o.y,o.r);else if(o.t==='salade')salade(g,o.x,o.y,o.r);else piece(g,o.x,o.y,o.r)}
 
-  /* Marzouker : un gars √† la peau claire qui s'arrondit √† chaque bouch√©e */
+  /* Marzouker : un gars à la peau claire qui s'arrondit à chaque bouchée */
   function guy(g,x,kg,mouth,face,poor){
     var f=Math.max(0,(kg-70)/230),bw=58+f*230,bh=92+f*70,base=520,cy=base-bh/2-38,skin='#f3d9c4',skinD='#e2bfa4';
     g.save();
@@ -46,13 +46,13 @@
     /* corps */
     g.fillStyle=poor?'#8a8070':RED;g.beginPath();g.ellipse(x,cy,bw,bh/2+10,0,0,7);g.fill();
     if(poor){g.fillStyle='#6a6052';[[-.4,-.1],[.3,.2],[.1,-.35]].forEach(function(p){g.beginPath();g.ellipse(x+p[0]*bw,cy+p[1]*bh,10+f*10,7+f*6,.6,0,7);g.fill()})}
-    /* ventre qui d√©passe */
+    /* ventre qui dépasse */
     if(f>.08){g.fillStyle=skin;g.beginPath();g.ellipse(x,cy+bh*.28,bw*.62,bh*.22*Math.min(1,f*3),0,0,Math.PI);g.fill();g.fillStyle=skinD;g.beginPath();g.ellipse(x,cy+bh*.32,4,3,0,0,7);g.fill()}
     if(!poor){g.fillStyle=CR;g.font='800 '+(16+f*14|0)+'px "Anton","Inter Tight",sans-serif';g.textAlign='center';g.fillText('MARZOUKER',x,cy-bh*.05)}
     /* bras */
     g.strokeStyle=skin;g.lineCap='round';g.lineWidth=16+f*22;var ay=cy-bh*.15,wave=Math.sin(Date.now()/150)*(mouth>0?.6:.15);
     g.beginPath();g.moveTo(x-bw*.9,ay);g.lineTo(x-bw*1.05-14,ay-30-wave*30);g.stroke();g.beginPath();g.moveTo(x+bw*.9,ay);g.lineTo(x+bw*1.05+14,ay-30+wave*30);g.stroke();
-    /* t√™te (double menton quand il grossit) */
+    /* tête (double menton quand il grossit) */
     var hr=34+f*22,hy=cy-bh/2-hr*.7;
     if(f>.15){g.fillStyle=skinD;g.beginPath();g.ellipse(x,hy+hr*.85,hr*(.8+f*.6),hr*.32,0,0,7);g.fill()}
     g.fillStyle=skin;g.beginPath();g.ellipse(x,hy,hr*(1+f*.35),hr,0,0,7);g.fill();
@@ -85,8 +85,8 @@
 
   PP._marz=function(){return S};
   PP.arcade({id:'marz',
-    setup:function(C){reset();C.keysText('Souris, doigt ou <kbd>‚Üê</kbd><kbd>‚Üí</kbd> pour placer sa bouche sous la bouffe ¬∑ √©vite la salade ¬∑ les pi√®ces rallongent la partie');
-      C.over('Marzouker','Nourris Marzouker de burgers jusqu\'√† ce qu\'il devienne m√©ga gros. Chaque burger co√ªte des sous‚Ä¶ quand le portefeuille est vide, il devient pauvre.<br>Record : <b>'+(C.best('kg')||0)+' kg</b>','Manger !');this.draw(C)},
+    setup:function(C){reset();C.keysText('Souris, doigt ou <kbd>←</kbd><kbd>→</kbd> pour placer sa bouche sous la bouffe · évite la salade · les pièces rallongent la partie');
+      C.over('Marzouker','Nourris Marzouker de burgers jusqu\'à ce qu\'il devienne méga gros. Chaque burger coûte des sous… quand le portefeuille est vide, il devient pauvre.<br>Record : <b>'+(C.best('kg')||0)+' kg</b>','Manger !');this.draw(C)},
     start:function(C){reset();sfx.play('go')},
     mouse:function(C,t,x){if(t!=='up')S.tgt=x},
     step:function(C,dt){
@@ -99,25 +99,25 @@
       for(var i=S.items.length-1;i>=0;i--){var o=S.items[i];o.y+=o.vy*dt;
         if(Math.abs(o.y-my)<26&&Math.abs(o.x-S.x)<catchW){var it=ITEMS[o.t];S.items.splice(i,1);
           if(o.t==='salade'){S.kg=Math.max(60,S.kg+it.kg);S.face=-1;sfx.play('lose');C.pop('BEURK ! '+it.kg+' kg',GRN,'40px');C.shake(6)}
-          else if(o.t==='piece'){S.eur+=it.eur;sfx.play('pickup');C.pop('+'+it.eur+' ‚Ç¨',YEL,'40px')}
+          else if(o.t==='piece'){S.eur+=it.eur;sfx.play('pickup');C.pop('+'+it.eur+' €',YEL,'40px')}
           else{S.kg+=it.kg;S.eur+=it.eur;S.mouth=.35;S.eaten++;sfx.play('eat');for(var c=0;c<6;c++)S.crumbs.push({x:S.x+(Math.random()-.5)*30,y:my,vx:(Math.random()-.5)*160,vy:-Math.random()*160,t:.6});if(o.t==='maxi'){C.pop('MENU MAXI ! +'+it.kg+' kg',RED,'44px');C.shake(4)}}
           var st=stageOf(S.kg);if(st>S.stage){S.stage=st;sfx.play('win');C.pop(STAGES[st][1].toUpperCase()+' !',RED,'64px');C.shake(10)}
           S.max=Math.max(S.max,S.kg);
           if(S.eur<=0){S.eur=0;S.over=true;S.poor=true;S.items=[];S.mouth=0;C.stop();sfx.play('lose');var nb=C.best('kg',Math.round(S.max));if(S.max>=230)C.win();
-            setTimeout(function(){C.over('Marzouker est devenu pauvre','Il a tout claqu√© en burgers. Il a atteint <b>'+Math.round(S.max)+' kg</b> ('+STAGES[stageOf(S.max)][1]+') avec '+S.eaten+' burgers.'+(nb?' Nouveau record !':' Record : '+C.best('kg')+' kg'),'Recommencer')},900)}
+            setTimeout(function(){C.over('Marzouker est devenu pauvre','Il a tout claqué en burgers. Il a atteint <b>'+Math.round(S.max)+' kg</b> ('+STAGES[stageOf(S.max)][1]+') avec '+S.eaten+' burgers.'+(nb?' Nouveau record !':' Record : '+C.best('kg')+' kg'),'Recommencer')},900)}
           continue}
         if(o.y>600)S.items.splice(i,1)}
       S.crumbs.forEach(function(c){c.t-=dt;c.vy+=500*dt;c.x+=c.vx*dt;c.y+=c.vy*dt});S.crumbs=S.crumbs.filter(function(c){return c.t>0});
-      C.hud('<span>Poids <b>'+Math.round(S.kg)+' kg</b></span><span>Porte-monnaie <b>'+Math.round(S.eur)+' ‚Ç¨</b></span><span>'+STAGES[stageOf(S.kg)][1]+'</span>')},
+      C.hud('<span>Poids <b>'+Math.round(S.kg)+' kg</b></span><span>Porte-monnaie <b>'+Math.round(S.eur)+' €</b></span><span>'+STAGES[stageOf(S.kg)][1]+'</span>')},
     draw:function(C){var g=C.g,W=960,H=540;if(!S)reset();g.save();if(S.shake>0)g.translate((Math.random()-.5)*10,(Math.random()-.5)*10);
       scene(g,W,H,S.poor);
       S.items.forEach(function(o){item(g,o)});
       guy(g,S.x,S.kg,S.mouth,S.face,S.poor);
       g.fillStyle='#c98a3a';S.crumbs.forEach(function(c){g.fillRect(c.x,c.y,4,4)});
-      if(S.poor){g.save();g.translate(S.x+150,470);g.rotate(-.06);g.fillStyle='#b8925a';g.fillRect(-80,-46,160,72);g.fillStyle=INK;g.font='700 15px "IBM Plex Mono",monospace';g.textAlign='center';g.fillText('J\'AI TOUT MIS',0,-18);g.fillText('DANS LES BURGERS',0,2);g.fillText('1 ‚Ç¨ SVP',0,22);g.restore();
+      if(S.poor){g.save();g.translate(S.x+150,470);g.rotate(-.06);g.fillStyle='#b8925a';g.fillRect(-80,-46,160,72);g.fillStyle=INK;g.font='700 15px "IBM Plex Mono",monospace';g.textAlign='center';g.fillText('J\'AI TOUT MIS',0,-18);g.fillText('DANS LES BURGERS',0,2);g.fillText('1 € SVP',0,22);g.restore();
         g.fillStyle='#8a8a8a';g.beginPath();g.ellipse(S.x-150,500,26,8,0,0,7);g.fill();g.fillStyle='#d4a32a';g.beginPath();g.arc(S.x-156,496,5,0,7);g.fill()}
       /* jauge du porte-monnaie */
-      if(!S.poor){g.fillStyle=INK;g.fillRect(20,20,220,18);g.fillStyle=S.eur<25?RED:GRN;g.fillRect(22,22,216*Math.min(1,S.eur/100),14);g.fillStyle=CR;g.font='700 11px "IBM Plex Mono",monospace';g.textAlign='left';g.fillText('‚Ç¨ '+Math.round(S.eur),28,33)}
+      if(!S.poor){g.fillStyle=INK;g.fillRect(20,20,220,18);g.fillStyle=S.eur<25?RED:GRN;g.fillRect(22,22,216*Math.min(1,S.eur/100),14);g.fillStyle=CR;g.font='700 11px "IBM Plex Mono",monospace';g.textAlign='left';g.fillText('€ '+Math.round(S.eur),28,33)}
       g.restore()}
   });
 })();
