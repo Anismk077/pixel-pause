@@ -35,7 +35,7 @@
 
   /* ---------- Manche ---------- */
   function showPhoto(p){
-    var im=$('tg-img');$('tg-photo').classList.add('loading');im.onload=function(){$('tg-photo').classList.remove('loading')};im.onerror=function(){$('tg-photo').classList.remove('loading')};im.src=p.img;
+    var im=$('tg-img');$('tg-photo').classList.add('loading');im.onload=function(){$('tg-photo').classList.remove('loading')};im.onerror=function(){$('tg-photo').classList.remove('loading')};im.src=p.img;$('tg-photo').style.setProperty('--bg','url("'+p.img.replace(/"/g,'%22')+'")');
     locked=false;clearMap();setYear(1950);$('tg-res').innerHTML='';$('tg-cap').textContent='';check();$('tg-side').classList.remove('done');setTimeout(function(){map.resize()},60);
   }
   function result(p,g,y){
