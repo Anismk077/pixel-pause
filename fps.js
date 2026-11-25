@@ -1086,7 +1086,10 @@
     drawMini();
   }
   function mobFull(on){if(!touchUI)return;var st=cv.parentNode;if(st.classList.contains('ft-full')!==!!on){st.classList.toggle('ft-full',!!on);document.body.classList.toggle('ft-lock',!!on)}}
-  function loop(t){var dt=last?Math.min(.05,(t-last)/1000):0;last=t;if(running){mobFull(true);if((!paused||online)&&!shopOpen)step(dt);if(running)render();raf=requestAnimationFrame(loop)}}
+  function loop(t){var dt=last?Math.min(.05,(t-last)/1000):0;last=t;if(running){mobFull(true);
+      /* à la souris, le jeu ne tourne que si la souris est bien capturée : sinon il attend un clic dans l'image (la souris ne peut plus « sortir » en pleine partie) */
+      var hold=DESK&&!online&&!shopOpen&&!chatOpen&&!dead&&document.pointerLockElement!==cv;if(hold!==lastHold){lastHold=hold;$('fps-lockhint').hidden=!hold||paused;if(hold){keys={};mouseDown=false}}
+      if((!paused||online)&&!shopOpen&&!hold)step(dt);if(running)render();raf=requestAnimationFrame(loop)}}
 
   /* ---------- Entrées ---------- */
   /* la moindre touche, clic ou mouvement de souris sur la page te sort du mode AFK */
@@ -1122,9 +1125,14 @@
   cv.addEventListener('wheel',function(e){if(!running)return;e.preventDefault();cycle(e.deltaY>0?1:-1)},{passive:false});
   document.addEventListener('mousemove',function(e){if(document.pointerLockElement!==cv||!P||dead)return;mouseDX+=e.movementX;mouseDY+=e.movementY;lastInput=performance.now();var s=(aiming?(cam.fov/75)*.0026:.0026)*PP.settings.sens/100;P.yaw-=e.movementX*s;P.pitch=Math.max(-1.45,Math.min(1.45,P.pitch-e.movementY*s*(PP.settings.invY?-1:1)))});
   document.addEventListener('pointerlockchange',function(){if(PP.cur()!=='fps'||!running)return;var l=document.pointerLockElement===cv;$('fps-lockhint').hidden=l||chatOpen;if(!l&&!online&&!chatOpen&&!shopOpen){paused=true;PP.pause(true)}if(l)paused=false;if(shopOpen)$('fps-lockhint').hidden=true});
-  document.addEventListener('pp-resume',function(){if(PP.cur()!=='fps'||!running)return;lock();paused=false;$('fps-lockhint').hidden=true});
+  document.addEventListener('pointerlockerror',function(){lastHold=null});
+  document.addEventListener('pp-resume',function(){if(PP.cur()!=='fps'||!running)return;lock();paused=false;lastHold=null});
   document.addEventListener('pp-settings',function(){if(!R3)return;var q=PP.settings.q,dpr=window.devicePixelRatio||1;R3.setPixelRatio(q==='haute'?Math.min(1.5,dpr):q==='basse'?.7:1);R3.setSize(cv.width,cv.height,false)});
-  function lock(){if(cv.requestPointerLock&&matchMedia('(hover:hover)').matches)try{var r=cv.requestPointerLock();if(r&&r.catch)r.catch(function(){})}catch(e){}}
+  var DESK=matchMedia('(hover:hover) and (pointer:fine)').matches,lastHold=null;
+  function lock(){if(!cv.requestPointerLock||!DESK||document.pointerLockElement===cv)return;
+    try{var r=cv.requestPointerLock();if(r&&r.catch)r.catch(function(){lastHold=null})}catch(e){lastHold=null}}
+  /* un clic n'importe où sur l'image (même sur le message « clique pour reprendre ») recapture la souris */
+  cv.parentNode.addEventListener('mousedown',function(e){if(PP.cur()!=='fps'||!running||shopOpen||chatOpen||e.target===cv)return;if(e.target.closest('button,input,.fx-shop'))return;if(document.pointerLockElement!==cv){e.preventDefault();lock();paused=false}});
   function unlock(){if(document.pointerLockElement===cv&&document.exitPointerLock)document.exitPointerLock()}
   // tactile : joystick à gauche, on vise en glissant à droite, gros bouton TIR + 3 petits boutons
   var touchUI=null,joy=null,look=null;
@@ -1165,7 +1173,7 @@
     mapId=PP.pick(Object.keys(MAPS));
     if(!reset())return;
     if(mode==='br'){round={n:1,seed:0,map:mapId,phase:'play',t0:performance.now()};for(var i=0;i<9;i++){var s=spawnFar(14);addBot(i,s.x,s.z)}}
-    $('fps-ov').hidden=true;running=true;paused=false;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);lock();sfx.play('go');center('');
+    $('fps-ov').hidden=true;running=true;paused=false;last=0;lastHold=null;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);lock();sfx.play('go');center('');
     if(mode==='zombie'){waveT=3;center(MAPS[mapId].toUpperCase()+' · '+(ZNAME[zoneOf(P.x,P.z)]||'').toUpperCase())}else{center('CARTE : '+MAPS[mapId].toUpperCase());setTimeout(function(){if(running&&!dead)center('')},2200)}
     hud();
   }
