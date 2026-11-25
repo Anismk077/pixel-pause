@@ -8,6 +8,7 @@ window.PP_CLOUD_CFG=window.PP_CLOUD_CFG||{apiKey:'AIzaSyBM4-trHYAvg0bPShkUOhJAIt
   var C={ready:false,user:null,state:'off',listeners:[],friends:[],unread:{},verified:false,name:null};PP.cloud=C;
   function emit(){C.listeners.forEach(function(f){try{f(C)}catch(e){console.error(e)}})}
   C.on=function(f){C.listeners.push(f)};
+  var readyCbs=[];C.whenReady=function(f){if(C.db)f(C.db);else readyCbs.push(f)};
   var cfg=window.PP_CLOUD_CFG;if(!cfg)return;
   var V='10.12.2',base='https://www.gstatic.com/firebasejs/'+V+'/';
   function load(src){return new Promise(function(ok,ko){var s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=ko;document.head.appendChild(s)})}
@@ -27,7 +28,7 @@ window.PP_CLOUD_CFG=window.PP_CLOUD_CFG||{apiKey:'AIzaSyBM4-trHYAvg0bPShkUOhJAIt
   function fail(m){return Promise.reject({message:m})}
 
   function init(){
-    firebase.initializeApp(cfg);auth=firebase.auth();db=firebase.firestore();FV=firebase.firestore.FieldValue;C.ready=true;C.state='ready';
+    firebase.initializeApp(cfg);auth=firebase.auth();db=firebase.firestore();FV=firebase.firestore.FieldValue;C.ready=true;C.state='ready';C.db=db;C.FV=FV;readyCbs.forEach(function(f){try{f(db)}catch(e){console.error(e)}});readyCbs=[];
     try{auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)}catch(e){}
     try{auth.languageCode=(document.documentElement.lang||'fr').slice(0,2)}catch(e){}
     if(auth.isSignInWithEmailLink(location.href)){holding=true;finishLink()}
@@ -69,11 +70,11 @@ window.PP_CLOUD_CFG=window.PP_CLOUD_CFG||{apiKey:'AIzaSyBM4-trHYAvg0bPShkUOhJAIt
       method=null;
       if(devs.indexOf(dev())<0)ref.set({devs:FV.arrayUnion(dev())},{merge:true}).catch(noop);
       var fresh=u.emailVerified?Promise.resolve():u.reload().then(function(){if(auth.currentUser&&auth.currentUser.emailVerified)return auth.currentUser.getIdToken(true)}).catch(noop);
-      return fresh.then(function(){u=auth.currentUser||u;return db.collection('profiles').doc(u.uid).get()}).then(function(pd){
+      return fresh.then(function(){u=auth.currentUser||u;return db.collection('banned').doc(u.uid).get().then(function(b){if(b.exists){C.note='Ce compte a été banni du site.'+(b.data().why?' Raison : '+b.data().why:'');C.state='ready';throw {banned:1}}},function(){})}).then(function(){return db.collection('profiles').doc(u.uid).get()}).then(function(pd){
         if(!pd.exists||!pd.data().name){C.state='need-name';emit();return}
-        C.name=pd.data().name;C.verified=!!u.emailVerified;attach(u,data);
+        C.name=pd.data().name;C.noReq=!!pd.data().noReq;C.verified=!!u.emailVerified;attach(u,data);
       });
-    }).catch(function(e){C.state='error';C.err=C.msg(e);emit()});
+    }).catch(function(e){if(e&&e.banned){auth.signOut();emit();return}C.state='error';C.err=C.msg(e);emit()});
   }
   function profiles(){try{return JSON.parse(localStorage.getItem('pp-profiles'))||[]}catch(e){return []}}
   function prefix(name){return 'pp-p-'+name+'-'}
@@ -123,7 +124,7 @@ window.PP_CLOUD_CFG=window.PP_CLOUD_CFG||{apiKey:'AIzaSyBM4-trHYAvg0bPShkUOhJAIt
       .then(function(r){u=r.user;return db.collection('usernames').doc(key).set({uid:u.uid,name:name}).catch(function(){return u.delete().then(function(){u=null;throw {message:'Ce pseudo vient d\'être pris. Choisis-en un autre.'}})})})
       .then(function(){return Promise.all([u.updateProfile({displayName:name}),db.collection('profiles').doc(u.uid).set({name:name,av:av(),seen:Date.now()}),db.collection('users').doc(u.uid).set({devs:[dev()]},{merge:true})])})
       .then(function(){return u.sendEmailVerification({url:HOME+'#account'}).catch(noop)})
-      .then(function(){holding=false;method=null;proceed(u)})
+      .then(function(){holding=false;method=null;if(PP.site&&PP.site.newAccount)PP.site.newAccount();proceed(u)})
       .catch(function(e){holding=false;if(auth.currentUser)proceed(auth.currentUser);throw e});
   };
   C.login=function(email,pass){method='password';C.note='';return auth.signInWithEmailAndPassword(email,pass).catch(function(e){method=null;throw e})};
@@ -146,7 +147,18 @@ window.PP_CLOUD_CFG=window.PP_CLOUD_CFG||{apiKey:'AIzaSyBM4-trHYAvg0bPShkUOhJAIt
 
   /* ---------- Présence : en ligne, dans quel salon ---------- */
   var presT=null,roomJ='null',avJ='';C.room=null;
-  function presence(){if(!C.user||!C.name||!C.verified)return;var a=av();avJ=JSON.stringify(a);db.collection('profiles').doc(C.user.uid).set({name:C.name,av:a,seen:Date.now(),room:C.room||null},{merge:true}).catch(noop)}
+  var PAGES={menu:1,room:1,join:1,perso:1,friends:1,account:1,settings:1,admin:1};
+  function curGame(){var v=PP.cur&&PP.cur();return v&&!PAGES[v]?v:null}
+  /* stats publiques (mini profil) : parties, victoires, temps de jeu, jeu préféré */
+  function pubStats(){var pre=prefix(C.local||''),p=0,w=0,fav='',fm=0;Object.keys(localStorage).forEach(function(k){if(k.indexOf(pre+'st-')!==0)return;var m=/^st-(.+)-(parties|win)$/.exec(k.slice(pre.length));if(!m)return;var v=+localStorage.getItem(k)||0;if(m[2]==='parties'){p+=v;if(v>fm){fm=v;fav=m[1]}}else w+=v});
+    var since=0;try{since=Date.parse(C.user.metadata.creationTime)||0}catch(e){}return {p:p,w:w,time:Math.round(+localStorage.getItem(pre+'play-time')||0),fav:fav,since:since}}
+  C.status=function(){try{return localStorage.getItem('pp-status')||'on'}catch(e){return 'on'}};
+  C.setStatus=function(s){try{localStorage.setItem('pp-status',s)}catch(e){}presence();emit()};
+  /* état d'un joueur à partir de son profil : on, busy (occupé), game (en partie), off */
+  C.statusOf=function(pr){if(!pr||!pr.seen||pr.seen<Date.now()-150000||pr.st==='off')return 'off';if(pr.st==='busy')return 'busy';if(pr.g)return 'game';return 'on'};
+  C.setNoReq=function(v){C.noReq=!!v;if(C.user)return db.collection('profiles').doc(C.user.uid).set({name:C.name,noReq:!!v},{merge:true});return Promise.resolve()};
+  function presence(){if(!C.user||!C.name||!C.verified)return;var a=av();avJ=JSON.stringify(a);db.collection('profiles').doc(C.user.uid).set({name:C.name,av:a,seen:Date.now(),room:C.room||null,st:C.status(),g:curGame(),stats:pubStats()},{merge:true}).catch(noop)}
+  var gT=0;document.addEventListener('pp-go',function(){clearTimeout(gT);gT=setTimeout(function(){if(socialOn)presence()},1200)});
   C.setRoom=function(r){var j=JSON.stringify(r||null);if(j===roomJ)return;roomJ=j;C.room=r||null;presence()};
   setInterval(function(){if(socialOn&&JSON.stringify(av())!==avJ)presence()},5000);
 
@@ -161,6 +173,7 @@ window.PP_CLOUD_CFG=window.PP_CLOUD_CFG||{apiKey:'AIzaSyBM4-trHYAvg0bPShkUOhJAIt
   function startSocial(){
     if(socialOn||!C.user||!C.verified)return;socialOn=true;
     presence();clearInterval(presT);presT=setInterval(presence,60000);
+    unsubs.push(db.collection('banned').doc(C.user.uid).onSnapshot(function(d){if(d.exists){PP.toast&&PP.toast('Ce compte a été banni du site.','warn');setTimeout(C.logout,1500)}},noop));
     unsubs.push(db.collection('friends').doc(C.user.uid).collection('list').onSnapshot(function(s){
       var l=[];s.forEach(function(d){var x=d.data();x.uid=d.id;var old=friend(d.id);if(old)x.prof=old.prof;l.push(x)});
       l.forEach(function(f){if(f.status==='pending_in'&&!seenReq[f.uid]&&reqInit){PP.toast&&PP.toast(f.name+' veut être ton ami','ok');try{PP.sfx.play('join')}catch(e){}}if(f.status==='pending_in')seenReq[f.uid]=1});
@@ -191,6 +204,7 @@ window.PP_CLOUD_CFG=window.PP_CLOUD_CFG||{apiKey:'AIzaSyBM4-trHYAvg0bPShkUOhJAIt
     return db.collection('usernames').doc(key).get().then(function(d){
       if(!d.exists)throw {message:'Aucun joueur avec ce pseudo.'};var o=d.data();
       if(o.uid===C.user.uid)throw {message:'C\'est ton propre pseudo !'};
+      return db.collection('profiles').doc(o.uid).get().then(function(pd){var ex0=friend(o.uid);if(pd.exists&&pd.data().noReq&&!(ex0&&ex0.status==='pending_in'))throw {message:o.name+' n\'accepte pas les demandes d\'ami pour l\'instant.'};return o})}).then(function(o){
       var ex=friend(o.uid);if(ex&&ex.status==='friends')throw {message:'Vous êtes déjà amis.'};
       if(ex&&ex.status==='pending_in')return C.accept(o.uid).then(function(){return o.name});
       if(ex&&ex.status==='pending_out')throw {message:'Demande déjà envoyée.'};

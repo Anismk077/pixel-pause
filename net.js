@@ -52,7 +52,7 @@ PP.net=(function(){
           var nm=String(d.name||'').slice(0,14)||'Joueur';
           if(players.some(function(p){return p.id===conn.peer}))return;
           if(banned[nm.toLowerCase()]){try{conn.send({t:'kicked',ban:1})}catch(e){}setTimeout(function(){try{conn.close()}catch(e){}},300);return}
-          if(gate&&!gate(d)){try{conn.send({t:'kicked',why:'friends'})}catch(e){}setTimeout(function(){try{conn.close()}catch(e){}},300);return}
+          var gw=gate?gate(d):true;if(gw!==true){try{conn.send({t:'kicked',why:gw||'friends'})}catch(e){}setTimeout(function(){try{conn.close()}catch(e){}},300);return}
           players.push({id:conn.peer,name:nm,av:d.av||null,uid:typeof d.uid==='string'?d.uid.slice(0,40):null});
           conn.send({t:'hello',id:conn.peer,players:players,code:code});
           broadcast({t:'players',players:players});
@@ -96,7 +96,7 @@ PP.net=(function(){
           cb(null,code);return;
         }
         if(d.t==='players')players=d.players;
-        if(d.t==='kicked'){if(!done){done=true;clearTimeout(timer);try{p.destroy()}catch(e){}cb(d.why==='friends'?'Ce salon est réservé aux amis du chef.':'Le chef t\'a exclu de ce salon.');return}gone=true;emit({t:'kicked',ban:d.ban},'host');leave();return}
+        if(d.t==='kicked'){if(!done){done=true;clearTimeout(timer);try{p.destroy()}catch(e){}cb(d.why==='friends'?'Ce salon est réservé aux amis du chef.':d.why==='acc'?'Ce salon est réservé aux joueurs avec un compte. Connecte-toi pour entrer.':'Le chef t\'a exclu de ce salon.');return}gone=true;emit({t:'kicked',ban:d.ban},'host');leave();return}
         if(d.t==='mkhost'){host(me.name,function(err,nc,np){if(err){try{hostConn.send({t:'newhost',err:1})}catch(e){}return}preP=np;try{hostConn.send({t:'newhost',code:nc})}catch(e){}},'pre');return}
         if(d.t==='migrate'){migrating=true;var nm=me.name,mine=d.to===me.id;emit({t:'migrating',chef:d.name,mine:mine},'host');
           setTimeout(function(){if(mine&&preP){var np=preP;preP=null;leave(true);adopt(np,d.code,nm);migrating=false;emit({t:'migrated',chef:true},'host')}else{leave(true);rejoin(d.code,nm,0)}},mine?200:1200);return}

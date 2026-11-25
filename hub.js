@@ -14,7 +14,7 @@
     account:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3.2"/><path d="M6.2 18.4a6.5 6.5 0 0 1 11.6 0"/>',
     settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'
   };
-  var PAGES={menu:1,room:1,join:1,perso:1,friends:1,account:1,settings:1};
+  var PAGES={menu:1,room:1,join:1,perso:1,friends:1,account:1,settings:1,admin:1};
   function navSetup(){
     document.querySelectorAll('header nav [data-go]').forEach(function(b){
       var k=b.dataset.go;if(!ICO[k]||b.querySelector('svg'))return;
@@ -111,6 +111,21 @@
   PP.auth={open:function(mode){if(!C||C.state==='off'){PP.toast('Comptes en ligne indisponibles','warn');return}if(C.user&&C.name){PP.go('account');return}if(C.state==='need-name')return nameStep();if(C.state==='need-device')return deviceStep();fresh=false;form(mode==='login'?'login':'signup')},close:close};
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&ov&&step!=='perso')close()});
   document.addEventListener('click',function(e){var b=e.target.closest('[data-auth]');if(b&&!b.closest('#acc-box')){e.preventDefault();PP.auth.open(b.dataset.auth)}});
+
+  /* ---------- Filtres de l'accueil : gros boutons avec le nombre de jeux, et une recherche ---------- */
+  function filters(){
+    var old=PP.$('chips'),tiles=PP.$('tiles');if(!old||!tiles||old.dataset.v2)return;
+    var ch=old.cloneNode(false);ch.dataset.v2='1';ch.className='filters2';old.parentNode.replaceChild(ch,old);
+    var F=[['all','Tout'],['solo','Solo'],['tel','En ligne'],['pc','Même écran'],['3d','3D']],cur='all',q='';
+    function rows(){return [].slice.call(tiles.querySelectorAll('.row-game[data-cat]'))}
+    function cnt(f){return rows().filter(function(r){return !r.classList.contains('blocked')&&(f==='all'||r.dataset.cat.split(' ').indexOf(f)>=0)}).length}
+    ch.innerHTML='<label class="f2-s"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input type="search" placeholder="Chercher un jeu…" aria-label="Chercher un jeu"></label><div class="f2-c">'+F.map(function(f){return '<button type="button" class="chip2'+(f[0]===cur?' on':'')+'" data-f2="'+f[0]+'">'+f[1]+' <small>'+cnt(f[0])+'</small></button>'}).join('')+'</div><p class="f2-none" hidden>Aucun jeu ne correspond.</p>';
+    function apply(){var vis=0;rows().forEach(function(r){var name=(r.querySelector('.rg-name')||r).textContent.toLowerCase()+' '+((r.querySelector('.rg-sub')||{}).textContent||'').toLowerCase();var ok=(cur==='all'||r.dataset.cat.split(' ').indexOf(cur)>=0)&&(!q||name.indexOf(q)>=0);r.classList.toggle('hide',!ok);if(ok&&!r.classList.contains('blocked'))vis++});tiles.classList.toggle('filtered',cur!=='all'||!!q);ch.querySelector('.f2-none').hidden=vis>0}
+    ch.addEventListener('click',function(e){var b=e.target.closest('[data-f2]');if(!b)return;cur=b.dataset.f2;ch.querySelectorAll('[data-f2]').forEach(function(x){x.classList.toggle('on',x===b)});apply();PP.sfx&&PP.sfx.play&&PP.sfx.play('ui')});
+    var inp=ch.querySelector('input');inp.addEventListener('input',function(){q=inp.value.toLowerCase().trim();apply()});inp.addEventListener('keydown',function(e){e.stopPropagation();if(e.key==='Enter'){var r=rows().filter(function(x){return !x.classList.contains('hide')})[0];if(r)r.click()}});
+    if(PP.site&&PP.site.on)PP.site.on(function(){ch.querySelectorAll('[data-f2]').forEach(function(b){b.querySelector('small').textContent=cnt(b.dataset.f2)})});
+  }
+  filters();
 
   /* ---------- Ton perso sur l'accueil ---------- */
   var home=null,bubT=0;
