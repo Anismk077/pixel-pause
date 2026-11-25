@@ -7,6 +7,7 @@
   'use strict';
   var $=PP.$,esc=PP.esc,net=PP.net,sfx=PP.sfx,box=$('room-box'),T=function(s){return PP.t?PP.t(s):s},C=PP.cloud;
   var ONLINE=[
+    {id:'fps',name:'Zone Morte',desc:'Zombies en équipe, on se relève entre potes',min:1,max:8},
     {id:'party',name:'Dernier Debout',desc:'Épreuves éliminatoires, bots en renfort',min:1,max:8},
     {id:'surv',name:'Survie',desc:'La même île pour tout le salon',min:1},
     {id:'sumo',name:'Sumo Arena',desc:'Pousse les autres dans le vide',min:2,max:4},
@@ -25,7 +26,7 @@
     {id:'c4',name:'Quatre en ligne',desc:'Aligne 4 jetons',min:2,max:2},
     {id:'navale',name:'Bataille navale',desc:'Coule la flotte d\'en face',min:2,max:2}
   ];
-  var GN={};ONLINE.forEach(function(g){GN[g.id]=g.name});GN.fps='Zone Morte';
+  var GN={};ONLINE.forEach(function(g){GN[g.id]=g.name});
   var curGame=null;
 
   /* ---------- État du salon (tenu par le chef, envoyé à tout le monde) ---------- */
