@@ -854,6 +854,8 @@
   /* ---------- Détails : lumières de nuit, clôtures, jardins, château vivant, nature ---------- */
   var glows=[],GLOWT=null,birds=[],flies=null,flags=[];
   function glowTex(){if(GLOWT)return GLOWT;var c=document.createElement('canvas');c.width=c.height=64;var g=c.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,220,150,1)');gr.addColorStop(.3,'rgba(255,170,80,.55)');gr.addColorStop(1,'rgba(255,140,40,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);GLOWT=new THREE.CanvasTexture(c);return GLOWT}
+  var FLAMET=null;
+  function flameTex(){if(FLAMET)return FLAMET;var c=document.createElement('canvas');c.width=64;c.height=128;var g=c.getContext('2d');g.translate(32,96);g.scale(1,2.1);var gr=g.createRadialGradient(0,0,0,0,-4,30);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.35,'rgba(255,255,255,.75)');gr.addColorStop(.7,'rgba(255,255,255,.22)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.beginPath();g.arc(0,-6,30,0,7);g.fill();FLAMET=new THREE.CanvasTexture(c);return FLAMET}
   function glow(x,y,z,s){var sp=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex(),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0}));sp.position.set(x,y,z);sp.scale.setScalar(s||2.2);scene.add(sp);glows.push(sp);return sp}
   function lantern(x,y,z){var cage=new THREE.Mesh(new THREE.BoxGeometry(.22,.3,.22),lam({color:0x2b2420}));cage.position.set(x,y,z);scene.add(cage);var lit=new THREE.Mesh(new THREE.BoxGeometry(.16,.22,.16),new THREE.MeshLambertMaterial({color:0xffd27a,emissive:0x000000}));lit.position.set(x,y,z);scene.add(lit);windows.push(lit);glow(x,y,z,2.6)}
   function lampPost(x,z){var y=groundAt(x,z),dk=lam({color:0x2b2420});deco(new THREE.CylinderGeometry(.06,.09,3,8),dk,x,y+1.5,z);deco(new THREE.BoxGeometry(.6,.06,.06),dk,x+.25,y+2.95,z);lantern(x+.5,y+2.7,z)}
@@ -1204,7 +1206,7 @@
     if(P.food<=0||P.water<=0){P.hp-=dt*1.5;if(P.hp<=0)return die()}
     else if(P.food>55&&P.water>55&&now-lastHurt>5000&&P.hp<100)P.hp=Math.min(100,P.hp+dt*1.2);
     // torche
-    torchL.intensity=tool==='torch'?(isNight()?2.4:1)+Math.sin(now/70)*.2:0;torchL.position.set(P.x-Math.sin(P.yaw)*.6,P.y+EYE,P.z-Math.cos(P.yaw)*.6);
+    var tf=.88+Math.sin(now/58)*.06+Math.sin(now/23+1.1)*.04+Math.sin(now/137)*.05;torchL.intensity=tool==='torch'?(isNight()||P.under?3.2:1.2)*tf:0;torchL.distance=isNight()||P.under?26:14;torchL.color.setRGB(1,.58+tf*.06,.25);torchL.position.set(P.x-Math.sin(P.yaw)*.7+Math.cos(P.yaw)*.25,P.y+EYE+.1,P.z-Math.cos(P.yaw)*.7-Math.sin(P.yaw)*.25);
     if(online&&!auth)stepGuestEnts(dt);else stepEnts(dt,now);
     if(online){stepRemotes(dt);sendNet(dt)}
     bushes.forEach(function(b){if(!b.full){b.t-=dt;if(b.t<=0){b.full=true;b.b.visible=true}}});
@@ -1427,7 +1429,19 @@
     else if(tool==='sword'){var bs=new THREE.Shape();bs.moveTo(-.03,0);bs.lineTo(-.026,.66);bs.lineTo(0,.76);bs.lineTo(.026,.66);bs.lineTo(.03,0);bs.lineTo(-.03,0);var bl=new THREE.Mesh(new THREE.ExtrudeGeometry(bs,{depth:.01,bevelEnabled:true,bevelThickness:.004,bevelSize:.004,bevelSegments:1}),steelS);bl.rotation.y=Math.PI/2;bl.position.set(-.005,.1,0);g.add(bl);var fu=new THREE.Mesh(new THREE.BoxGeometry(.004,.5,.012),new THREE.MeshStandardMaterial({color:0x6a6e74,metalness:.8,roughness:.3}));fu.position.set(.008,.38,0);g.add(fu);
       var cg=new THREE.Mesh(new THREE.BoxGeometry(.035,.035,.24),new THREE.MeshStandardMaterial({color:0xb08a3a,metalness:.7,roughness:.3}));cg.position.set(0,.09,0);g.add(cg);[-1,1].forEach(function(s){var b2=new THREE.Mesh(new THREE.SphereGeometry(.022,8,6),cg.material);b2.position.set(0,.09,s*.12);g.add(b2)});
       var gp=new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,.14,10),wrap);gp.position.set(0,.0,0);g.add(gp);for(var r2=0;r2<5;r2++)ring(-.06+r2*.028,.024);var pm=new THREE.Mesh(new THREE.SphereGeometry(.03,10,8),cg.material);pm.position.set(0,-.08,0);g.add(pm)}
-    else if(tool==='torch'){var th=new THREE.Mesh(new THREE.CylinderGeometry(.022,.03,.5,10),woodS);th.position.set(0,.15,0);g.add(th);var cloth=new THREE.Mesh(new THREE.CylinderGeometry(.045,.035,.1,10),new THREE.MeshStandardMaterial({color:0x3a2a1a,roughness:1}));cloth.position.set(0,.4,0);g.add(cloth);var fl=new THREE.Group();[[0xff7a1a,.08,.26,1],[0xffb030,.055,.2,.95],[0xfff0a0,.03,.13,1]].forEach(function(f){var c=new THREE.Mesh(new THREE.ConeGeometry(f[1],f[2],10),new THREE.MeshBasicMaterial({color:f[0],transparent:true,opacity:f[3]}));c.position.y=f[2]/2;fl.add(c)});fl.position.set(0,.45,0);g.add(fl);g.userData.flame=fl}
+    else if(tool==='torch'){
+      /* torche : manche effilé avec liens de cuir, tête en tissu goudronné dans une cage de fer, flamme vivante (couches lumineuses) et étincelles */
+      var hdl=new THREE.Mesh(new THREE.CylinderGeometry(.024,.032,.56,10),woodS);hdl.position.set(0,.12,0);g.add(hdl);for(var w4=0;w4<3;w4++)ring(-.06+w4*.035,.034);
+      var tar=new THREE.Mesh(new THREE.CylinderGeometry(.052,.04,.13,12),new THREE.MeshStandardMaterial({color:0x2a1a10,roughness:1}));tar.position.set(0,.43,0);g.add(tar);
+      var ember=new THREE.Mesh(new THREE.SphereGeometry(.05,10,8),new THREE.MeshBasicMaterial({color:0xff6a18}));ember.scale.set(1,.55,1);ember.position.set(0,.5,0);g.add(ember);
+      var iron=new THREE.MeshStandardMaterial({color:0x3a3632,roughness:.6,metalness:.4});[.37,.49].forEach(function(y){var t=new THREE.Mesh(new THREE.TorusGeometry(.056,.008,5,14),iron);t.rotation.x=Math.PI/2;t.position.y=y;g.add(t)});
+      for(var bi=0;bi<4;bi++){var bar=new THREE.Mesh(new THREE.BoxGeometry(.008,.15,.008),iron);var ba=bi*Math.PI/2;bar.position.set(Math.cos(ba)*.056,.43,Math.sin(ba)*.056);g.add(bar)}
+      var fl=new THREE.Group();fl.position.set(0,.52,0);g.add(fl);var ft=flameTex(),fls=[];
+      [[.26,.42,0xff5a10,.85],[.2,.34,0xff9a28,.9],[.13,.24,0xffd060,.95],[.07,.14,0xfff6d0,1]].forEach(function(f,i){var sp=new THREE.Sprite(new THREE.SpriteMaterial({map:ft,color:f[2],transparent:true,opacity:f[3],blending:THREE.AdditiveBlending,depthWrite:false}));sp.scale.set(f[0],f[1],1);sp.position.y=f[1]*.38;sp.userData.b=[f[0],f[1],f[3],i*1.7];fl.add(sp);fls.push(sp)});
+      var halo=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex(),color:0xffa040,transparent:true,opacity:.55,blending:THREE.AdditiveBlending,depthWrite:false}));halo.scale.setScalar(.9);halo.position.y=.12;fl.add(halo);
+      var sparks=[];for(var si=0;si<10;si++){var sk=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex(),color:0xffc060,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));sk.scale.setScalar(.03);sk.userData.t=Math.random();sk.userData.v=[(Math.random()-.5)*.12,.35+Math.random()*.35,(Math.random()-.5)*.12];fl.add(sk);sparks.push(sk)}
+      var hl=new THREE.PointLight(0xff9a40,1.6,1.6,1.2);hl.position.set(0,.6,0);g.add(hl);
+      g.userData.torch={fls:fls,halo:halo,sparks:sparks,hl:hl};g.rotation.z=.12;g.rotation.x=-.15}
     else if(tool==='bow'){var bw=new THREE.Mesh(new THREE.TorusGeometry(.34,.016,8,32,Math.PI*.9),woodS);bw.rotation.z=Math.PI/2+Math.PI*.05;bw.position.set(0,.05,-.12);g.add(bw);var gw=new THREE.Mesh(new THREE.CylinderGeometry(.024,.024,.12,10),wrap);gw.position.set(0,.05,-.46);g.add(gw);
       var str=new THREE.Mesh(new THREE.CylinderGeometry(.0025,.0025,.66,4),new THREE.MeshBasicMaterial({color:0xf1ece2}));str.position.set(0,.05,-.13);g.add(str);if(inv.fleches>0){var ar=new THREE.Mesh(new THREE.CylinderGeometry(.006,.006,.6,6),woodS);ar.rotation.x=Math.PI/2;ar.position.set(.02,.05,-.38);g.add(ar);var ah=new THREE.Mesh(new THREE.ConeGeometry(.016,.05,6),steelS);ah.rotation.x=-Math.PI/2;ah.position.set(.02,.05,-.7);g.add(ah);[-1,1].forEach(function(s){var ft=new THREE.Mesh(new THREE.BoxGeometry(.002,.025,.06),new THREE.MeshBasicMaterial({color:0xe2361b}));ft.position.set(.02+s*.008,.05,-.1);ft.rotation.z=s*.5;g.add(ft)})}}
     else{var len=tool==='rifle'?.82:.36,gm=buildGun(tool,tool==='rifle'?0x6b4a2a:0x2b2b30);gm.position.set(0,.05,0);g.add(gm);
@@ -1454,6 +1468,10 @@
         vm.rotation.set(rx,ry,rz);vm.position.x+=px;vm.position.y+=py;vm.position.z+=pz}
       else{vm.position.z+=gunKick*.07;vm.rotation.set(flash*.25+gunKick*.35-(tool==='bow'?sw*.2:0)+Math.sin(P.bob*.5)*.03*mv,0,(tool==='bow'?.2:0)+Math.cos(P.bob*.5)*.04*mv);if(vm.userData.fl)vm.userData.fl.material.opacity=flash}
       if(vm.userData.flame)vm.userData.flame.scale.y=1+Math.sin(performance.now()/60)*.2;
+      if(vm.userData.torch){var T2=vm.userData.torch,tn=performance.now()/1000,fk=.85+Math.sin(tn*17)*.06+Math.sin(tn*31+1.3)*.05+Math.sin(tn*7.3)*.06;
+        T2.fls.forEach(function(sp){var b=sp.userData.b,w=Math.sin(tn*(9+b[3])+b[3])*.12;sp.scale.set(b[0]*(1+w*.5),b[1]*fk*(1+Math.sin(tn*13+b[3])*.12),1);sp.position.x=Math.sin(tn*6+b[3])*.012-(P.spd||0)*.02;sp.material.opacity=b[2]*(.85+Math.random()*.15)});
+        T2.halo.material.opacity=.42+fk*.15;T2.hl.intensity=1.3+fk*.6;
+        T2.sparks.forEach(function(sk){var u=sk.userData;u.t+=.016*(.8+Math.random()*.4);if(u.t>1){u.t=0;u.v=[(Math.random()-.5)*.12,.35+Math.random()*.35,(Math.random()-.5)*.12]}sk.position.set(u.v[0]*u.t+Math.sin(tn*9+u.v[0]*40)*.01,.08+u.v[1]*u.t,u.v[2]*u.t);sk.material.opacity=(1-u.t)*.9;sk.scale.setScalar(.03*(1-u.t*.6))})}
       R3.clearDepth();R3.render(vscene,vcam);
     }
     drawMap();
