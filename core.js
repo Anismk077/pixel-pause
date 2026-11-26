@@ -172,8 +172,8 @@ window.PP=(function(){
     tb.querySelector('[data-pause]').addEventListener('click',function(e){e.stopPropagation();setPause(!paused)});tb.querySelector('[data-fsx]').addEventListener('click',function(e){e.stopPropagation();exitFs()});
     bar.querySelector('[data-pause]').addEventListener('click',function(){setPause(!paused)});
   });
-  /* en plein écran, la touche P met en pause (sauf dans la Survie où P sert déjà) */
-  document.addEventListener('keydown',function(e){if(e.key==='Pause'||(e.key.toLowerCase()==='p'&&current!=='surv'&&current!=='menu'&&!/INPUT|TEXTAREA/.test((e.target&&e.target.tagName)||''))){if(document.querySelector('.view.on .stage.wide'))setPause(!paused)}});
+  /* v50 : la lettre P ne met plus en pause (demande d'Anis). Il reste le bouton Pause et la touche Pause du clavier. */
+  document.addEventListener('keydown',function(e){if(e.key==='Pause'){if(document.querySelector('.view.on .stage.wide'))setPause(!paused)}});
   /* Plein écran fiable : la scène passe en position fixe par-dessus tout (marche aussi sur iPhone),
      et on demande en plus le vrai plein écran du navigateur quand il est disponible. */
   var fsStage=null,fsReal=false;
