@@ -9,7 +9,7 @@
     geo:[['geo-best','Score',0,' pts']],time:[['tg-best','Score',0,' pts']],
     kart:[['kt-best-ville','Ville',1,'time'],['kt-best-desert','Désert',1,'time'],['kt-best-neige','Neige',1,'time']],
     stack:[['ag-stack-h','Hauteur',0,'']],reflex:[['ag-reflex-ms','Réflexes',1,' ms']],bricks:[['ag-bricks-pts','Score',0,' pts']],bowl:[['ag-bowl-pts','Score',0,' pts']],
-    golf:[['ag-golf-coups','Coups',1,' coups']],arch:[['ag-arch-pts','Score',0,' pts']],typing:[['ag-typing-wpm','Vitesse',0,' mots/min']],quiz:[['ag-quiz-pts','Score',0,' pts']],
+    golf:[['ag-golf-coups9','Coups',1,' coups']],arch:[['ag-arch-pts','Score',0,' pts']],typing:[['ag-typing-wpm','Vitesse',0,' mots/min']],quiz:[['ag-quiz-pts','Score',0,' pts']],
     memory:[['ag-memory-coups','Coups',1,' coups']],mines:[['ag-mines-easy','Facile',1,' s'],['ag-mines-mid','Moyen',1,' s'],['ag-mines-hard','Difficile',1,' s']],
     plane:[['ag-plane-pts','Score',0,' pts']],maze:[['ag-maze-t','Temps',1,' s']],hoops:[['ag-hoops-pts','Points',0,' pts']],pool:[['ag-pool-coups','Coups',1,' coups']],
     marz:[['ag-marz-kg','Poids',0,' kg']],flap:[['ag-flap-pts','Cheminées',0,'']],snakeio:[['ag-snakeio-m','Taille',0,'']],
