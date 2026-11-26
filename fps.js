@@ -10,15 +10,15 @@
   /* ---------- Données ---------- */
   /* sight : hauteur du viseur (visée propre au centre) · grip/hg : où se posent la main droite et la main gauche · tier : couleur dans la barre d'armes */
   var GUNS={
-    pistol  :{n:'Pistolet',dmg:26,rate:.26,mag:12,res:Infinity,spread:.012,auto:false,rel:1.1,pel:1,zoom:55,kick:.035,sight:.094,grip:[0,-.1,.03],hg:null,tier:0},
+    pistol  :{n:'Pistolet',dmg:30,rate:.26,mag:12,res:Infinity,spread:.012,auto:false,rel:1.1,pel:1,zoom:55,kick:.035,sight:.094,grip:[0,-.1,.03],hg:null,tier:0},
     magnum  :{n:'Magnum',dmg:75,rate:.48,mag:6,res:36,spread:.008,auto:false,rel:1.9,pel:1,zoom:50,kick:.11,sight:.1,grip:[0,-.1,.04],hg:null,tier:2,price:650},
-    smg     :{n:'Mitraillette',dmg:17,rate:.068,mag:32,res:128,spread:.034,auto:true,rel:1.4,pel:1,zoom:54,kick:.013,sight:.098,grip:[0,-.09,.02],hg:[0,-.035,-.24],tier:1,price:500},
-    rifle   :{n:'Fusil d\'assaut',dmg:23,rate:.1,mag:30,res:90,spread:.028,auto:true,rel:1.7,pel:1,zoom:46,kick:.02,sight:.1,grip:[0,-.09,.04],hg:[0,-.015,-.42],tier:1,price:900},
-    shotgun :{n:'Fusil à pompe',dmg:16,rate:.8,mag:6,res:24,spread:.085,auto:false,rel:2.2,pel:8,zoom:58,kick:.09,sight:.072,grip:[0,-.1,.08],hg:[0,-.04,-.46],tier:1,price:1000},
+    smg     :{n:'Mitraillette',dmg:18,rate:.068,mag:32,res:128,spread:.027,auto:true,rel:1.4,pel:1,zoom:54,kick:.013,sight:.098,grip:[0,-.09,.02],hg:[0,-.035,-.24],tier:1,price:500},
+    rifle   :{n:'Fusil d\'assaut',dmg:25,rate:.1,mag:30,res:90,spread:.021,auto:true,rel:1.7,pel:1,zoom:46,kick:.02,sight:.1,grip:[0,-.09,.04],hg:[0,-.015,-.42],tier:1,price:900},
+    shotgun :{n:'Fusil à pompe',dmg:16,rate:.75,mag:6,res:24,spread:.075,auto:false,rel:2.2,pel:9,zoom:58,kick:.09,sight:.072,grip:[0,-.1,.08],hg:[0,-.04,-.46],tier:1,price:1000},
     sniper  :{n:'Sniper',dmg:130,rate:1.15,mag:5,res:15,spread:.07,auto:false,rel:2.4,pel:1,zoom:18,kick:.12,sight:.13,grip:[0,-.09,.05],hg:[0,-.025,-.5],tier:2,price:1400},
-    lmg     :{n:'Mitrailleuse',dmg:26,rate:.085,mag:80,res:160,spread:.042,auto:true,rel:3.2,pel:1,zoom:50,kick:.02,sight:.11,grip:[0,-.09,.05],hg:[0,-.04,-.5],tier:3,price:1700},
+    lmg     :{n:'Mitrailleuse',dmg:27,rate:.085,mag:80,res:160,spread:.034,auto:true,rel:3.2,pel:1,zoom:50,kick:.02,sight:.11,grip:[0,-.09,.05],hg:[0,-.04,-.5],tier:3,price:1700},
     launcher:{n:'Lance-grenades',dmg:220,rate:.95,mag:4,res:12,spread:.004,auto:false,rel:2.6,pel:1,zoom:54,kick:.15,sight:.125,grip:[0,-.1,.06],hg:[0,-.06,-.36],tier:3,boom:true,price:2200},
-    minigun :{n:'Minigun',dmg:21,rate:.045,mag:150,res:300,spread:.048,auto:true,rel:4,pel:1,zoom:58,kick:.009,sight:.13,grip:[0,-.12,.1],hg:[0,-.08,-.3],tier:4,spin:true,price:3500},
+    minigun :{n:'Minigun',dmg:22,rate:.045,mag:150,res:300,spread:.04,auto:true,rel:4,pel:1,zoom:58,kick:.009,sight:.13,grip:[0,-.12,.1],hg:[0,-.08,-.3],tier:4,spin:true,price:3500},
     ray     :{n:'Pistolet à rayons',dmg:160,rate:.32,mag:20,res:80,spread:.004,auto:false,rel:2,pel:1,zoom:50,kick:.05,sight:.115,grip:[0,-.1,.04],hg:null,tier:4,beam:true,price:4000}
   },ORDER=['pistol','magnum','smg','rifle','shotgun','sniper','lmg','launcher','minigun','ray'],MAXSLOT=4;
   /* difficulté : vie, dégâts et vitesse des zombies, nombre par vague, pièces de départ, précision des bots */
@@ -973,11 +973,11 @@
   function fire(){
     if(dead||P.down||P.rel>0||P.cd>0)return;if(online&&round&&performance.now()-round.t0<3000)return;var g=GUNS[P.gun],a=P.guns[P.gun];
     if(a.mag<=0){A.dry();reload();P.cd=.3;return}
-    a.mag--;P.cd=g.rate;P.kick=Math.min(.25,P.kick+g.kick*(1-P.aimT*.35));P.shotN++;stats.shots++;A.shot(P.gun);if(P.gun!=='shotgun'&&P.gun!=='sniper'&&P.gun!=='launcher'&&P.gun!=='magnum')casing();shakeT=Math.max(shakeT,g.kick*1.2);
-    P.fireT=1;if(P.gun==='shotgun')P.pumpT=1.6;if(P.gun==='sniper')P.boltT=1.6;P.drumT=1;P.pitch=Math.min(1.45,P.pitch+g.kick*(P.aimT>.5?.12:.22));smoke();
+    var since=performance.now()-(P.lastShot||0);a.mag--;P.cd=g.rate;P.kick=Math.min(.25,P.kick+g.kick*(1-P.aimT*.35));P.shotN++;stats.shots++;A.shot(P.gun);if(P.gun!=='shotgun'&&P.gun!=='sniper'&&P.gun!=='launcher'&&P.gun!=='magnum')casing();shakeT=Math.max(shakeT,g.kick*1.2*(1-(P.aimT||0)*.8));
+    P.fireT=1;if(P.gun==='shotgun')P.pumpT=1.6;if(P.gun==='sniper')P.boltT=1.6;P.drumT=1;/* v26 : recul qui remonte l'arme, puis elle redescend toute seule quand on arrête de tirer */var rk=g.kick*(P.aimT>.5?.12:.22)*(P.crouch>.5?.75:1);P.pitch=Math.min(1.45,P.pitch+rk);P.rec=Math.min(.3,(P.rec||0)+rk*.85);P.yaw+=(Math.random()-.5)*rk*.3;P.lastShot=performance.now();smoke();
     if(g.boom){var fd0=fwd(),o0=new THREE.Vector3(P.x+fd0.x*.8,EYE+P.y-.15+fd0.y*.8,P.z+fd0.z*.8);launchNade(o0,fd0);muzzle.material.opacity=1;muzzleL.intensity=3;muzzleL.position.set(P.x,EYE+P.y,P.z);if(a.mag===0&&a.res>0)setTimeout(function(){if(P&&P.guns[P.gun]===a&&a.mag===0)reload()},250);hud();return}
     muzzle.scale.setScalar(.8+Math.random()*.9);muzzle.rotation.z=Math.random()*6;muzzle.material.opacity=1;if(viewGun&&viewGun.userData.core)viewGun.userData.core.material.opacity=1;muzzleL.intensity=3;muzzleL.position.set(P.x,EYE+P.y,P.z);
-    var ads=P.aimT>.6,tl=targetList(),hitAny=false,trEnd=null,spr=g.spread*(ads?(P.gun==='sniper'?.02:.35):1)*(isMoving()?1.4:1)*(P.y>0?1.6:1);
+    var ads=P.aimT>.6,tl=targetList(),hitAny=false,trEnd=null,spr=g.spread*(ads?(P.gun==='sniper'?.02:.25):1)*(since>350&&g.pel===1?(ads?.15:.55):1)*(isMoving()?1.4:1)*(P.y>0?1.6:1);
     var origin=new THREE.Vector3(P.x,EYE+P.y,P.z);
     for(var i=0;i<g.pel;i++){
       var dir=fwd();dir.x+=(Math.random()-.5)*spr*2;dir.y+=(Math.random()-.5)*spr*2;dir.z+=(Math.random()-.5)*spr*2;dir.normalize();
@@ -1112,7 +1112,7 @@
       if(spd>.05){moveEnt(P,P.vx*dt,P.vz*dt,.4);if(P.slide<=0){var ob=P.bob;P.bob+=dt*(keys.SH?13:9)*Math.min(1,spd/5.5)*(crouchK?.7:1);if(P.y<=0&&Math.floor(ob/Math.PI)!==Math.floor(P.bob/Math.PI))A.step(spd,world0)}}
       if(keys.J&&P.y<=0&&!frz){P.vy=P.crouch>.5&&P.slide<=0?3.8:5.2;keys.J=false;A.jump()}
       var wasAir=P.y>0,vyB=P.vy;P.vy-=14*dt;P.y=Math.max(0,P.y+P.vy*dt);if(P.y===0){P.vy=Math.max(0,P.vy);if(wasAir&&vyB<-3){A.land();P.landT=1}}
-      P.aimT+=((aiming&&P.rel<=0?1:0)-P.aimT)*Math.min(1,dt*11);
+      P.aimT+=((aiming&&P.rel<=0?1:0)-P.aimT)*Math.min(1,dt*16);
       if(mode==='zombie')interact();
       P.cd-=dt;if(P.rel>0){P.rel-=dt;if(P.rel<=0){P.rel=0;finishReload()}}
       if(mouseDown&&GUNS[P.gun].auto&&!P.afk)fire();if(frz){var cd=3-Math.floor((performance.now()-round.t0)/1000);if(cd!==P.cdShown){P.cdShown=cd;center(cd>0?String(cd):'');if(cd>0)sfx.play('tick')}}else if(P.cdShown){P.cdShown=0;center('');sfx.play('go')}
@@ -1120,7 +1120,7 @@
       if(zone&&Math.hypot(P.x-zone.x,P.z-zone.z)>zone.r){P.hp-=7*dt;if(Math.random()<dt*2){UI.hurt.classList.remove('on');void UI.hurt.offsetWidth;UI.hurt.classList.add('on')}if(P.hp<=0)die('La zone');hud()}
       if(now-P.lastHurt>6000&&P.hp<100&&mode==='br'){P.hp=Math.min(100,P.hp+dt*2)}
     }else items.forEach(function(it,i){it.m.rotation.y+=dt*2});
-    P.kick=Math.max(0,P.kick-dt*.9);
+    P.kick=Math.max(0,P.kick-dt*.9);if(P.rec>0&&performance.now()-(P.lastShot||0)>120){var rr=Math.min(P.rec,dt*(.5+P.rec*5));P.pitch-=rr;P.rec-=rr}
     // zombies
     if(mode==='zombie'){if(coop&&!auth)stepZGuest(dt);else stepZombies(dt)}if(coop)coopTick(dt);
     if(mode==='br'){if(auth)stepBR(dt);else stepBRGuest(dt)}
@@ -1427,7 +1427,7 @@
     if(dead&&online){var mate=null;Object.keys(remotes).forEach(function(k){var r=remotes[k];if(!mate&&r.al===1&&r.m&&(coop||teamOf(k)===myTeam()))mate=r});if(mate){cam.position.set(mate.x+Math.sin(mate.yaw)*3.2,2.9,mate.z+Math.cos(mate.yaw)*3.2);cam.lookAt(mate.x,1.6,mate.z);UI.top.textContent='TU REGARDES '+String(mate.n).toUpperCase()+(coop?' · TU REVIENS À LA PROCHAINE VAGUE':' · ROUGE '+TSC[0]+' – '+TSC[1]+' BLEU')}}
     drawZone();
     R3.clear();R3.render(scene,cam);
-    var sc=P.gun==='sniper'&&aT>.85&&cam.fov<30;UI.scope.classList.toggle('on',!!sc);UI.cross.style.opacity=dead?0:Math.max(0,1-aT*2.2);
+    var sc=P.gun==='sniper'&&aT>.85&&cam.fov<30;UI.scope.classList.toggle('on',!!sc);UI.cross.style.opacity=dead?0:Math.max(0,1-aT*2.2);if(!UI.ads&&UI.cross.parentNode){UI.ads=document.createElement('div');UI.ads.className='fps-adsdot';UI.cross.parentNode.appendChild(UI.ads)}if(UI.ads)UI.ads.style.opacity=(aT>.7&&!sc&&!dead)?1:0;
     if(viewGun&&!sc&&!dead){
       /* visée : l'arme glisse au centre, le viseur pile sur la ligne de tir */
       var GDv=GUNS[P.gun],hx=.15,hy=-.115,hz=-.36,adY=-GDv.sight*VS,ax=hx+(0-hx)*aT,ay=hy+(adY-hy)*aT,az=hz+(-.3-hz)*aT,mvA=1-aT*.85;
