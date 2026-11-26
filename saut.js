@@ -13,7 +13,7 @@
     function ground(x0,x1,tp){for(var a=x0;a<Math.min(Wd,x1);a++)for(var b=tp;b<RH;b++)g[b][a]='#'}
     function put(r,c,ch){if(r>=0&&r<RH&&c>=0&&c<Wd)g[r][c]=ch}
     ground(0,9,top);x=9;
-    while(x<Wd-16){
+    while(x<Wd-22){
       if(x-lastCp>30){ground(x,x+5,top);put(top-1,x+2,'c');x+=5;lastCp=x;continue}
       var f=Math.floor(R()*8);if(f===last)f=(f+1)%8;last=f;
       if(f===0){var n=6+Math.floor(R()*4);ground(x,x+n,top);for(i=1;i<n-1;i++)if(R()<.5)put(top-2,x+i,'o');ents.push({k:'s',tx:x+n/2,ty:top});if(lv>0&&n>7)ents.push({k:'s',tx:x+2,ty:top});x+=n}
@@ -25,7 +25,9 @@
       else if(f===6){ground(x,x+9,top);ents.push({k:'b',tx:x+4.5,ty:top-2.6});for(i=2;i<7;i+=2)put(top-1,x+i,'o');if(lv>1)ents.push({k:'s',tx:x+6,ty:top});x+=9}
       else{ground(x,x+9,top);put(top-1,x+2,'#');put(top-1,x+3,'#');put(top-2,x+3,'#');put(top-1,x+4,'#');put(top-2,x+4,'#');put(top-3,x+4,'#');put(top-5,x+4,'o');put(top-1,x+5,'#');put(top-2,x+5,'#');put(top-1,x+6,'#');x+=9}
     }
-    ground(x,Wd,top);put(top-1,Wd-5,'F');return {g:g,ents:ents,w:Wd,top0:11}}
+    /* v59 : la fin du niveau est toujours un vrai sol de 10 cases (avant, le dernier morceau pouvait déborder et le portail flottait au-dessus du vide) */
+    var e0=Math.min(x,Wd-10);for(var a=e0;a<Wd;a++)for(var b=0;b<RH;b++)g[b][a]=' ';ents=ents.filter(function(e){return e.tx<e0-1});ground(e0,Wd,top);put(top-1,Wd-5,'F');return {g:g,ents:ents,w:Wd,top0:11}}
+  PP._sautGen=function(lv){return gen(lv)};
   function tile(tx,ty){if(tx<0||tx>=S.L.w)return '#';if(ty<0||ty>=RH)return ' ';return S.L.g[ty][tx]}
   function load(lv){var L=gen(lv);S.L=L;S.lv=lv;S.p={x:2*T,y:(L.top0-1)*T-2,w:24,h:34,vx:0,vy:0,g:false,face:1,coy:0,jb:0,inv:0,an:0};S.cp={x:S.p.x,y:S.p.y};S.cam=0;S.lt=0;S.banner=2.2;
     S.en=L.ents.map(function(e){return e.k==='s'?{k:'s',x:e.tx*T,y:e.ty*T,vx:(e.tx*7%2?1:-1)*(55+lv*12),w:30,h:22,alive:true}:{k:'b',x:e.tx*T,x0:e.tx*T,y:e.ty*T,y0:e.ty*T,ph:e.tx,w:30,h:20,alive:true}})}
