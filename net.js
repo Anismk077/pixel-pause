@@ -73,7 +73,10 @@ PP.net=(function(){
           var nm=String(d.name||'').slice(0,14)||'Joueur',ds=typeof d.sid==='string'?d.sid.slice(0,40):null,du=typeof d.uid==='string'?d.uid.slice(0,40):null;
           if(players.some(function(p){return p.id===conn.peer}))return;
           /* v25 : même navigateur (ou même compte) déjà dans le salon → on remplace l'ancienne connexion au lieu d'ajouter un doublon */
-          players.filter(function(p){return p.id!=='host'&&((ds&&p.sid===ds)||(du&&p.uid===du))}).forEach(function(old){players=players.filter(function(q){return q!==old});var oc=conns[old.id];delete conns[old.id];try{oc&&oc.close()}catch(e){}emit({t:'left',id:old.id},'host')});
+          players.filter(function(p){return p.id!=='host'&&((ds&&p.sid===ds)||(du&&p.uid===du))}).forEach(function(old){players=players.filter(function(q){return q!==old});var oc=conns[old.id];delete conns[old.id];
+            /* v38 : on prévient l'ancienne connexion qu'elle est remplacée, pour qu'elle ne se reconnecte PAS toute seule
+               (sinon deux onglets du même compte se chassaient l'un l'autre en boucle : « a rejoint / a quitté » sans fin) */
+            try{oc&&oc.send({t:'kicked',dup:1})}catch(e){}setTimeout(function(){try{oc&&oc.close()}catch(e){}},300);emit({t:'left',id:old.id},'host')});
           /* deux joueurs différents avec le même pseudo : le second devient « Pseudo 2 » */
           var base=nm,k=2;while(players.some(function(p){return p.name.toLowerCase()===nm.toLowerCase()}))nm=base.slice(0,12)+' '+(k++);
           if(banned[nm.toLowerCase()]){try{conn.send({t:'kicked',ban:1})}catch(e){}setTimeout(function(){try{conn.close()}catch(e){}},300);return}
@@ -125,6 +128,7 @@ PP.net=(function(){
         cb(null,code);return;
       }
       if(d.t==='players')players=d.players;
+      if(d.t==='kicked'&&d.dup){S.gone=true;quit();if(window.PP&&PP.toast)PP.toast('Tu as rejoint ce salon depuis un autre onglet ou appareil : celui-ci en sort.','warn');return}
       if(d.t==='kicked'){forget();if(!S.done){S.done=true;clearTimeout(S.timer);try{p.destroy()}catch(e){}cb(d.why==='friends'?'Ce salon est réservé aux amis du chef.':d.why==='acc'?'Ce salon est réservé aux joueurs avec un compte. Connecte-toi pour entrer.':'Le chef t\'a exclu de ce salon.');return}S.gone=true;emit({t:'kicked',ban:d.ban},'host');leave();return}
       if(d.t==='mkhost'){host(me.name,function(err,nc,np){if(err){try{hostConn.send({t:'newhost',err:1})}catch(e){}return}preP=np;try{hostConn.send({t:'newhost',code:nc})}catch(e){}},'pre');return}
       if(d.t==='migrate'){migrating=true;var nm=me.name,mine=d.to===me.id;emit({t:'migrating',chef:d.name,mine:mine},'host');
