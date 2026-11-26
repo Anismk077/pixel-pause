@@ -1532,7 +1532,7 @@
     var sc=P.gun==='sniper'&&aT>.85&&cam.fov<30;UI.scope.classList.toggle('on',!!sc);UI.cross.style.opacity=dead?0:Math.max(0,1-aT*2.2);if(!UI.ads&&UI.cross.parentNode){UI.ads=document.createElement('div');UI.ads.className='fps-adsdot';UI.cross.parentNode.appendChild(UI.ads)}if(UI.ads)UI.ads.style.opacity=(aT>.7&&!sc&&!dead)?1:0;
     if(viewGun&&!sc&&!dead&&!P.emote){
       /* visée : l'arme glisse au centre, le viseur pile sur la ligne de tir */
-      var GDv=GUNS[P.gun],hx=.15,hy=-.115,hz=-.36,adY=-GDv.sight*VS,ax=hx+(0-hx)*aT,ay=hy+(adY-hy)*aT,az=hz+(-.3-hz)*aT,mvA=1-aT*.85;
+      var GDv=GUNS[P.gun],hx=.15,hy=-.115,hz=-.36,adY=-GDv.sight*VS-.036,ax=hx+(0-hx)*aT,ay=hy+(adY-hy)*aT,az=hz+(-.47-hz)*aT,mvA=1-aT*.85;
       P.drawT=Math.max(0,(P.drawT||0)-.016*4);
       viewGun.position.set(ax+Math.cos(P.bob*.5)*.012*mvA,ay+Math.abs(Math.sin(P.bob*.5))*.015*mvA-P.drawT*.25-(P.slide>0?.03:0)-P.landT*.03,az+P.kick*.6*(1-aT*.5));
       sway.x+=(-mouseDX*.0006*mvA-sway.x)*.15;sway.y+=(mouseDY*.0006*mvA-sway.y)*.15;mouseDX*=.6;mouseDY*=.6;
