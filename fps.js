@@ -437,26 +437,30 @@
     scene.background=new THREE.Color(sky);scene.fog=new THREE.Fog(sky,style==='village'?70:34,style==='village'?230:125);
     scene.add(new THREE.HemisphereLight(style==='village'?0xe6f2ff:0xd2d6e0,style==='village'?0x56683a:0x3a3632,style==='village'?1.35:1.35));
     var sun=new THREE.DirectionalLight(style==='village'?0xfff1d8:0xfff6e8,style==='village'?1.5:.75);sun.position.set(30,60,20);scene.add(sun);
+    /* v56 : vraies ombres au soleil dans le village (murs, arbres, zombies) */
+    var SH=style==='village'&&!(window.matchMedia&&matchMedia('(pointer:coarse)').matches);R3.shadowMap.enabled=SH;R3.shadowMap.type=THREE.PCFSoftShadowMap;if(SH){sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);var shc=sun.shadow.camera;shc.left=shc.bottom=-(Math.max(W,H)*S)/2-4;shc.right=shc.top=(Math.max(W,H)*S)/2+4;shc.near=1;shc.far=200;sun.shadow.bias=-.0006;sun.position.set(W*S/2+30,70,H*S/2+20);sun.target.position.set(W*S/2,0,H*S/2);scene.add(sun.target)}
     scene.add(muzzleL);
     var wallT=style==='bunker'?TX.concrete:style==='entrepot'?TX.metal:TX.brick,floorT=style==='bunker'?TX.bfloor:style==='entrepot'?TX.wfloor:TX.grass;
     var walls=[],crates=[],trees=[];
     for(var z=0;z<H;z++)for(var x=0;x<W;x++){var c=G[z][x];if(c==='#')walls.push([x,z]);else if(c==='c')crates.push([x,z]);else if(c==='t')trees.push([x,z])}
     var m4=new THREE.Matrix4();
-    function inst(geo,mat,list,y,yoff){var im=new THREE.InstancedMesh(geo,mat,list.length);list.forEach(function(p,i){m4.makeTranslation((p[0]+.5)*S,y,(p[1]+.5)*S);if(yoff)m4.multiply(new THREE.Matrix4().makeRotationY(yoff(i)));im.setMatrixAt(i,m4)});scene.add(im);solidMeshes.push(im);return im}
-    var wim=walls.length?inst(new THREE.BoxGeometry(S,WH,S),lam({map:wallT}),walls,WH/2):null;
+    function inst(geo,mat,list,y,yoff){var im=new THREE.InstancedMesh(geo,mat,list.length);list.forEach(function(p,i){m4.makeTranslation((p[0]+.5)*S,y,(p[1]+.5)*S);if(yoff)m4.multiply(new THREE.Matrix4().makeRotationY(yoff(i)));im.setMatrixAt(i,m4)});if(style==='village')im.castShadow=true;scene.add(im);solidMeshes.push(im);return im}
+    var wim=walls.length?inst(new THREE.BoxGeometry(S,WH,S),lam({map:wallT}),walls,WH/2):null;if(wim&&style==='village'){wim.castShadow=true;wim.receiveShadow=true}
+    /* v56 : chaperon en pierre sur les murs du village, pour des contours nets */
+    if(walls.length&&style==='village'){var cap=inst(new THREE.BoxGeometry(S+.16,.22,S+.16),lam({color:0xb9ad98}),walls,WH+.11);cap.castShadow=true;var cap2=inst(new THREE.BoxGeometry(S+.04,.06,S+.04),lam({color:0x6e6252}),walls,WH-.03)}
     if(ZG){
       /* chaque zone a son ambiance : murs teintés, sol à elle, objets propres (lits, générateurs, tombes…) et son nom au mur */
       var tc=new THREE.Color();
       if(wim){walls.forEach(function(p,i){var zn=-1;[[0,0],[1,0],[-1,0],[0,1],[0,-1]].some(function(o){var r=ZG[p[1]+o[1]];var v=r?r[p[0]+o[0]]:-1;if(v>=0){zn=v;return true}return false});var th=zn>=0?TH[ZNAME[zn]]:null;tc.setHex(th?th.w:0xffffff);wim.setColorAt(i,tc)});wim.instanceColor.needsUpdate=true}
       for(var zi=0;zi<9;zi++){var th2=TH[ZNAME[zi]]||{},zx0=(zi%3)*14+1,zy0=Math.floor(zi/3)*14+1,ft2=floorT.clone();ft2.needsUpdate=true;ft2.repeat.set(13/(style==='village'?2:1),13/(style==='village'?2:1));
-        var zf=new THREE.Mesh(new THREE.PlaneGeometry(13*S,13*S),lam({map:ft2,color:th2.f||0xffffff}));zf.rotation.x=-Math.PI/2;zf.position.set((zx0+6.5)*S,.012,(zy0+6.5)*S);scene.add(zf);
+        var zf=new THREE.Mesh(new THREE.PlaneGeometry(13*S,13*S),lam({map:ft2,color:th2.f||0xffffff}));zf.rotation.x=-Math.PI/2;zf.position.set((zx0+6.5)*S,.012,(zy0+6.5)*S);zf.receiveShadow=true;scene.add(zf);
         if(G[zy0-1]&&G[zy0-1][zx0+2]==='#'&&G[zy0-1][zx0+3]==='#'&&ZNAME[zi])zoneSign(ZNAME[zi],th2.w||0xffffff,(zx0+3)*S,zy0*S+.03)}
       var bx3=new THREE.Box3();BLOBG=BLOBG||new THREE.PlaneGeometry(1,1);BLOBM=BLOBM||new THREE.MeshBasicMaterial({map:TX.blob,transparent:true,depthWrite:false});
       crates.forEach(function(p){var zn=ZG[p[1]][p[0]],th3=TH[ZNAME[zn]]||{},pr=prop(th3.p||'crate',p[0]*7+p[1]*13);pr.position.set((p[0]+.5)*S,0,(p[1]+.5)*S);scene.add(pr);pr.updateMatrixWorld(true);bx3.setFromObject(pr);addCol(bx3.min.x+.05,bx3.min.z+.05,bx3.max.x-.05,bx3.max.z-.05,true);var bw=bx3.max.x-bx3.min.x+1.2,bd=bx3.max.z-bx3.min.z+1.2,sh=new THREE.Mesh(BLOBG,BLOBM);sh.rotation.x=-Math.PI/2;sh.scale.set(bw,bd,1);sh.position.set((bx3.min.x+bx3.max.x)/2,.024,(bx3.min.z+bx3.max.z)/2);sh.renderOrder=1;scene.add(sh)});
     }else if(crates.length)inst(new THREE.BoxGeometry(S*.8,1.7,S*.8),lam({map:TX.crate}),crates,.85,function(i){return (i%4)*.2});
     if(trees.length){inst(new THREE.CylinderGeometry(.35,.45,3,8),lam({color:0x5b3b22}),trees,1.5);inst(new THREE.ConeGeometry(2,5,9),lam({color:0x2f5a2a}),trees,5);inst(new THREE.ConeGeometry(1.5,3.5,9),lam({color:0x3b6e32}),trees,7);trees.forEach(function(p){var tx=(p[0]+.5)*S,tz=(p[1]+.5)*S;addCol(tx-.55,tz-.55,tx+.55,tz+.55,true)})}
     var ft=floorT.clone();ft.needsUpdate=true;ft.repeat.set(W/(style==='village'?2:1),H/(style==='village'?2:1));
-    var floor=new THREE.Mesh(new THREE.PlaneGeometry(W*S,H*S),lam({map:ft}));floor.rotation.x=-Math.PI/2;floor.position.set(W*S/2,0,H*S/2);scene.add(floor);solidMeshes.push(floor);
+    var floor=new THREE.Mesh(new THREE.PlaneGeometry(W*S,H*S),lam({map:ft}));floor.receiveShadow=true;floor.rotation.x=-Math.PI/2;floor.position.set(W*S/2,0,H*S/2);scene.add(floor);solidMeshes.push(floor);
     if(style!=='village'){var ct=TX.ceil.clone();ct.needsUpdate=true;ct.repeat.set(W/2,H/2);var ceil=new THREE.Mesh(new THREE.PlaneGeometry(W*S,H*S),lam({map:ct,emissive:0x111111}));ceil.rotation.x=Math.PI/2;ceil.position.set(W*S/2,WH,H*S/2);scene.add(ceil)}
     else{var hill=new THREE.Mesh(new THREE.PlaneGeometry(600,600),lam({color:0x5d8a3a}));hill.rotation.x=-Math.PI/2;hill.position.set(W*S/2,-.02,H*S/2);scene.add(hill)}
     decorate(style,seed);
@@ -534,7 +538,7 @@
     var R=rng((seed||1)+99),m4=new THREE.Matrix4(),q=new THREE.Quaternion(),sc=new THREE.Vector3(),pos=new THREE.Vector3(),eu=new THREE.Euler();
     function build(geo,mat,list,solid){if(!list.length)return null;var im=new THREE.InstancedMesh(geo,mat,list.length);list.forEach(function(p,i){eu.set(p[3]||0,p[4]||0,p[5]||0);q.setFromEuler(eu);pos.set(p[0],p[1],p[2]);var s=p[6]||1;sc.set(s,p[7]||s,s);m4.compose(pos,q,sc);im.setMatrixAt(i,m4)});scene.add(im);if(solid)solidMeshes.push(im);return im}
     function open(x,z){return G[z]&&G[z][x]==='.'}function wall(x,z){return G[z]&&G[z][x]==='#'}
-    var L={ao:[],lamp:[],flick:[],pipeH:[],pipeV:[],valve:[],b0:[],b1:[],b2:[],blood:[],oil:[],paper:[],p0:[],p1:[],p2:[],beam:[],shade:[],bulb:[],post:[],rock:[],bush:[],flower:[]},HALF=Math.PI/2;
+    var L={ao:[],lamp:[],flick:[],pipeH:[],pipeV:[],valve:[],b0:[],b1:[],b2:[],blood:[],oil:[],paper:[],p0:[],p1:[],p2:[],beam:[],shade:[],bulb:[],post:[],rock:[],bush:[],flower:[],tuft:[]},HALF=Math.PI/2;
     for(var z=1;z<H-1;z++)for(var x=1;x<W-1;x++){
       if(!open(x,z))continue;var cx=(x+.5)*S,cz=(z+.5)*S;
       var nb=[[1,0],[-1,0],[0,1],[0,-1]].filter(function(o){return wall(x+o[0],z+o[1])});
@@ -552,6 +556,7 @@
         nb.forEach(function(o){L.ao.push([cx+o[0]*(S/2-.55),cz+o[1]*(S/2-.55),o[0]===1?-Math.PI/2:o[0]===-1?Math.PI/2:o[1]===1?Math.PI:0])});
         if(R()<.03)L.rock.push([cx+(R()-.5)*S*.6,.2,cz+(R()-.5)*S*.6,R(),R()*6,0,.5+R()*.7,.35+R()*.3]);
         if(R()<.06)L.bush.push([cx+(R()-.5)*S*.6,.35,cz+(R()-.5)*S*.6,0,R()*6,0,.7+R()*.5,.6]);
+        for(var gt=0;gt<5;gt++){var gx=cx+(R()-.5)*S*.9,gz=cz+(R()-.5)*S*.9;for(var bl2=0;bl2<3;bl2++)L.tuft.push([gx+(R()-.5)*.18,.1,gz+(R()-.5)*.18,(R()-.5)*.5,R()*6,(R()-.5)*.5,.7+R()*.6])}
         if(R()<.05)for(var fl=0;fl<4;fl++)L.flower.push([cx+(R()-.5)*2,.12,cz+(R()-.5)*2,0,0,0,1]);
         if(!nb.length&&(x*5+z*3)%17===0){L.post.push([cx+S*.4,1.6,cz+S*.4]);L.bulb.push([cx+S*.4,3.25,cz+S*.4])}
         if(nb.length&&R()<.05)L['b'+Math.floor(R()*3)].push([cx+nb[0][0]*(S/2-.75),.55,cz+nb[0][1]*(S/2-.75),0,R()*6,0]);
@@ -561,6 +566,8 @@
     if(style==='entrepot'){for(var bz=2;bz<H-1;bz+=4){L.beam.push([W*S/2,WH-.25,(bz+.5)*S]);for(var bx=2;bx<W-1;bx+=5)if(open(bx,bz)){L.shade.push([(bx+.5)*S,WH-.75,(bz+.5)*S]);L.bulb.push([(bx+.5)*S,WH-.92,(bz+.5)*S])}}}
     /* ombre douce au pied des murs */
     if(L.ao.length){var aoIm=new THREE.InstancedMesh(new THREE.PlaneGeometry(S,1.1),new THREE.MeshBasicMaterial({map:TX.ao,transparent:true,depthWrite:false}),L.ao.length),mxA=new THREE.Matrix4(),ryA=new THREE.Matrix4(),rxA=new THREE.Matrix4().makeRotationX(-Math.PI/2);L.ao.forEach(function(a,i){ryA.makeRotationY(a[2]);mxA.makeTranslation(a[0],.026,a[1]).multiply(ryA).multiply(rxA);aoIm.setMatrixAt(i,mxA)});aoIm.renderOrder=1;scene.add(aoIm)}
+    /* v56 : touffes d'herbe dans le village */
+    if(L.tuft.length){var tf=build(new THREE.ConeGeometry(.04,.24,3),lam({color:0x6a9a3a}),L.tuft);if(tf){var tcol=new THREE.Color();L.tuft.forEach(function(p,i){tcol.setHSL(.24+(i%7)*.012,.5,.38+(i%5)*.04);tf.setColorAt(i,tcol)});tf.instanceColor.needsUpdate=true}}
     var metal=lam({color:0x5a6068}),rust=lam({color:0x7a4a2a});
     build(new THREE.BoxGeometry(1.1,.06,.28),new THREE.MeshBasicMaterial({color:0xfff2c8}),L.lamp);
     flickMat=new THREE.MeshBasicMaterial({color:0xfff2c8});build(new THREE.BoxGeometry(1.1,.06,.28),flickMat,L.flick);
@@ -653,7 +660,7 @@
   /* ---------- Zombies : modèle et animations ---------- */
   /* zombies plus réalistes : peau marbrée et veinée, vêtements sales et déchirés, genoux et coudes articulés,
      mains à doigts griffus, visage creusé (orbites, arcade, nez, dents), côtes apparentes chez certains */
-  var ZGEO=null,ZTX=null,BLOBG=null,BLOBM=null;
+  var ZGEO=null,ZTX=null,BLOBG=null,BLOBM=null,ZOUT=null;
   function zTex(){if(ZTX)return ZTX;ZTX={};
     ZTX.skin=tex(256,256,function(g,w,h){g.fillStyle='#d8d8d0';g.fillRect(0,0,w,h);for(var i=0;i<900;i++){var r=4+Math.random()*22;g.fillStyle='rgba('+(Math.random()<.5?'60,70,50':'120,130,100')+','+(Math.random()*.12)+')';g.beginPath();g.arc(Math.random()*w,Math.random()*h,r,0,7);g.fill()}
       g.strokeStyle='rgba(60,40,70,.35)';g.lineWidth=1.2;for(var v=0;v<26;v++){var x=Math.random()*w,y=Math.random()*h;g.beginPath();g.moveTo(x,y);for(var s=0;s<6;s++){x+=(Math.random()-.5)*26;y+=Math.random()*20;g.lineTo(x,y)}g.stroke()}
@@ -709,6 +716,12 @@
       var hand=new THREE.Group();hand.position.set(0,-.34,0);el.add(hand);mesh(Gm.palm,skin,0,0,0,hand);for(var f=0;f<4;f++){var fg=mesh(Gm.fing,skin,(f-1.5)*.022,-.07,-.01,hand);fg.rotation.x=-.5;var cl=mesh(Gm.claw,bone,(f-1.5)*.022,-.115,-.04,hand);cl.rotation.x=Math.PI-.5}
       if(type==='tank')hand.scale.setScalar(1.5);return a});
     BLOBG=BLOBG||new THREE.PlaneGeometry(1,1);BLOBM=BLOBM||new THREE.MeshBasicMaterial({map:TX.blob,transparent:true,depthWrite:false});var blob=new THREE.Mesh(BLOBG,BLOBM);blob.rotation.x=-Math.PI/2;blob.scale.set(big?1.9:1.3,big?1.9:1.3,1);blob.position.y=.03;blob.renderOrder=1;g.add(blob);g.userData.blob=blob;
+    /* v56 : contour noir façon dessin (comme les persos), yeux qui brillent plus fort, ombres portées */
+    if(!ZOUT)ZOUT=new THREE.MeshBasicMaterial({color:0x0c0a09,side:THREE.BackSide});
+    var outl=!(window.matchMedia&&matchMedia('(pointer:coarse)').matches),list=[];root.traverse(function(o){if(o.isMesh)list.push(o)});
+    list.forEach(function(o){o.castShadow=true;var gp=o.geometry.parameters||{},big2=(gp.radius||0)>=.06||(gp.width||0)>=.14||(gp.height||0)>=.2;
+      if(o.material&&o.material.isMeshBasicMaterial&&o.material.color&&o.material.color.r>.5){o.scale.multiplyScalar(1.35);var halo=new THREE.Mesh(o.geometry,new THREE.MeshBasicMaterial({color:o.material.color,transparent:true,opacity:.35,depthWrite:false}));halo.scale.setScalar(2.2);halo.raycast=function(){};o.add(halo);return}
+      if(outl&&big2){if(!o.geometry.boundingSphere)o.geometry.computeBoundingSphere();var ol=new THREE.Mesh(o.geometry,ZOUT);ol.scale.setScalar(1+Math.min(.07,.014/Math.max(.05,o.geometry.boundingSphere.radius)));ol.raycast=function(){};o.add(ol)}});
     g.scale.setScalar(T.sc*(.95+Math.random()*.1));
     g.userData.parts={legs:legs,arms:arms,knees:knees,elbows:elbows,torso:torso,head:head,jaw:jaw,root:root,body:body};g.userData.zt=type;
     return g;
@@ -1574,7 +1587,7 @@
   function mobFull(on){if(!touchUI)return;var st=cv.parentNode;if(st.classList.contains('ft-full')!==!!on){st.classList.toggle('ft-full',!!on);document.body.classList.toggle('ft-lock',!!on)}}
   function loop(t){var raw=last?Math.min(.3,(t-last)/1000):0,dt=Math.min(.05,raw);last=t;if(running){mobFull(true);if(++resN%90===0)fitRes();
       /* à la souris, le jeu ne tourne que si la souris est bien capturée : sinon il attend un clic dans l'image (la souris ne peut plus « sortir » en pleine partie) */
-      var hold=DESK&&!online&&!shopOpen&&!chatOpen&&!dead&&document.pointerLockElement!==cv;if(hold!==lastHold){lastHold=hold;$('fps-lockhint').hidden=!hold||paused;if(hold){keys={};mouseDown=false}}
+      var hold=DESK&&!window.PP_NOHOLD&&!online&&!shopOpen&&!chatOpen&&!dead&&document.pointerLockElement!==cv;if(hold!==lastHold){lastHold=hold;$('fps-lockhint').hidden=!hold||paused;if(hold){keys={};mouseDown=false}}
       if(cdT>0){if(!hold&&!paused)stepCountdown(raw)}
       else if((!paused||online)&&!shopOpen&&!hold)step(dt);if(running)render();raf=requestAnimationFrame(loop)}}
 
@@ -1710,6 +1723,7 @@
   });
 
   PP._fps=function(){return {reload:reload,fire:fire,P:P,ents:ents,zone:zone,items:items,remotes:remotes,round:round,online:online,setMode:function(m){mode=m},doors:DOORS,stands:STANDS,perks:function(){return PERKS},buyPerk:function(p){buyPerk(p)},addZ:function(t){addZombie(t,1)},use:use,interact:interact,give:giveGun,keys:keys,explode:explode,addZombie:addZombie,mapId:mapId,unl:UNL,setAim:function(v){aiming=v},paused:function(){return paused},dbg:function(){return {waveT:waveT,wave:wave,waveLeft:waveLeft,mode:mode,cdT:cdT,shopOpen:shopOpen,running:running}}}};
+  PP._fps=function(){return {P:P,ents:ents,add:addZombie,cam:cam}};
   PP.games.fps={
     open:function(){if(!init())return;buildTouch();$('fps-lockhint').hidden=true;$('fps-skins').hidden=true;
       /* nouveau salon = score remis à zéro */if(net.inRoom()&&fpsRoom!==net.code){fpsRoom=net.code;online=false;running=false;cancelAnimationFrame(raf);round=null;TSC=[0,0];kills=0;Object.keys(remotes).forEach(function(k){if(remotes[k].m&&scene)scene.remove(remotes[k].m)});remotes={}}
