@@ -132,10 +132,16 @@
   function botStep(C){if(C.mode!=='bot'||!OPP||!OPP.path||P.won)return;var now=performance.now();if(now<OPP.next)return;
     var m=OPP.path[OPP.i++];if(m){var A=OPP.tubes[m[0]],B=OPP.tubes[m[1]],c=A[A.length-1],r=0;for(var i=A.length-1;i>=0&&A[i]===c;i--)r++;var k=Math.min(r,4-B.length);for(var q=0;q<k;q++)B.push(A.pop())}
     OPP.next=now+BOTIV[botLv()]*(.7+Math.random()*.6);if(OPP.i>=OPP.path.length)duelEnd(C,false,'L\'ordi')}
-  function drawOpp(g,C){if(!OPP)return;var n=OPP.tubes.length,x0=W-22-n*17,y0=16;mono(g,String(OPP.name).slice(0,12).toUpperCase(),x0+n*17/2,y0-4,10,INK);
-    OPP.tubes.forEach(function(t,i){var x=x0+i*17,y=y0+6;g.fillStyle='rgba(255,255,255,.6)';g.fillRect(x,y,13,46);t.forEach(function(c,k){g.fillStyle=COLS[c];g.fillRect(x+1,y+45-(k+1)*11,11,11)});g.strokeStyle=INK;g.lineWidth=1.5;g.strokeRect(x,y,13,46)});
-    var mine=P.tubes.filter(full).length,his=OPP.tubes.filter(full).length;mono(g,'TOI '+mine+'/'+P.nc+'  ·  '+String(OPP.name).slice(0,10).toUpperCase()+' '+his+'/'+P.nc,x0+n*17/2,y0+64,10,INK)}
-  PP._pot=function(){return {opp:OPP,p:P,solve:solve,bot:function(){botStep(CP)}}};
+  /* v40 : l'adversaire dans un vrai cadre : mÃªmes fioles que les tiennes en miniature, son nom, et deux barres (toi / lui) */
+  function drawOpp(g,C){if(!OPP)return;var n=OPP.tubes.length,k=.31,sp=23,cw=n*sp+22,ch=120,x0=W-cw-12,y0=6,nm=String(OPP.name).slice(0,14).toUpperCase();
+    g.fillStyle='rgba(20,18,16,.18)';rr(g,x0+4,y0+5,cw,ch,10);g.fill();
+    g.fillStyle='#fbf8f1';rr(g,x0,y0,cw,ch,10);g.fill();g.strokeStyle=INK;g.lineWidth=2.5;g.stroke();
+    g.save();rr(g,x0,y0,cw,ch,10);g.clip();g.fillStyle=INK;g.fillRect(x0,y0,cw,22);g.restore();
+    mono(g,nm,x0+cw/2,y0+12,11,CR);
+    OPP.tubes.forEach(function(t,i){g.save();g.translate(x0+13+i*sp,y0+36);g.scale(k,k);var dn=full(t);drawTube(g,{x:0,y:0,w:54,h:4*SEG+20},t,0,0,0,0,0,0,dn,dn?1:0);g.restore()});
+    var mine=P.tubes.filter(full).length,his=OPP.tubes.filter(full).length,bx=x0+44,bw=cw-78;
+    function bar(y,lbl,v,col){mono(g,lbl,x0+10,y,9,INK,'left');g.fillStyle='rgba(20,18,16,.14)';rr(g,bx,y-4,bw,8,4);g.fill();if(v>0){g.fillStyle=col;rr(g,bx,y-4,Math.max(8,bw*v/P.nc),8,4);g.fill()}mono(g,v+'/'+P.nc,x0+cw-10,y,9,INK,'right')}
+    bar(y0+95,'LUI',his,RED);bar(y0+109,'TOI',mine,'#3fbf6a')}  PP._pot=function(){return {opp:OPP,p:P,solve:solve,bot:function(){botStep(CP)}}};
   function pWin(C){if(duel(C)){duelEnd(C,true);return}P.won=true;P.sel=-1;C.stop();sfx.play('win');var key=C.mode,nb=C.best('lvl-'+key,P.level),st=stars();C.pop('BRAVO !',RED,'70px');if(P.level>=5)C.win();
     setTimeout(function(){C.over('Niveau '+P.level+' réussi','<span style="font-size:30px;letter-spacing:6px;color:#f3c623">'+'★★★'.slice(0,st)+'<span style="opacity:.3">'+'★★★'.slice(st)+'</span></span><br>En '+P.moves+' coups.'+(nb?'<br><b>Record de niveaux !</b>':''),'Niveau suivant',function(){var lv=P.level+1;pReset(C,true);P.level=lv;C.go()})},450)}
   function pSelect(C,hit){if(P.won||P.stuck)return;if(P.anim)pFinish(C);if(P.won||P.stuck)return;P.hint=null;
