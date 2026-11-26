@@ -231,3 +231,5 @@
 #v-fps .ft-full #fx-coins{left:calc(3% + 56px)!important;top:64px!important}
 /* v26 : point rouge au centre quand on vise (visée précise avec toutes les armes) */
 .fps-adsdot{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#ff3b1f;box-shadow:0 0 0 1.5px rgba(0,0,0,.65),0 0 7px rgba(255,59,31,.9);pointer-events:none;opacity:0;transition:opacity .08s;z-index:4}
+/* v29 : boissons actives */
+.fps-perks{position:absolute;left:16px;bottom:128px;display:flex;gap:6px;z-index:4;pointer-events:none}.fps-perks i{width:28px;height:28px;border-radius:7px;background:var(--c);color:#141210;font:400 18px Anton,Impact,sans-serif;display:grid;place-items:center;font-style:normal;box-shadow:0 0 0 2px #141210,0 0 10px var(--c)}
