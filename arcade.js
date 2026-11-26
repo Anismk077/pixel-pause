@@ -17,8 +17,16 @@
       C.pop=function(t,col,size){var st=cv.parentNode,e=document.createElement('div');e.className='ag-pop';e.textContent=t;if(col)e.style.color=col;if(size)e.style.fontSize=size;st.appendChild(e);setTimeout(function(){e.remove()},1300)};
       C.shake=function(k){cv.classList.remove('ag-shake');void cv.offsetWidth;cv.style.setProperty('--sh',(k||6)+'px');cv.classList.add('ag-shake')};
       C.listen=function(fn){C.subs.push(net.on(function(m,from){if(PP.cur()===L.id)fn(m,from)}))};
-      C.stop=function(){C.running=false};
-      C.go=function(){C.hide();C.running=true;grab();C.last=0;cancelAnimationFrame(C.raf);C.raf=requestAnimationFrame(loop)};
+      /* v36 : 3, 2, 1, GO avant les jeux d'action, et un badge « Tu es … » quand on joue en salon */
+      var CDG={hockey:1,bricks:1,pong:1,plane:1,snakeio:1,marz:1,stack:1,tanks:1}[L.id],cdTok=0;
+      C.stop=function(){C.running=false;cdTok++};
+      function badge(){var st=cv.parentNode,b=st.querySelector('.ag-who');if(!net.inRoom()||C.mode!=='online'){if(b)b.hidden=true;return}
+        if(!b){b=document.createElement('div');b.className='ag-who';st.appendChild(b)}var i=net.slot(net.me.id),pic='';try{pic=PP.perso.img(PP.perso.get(),24,'ag-who-pic')}catch(e){}
+        b.innerHTML=pic+'<span>Tu es <b>'+PP.esc(net.me.name||'?')+'</b> · joueur '+(i+1)+'/'+net.players.length+'</span>';b.hidden=false}
+      function begin(){C.running=true;grab();C.last=0;cancelAnimationFrame(C.raf);C.raf=requestAnimationFrame(loop)}
+      C.go=function(){C.hide();var tk=++cdTok;badge();if(!CDG){begin();return}
+        C.running=false;C.loop();['3','2','1'].forEach(function(n,i){setTimeout(function(){if(tk!==cdTok||PP.cur()!==L.id)return;C.pop(n,null,'110px');sfx.play('tick')},i*550)});
+        setTimeout(function(){if(tk!==cdTok||PP.cur()!==L.id)return;C.pop('GO !','#e2361b','110px');sfx.play('go');begin()},1650)};
       function loop(t){var dt=C.last?Math.min(.05,(t-C.last)/1000):0;C.last=t;if(PP.cur()!==L.id)return;if(C.running&&d.step)d.step(C,dt);if(d.draw)d.draw(C,dt);C.raf=requestAnimationFrame(loop)}
       C.loop=function(){cancelAnimationFrame(C.raf);C.last=0;C.raf=requestAnimationFrame(loop)};
       $(L.id+'-start').addEventListener('click',function(){if(C.onBtn)C.onBtn();else{d.start(C);C.go()}});
@@ -50,7 +58,7 @@
       document.addEventListener('keydown',function(e){if(PP.cur()!==L.id||/INPUT|TEXTAREA/.test(e.target.tagName))return;C.keys[e.code]=true;if(C.running&&/^(Arrow|Space)/.test(e.code))e.preventDefault();if(d.key&&!e.repeat)d.key(C,e.code,true,e)});
       document.addEventListener('keyup',function(e){if(PP.cur()!==L.id)return;C.keys[e.code]=false;if(d.key)d.key(C,e.code,false,e)});
       PP.games[L.id]={open:function(){var on=net.inRoom()&&L.modes.some(function(m){return m[0]==='online'});if(on){C.mode='online';view.querySelectorAll('.ag-modes .mode').forEach(function(x){x.classList.toggle('on',x.dataset.m==='online')})}d.setup(C);C.loop()},
-        close:function(){unlock();hint.hidden=true;C.running=false;cancelAnimationFrame(C.raf);C.subs.forEach(function(u){u()});C.subs=[];C.keys={};if(d.close)d.close(C)}};
+        close:function(){cdTok++;var wb=cv.parentNode.querySelector('.ag-who');if(wb)wb.hidden=true;unlock();hint.hidden=true;C.running=false;cancelAnimationFrame(C.raf);C.subs.forEach(function(u){u()});C.subs=[];C.keys={};if(d.close)d.close(C)}};
     });
   };
   /* petits outils de dessin partagés */

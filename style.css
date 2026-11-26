@@ -721,3 +721,5 @@ body.fs-mode::after{content:"";position:fixed;inset:0;background:#000;z-index:99
 #kt-cv{cursor:grab;touch-action:none}#kt-cv.drag{cursor:grabbing}
 /* v23 : écran de chargement de la Survie */
 #sv-ov.sv-loading button,#sv-ov.sv-loading #sv-savelist,#sv-ov.sv-loading .sv-saves{display:none!important}#sv-ov.sv-loading h2::after,#sv-ov.sv-loading #sv-title::after{content:'';display:inline-block;width:.8em;height:.8em;margin-left:.4em;border:3px solid currentColor;border-right-color:transparent;border-radius:50%;animation:svSpin .8s linear infinite;vertical-align:middle}@keyframes svSpin{to{transform:rotate(360deg)}}
+/* v36 : badge « Tu es … » en salon */
+.ag-who{position:absolute;left:10px;bottom:10px;z-index:6;display:flex;align-items:center;gap:7px;background:rgba(20,18,16,.85);color:#f1ece2;border:2px solid #f3c623;padding:4px 9px 4px 5px;font:600 12px 'IBM Plex Mono',monospace;pointer-events:none}.ag-who b{color:#f3c623}.ag-who-pic{width:24px;height:24px;border-radius:50%;background:#e8e0d0}

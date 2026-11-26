@@ -6,6 +6,10 @@
   /* ================= COURSE DE FRAPPE ================= */
   (function(){
     var TXT=['Le renard brun saute par-dessus le chien paresseux qui dort au soleil.','Un petit café en terrasse, et la journée commence enfin du bon pied.','Les vacances arrivent vite quand on prépare déjà la prochaine sortie entre potes.','Il pleut sur Paris mais la tour Eiffel brille toujours le soir.','Ne remets jamais à demain ce que tu peux jouer aujourd\'hui.','Le train de nuit file à travers les montagnes sous un ciel étoilé.','Mon chat préfère dormir sur le clavier plutôt que dans son panier.','On a mangé une pizza géante et on a regardé un film jusqu\'à minuit.','La mer était calme et les bateaux rentraient lentement au port.','Celui qui tape le plus vite gagne une glace à la vanille.','Le gardien a plongé du mauvais côté et le ballon est entré.','Au marché, les tomates rouges sentaient bon le soleil du sud.','Un robot poli dit toujours bonjour avant de passer l\'aspirateur.','Le vélo grince un peu mais il roule encore très bien en ville.','Trois zombies dansent la salsa au milieu du bunker abandonné.'];
+    /* v36 : textes tapables sur tous les claviers (Windows, Mac, Linux, QWERTY) : pas d'accent circonflexe ni de
+       caractères spéciaux, et une lettre sans accent est acceptée à la place d'une lettre accentuée (e pour é, a pour à…) */
+    function nd(s){try{return String(s).normalize('NFD').replace(/[̀-ͯ]/g,'')}catch(e){return s}}
+    TXT=TXT.map(function(t){return t.replace(/[âäêëîïôöûü]/g,function(c){return nd(c)}).replace(/œ/g,'oe').replace(/æ/g,'ae').replace(/[’‘]/g,'\'').replace(/[«»“”]/g,'"').replace(/[–—]/g,'-').replace(/…/g,'...').replace(/ | /g,' ').replace(/ +/g,' ')});
     var S,CARS=['#e2361b','#3fa9ff','#3fe09a','#f3c623','#b072e0','#ff8a3d','#f1ece2','#2fa3a3'];
     function newRace(txt,bots){S.txt=txt;S.i=0;S.err=0;S.t0=0;S.done=false;S.racers=[{n:'Toi',p:0,me:true,c:CARS[0]}];if(bots)[[28,'Lent'],[42,'Moyen'],[58,'Rapide']].forEach(function(b,k){S.racers.push({n:'Bot '+b[1],p:0,wpm:b[0]*(0.9+Math.random()*.2),c:CARS[k+1]})});S.place=0}
     function wpm(){var t=(performance.now()-S.t0)/60000;return t>0?Math.round(S.i/5/t):0}
@@ -24,7 +28,7 @@
         C.keysText('Tape simplement au clavier · les accents comptent · sur mobile, utilise un clavier physique')},
       start:function(C){newRace(TXT[Math.random()*TXT.length|0],true);S.t0=performance.now()},
       key:function(C,k,d,e){if(!d||!C.running||S.done)return;var ch=e.key;if(ch.length!==1)return;e.preventDefault();if(!S.t0)S.t0=performance.now();
-        var want=S.txt[S.i];if(ch===want||(want==='’'&&ch==='\'')){S.i++;sfx.play('tick');if(C.mode==='online')C.net.send({t:'ty-p',p:S.i/S.txt.length});if(S.i>=S.txt.length)finish(C)}else{S.err++;S.bad=.25;sfx.play('lose')}},
+        var want=S.txt[S.i];if(ch===want||nd(ch)===nd(want)||(want==='’'&&ch==='\'')){S.i++;sfx.play('tick');if(C.mode==='online')C.net.send({t:'ty-p',p:S.i/S.txt.length});if(S.i>=S.txt.length)finish(C)}else{S.err++;S.bad=.25;sfx.play('lose')}},
       step:function(C,dt){S.bad=Math.max(0,(S.bad||0)-dt);var me=S.racers[0];me.p=S.i/Math.max(1,S.txt.length);
         if(C.mode==='solo'&&S.t0){var mins=(performance.now()-S.t0)/60000;S.racers.forEach(function(r){if(!r.me)r.p=Math.min(1,r.wpm*5*mins/S.txt.length)})}
         if(C.mode==='online'&&S.prog){S.racers=[{n:'Toi',p:me.p,me:true,c:CARS[0]}];var k=1;Object.keys(S.prog).forEach(function(n){if(n!==C.net.me.name)S.racers.push({n:n,p:S.prog[n],c:CARS[k++%8]})})}
