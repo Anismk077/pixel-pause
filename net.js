@@ -55,8 +55,11 @@ PP.net=(function(){
   var RK='pp-room';
   function remember(){try{sessionStorage.setItem(RK,JSON.stringify({c:code,h:isHost?1:0,n:me.name,t:Date.now()}))}catch(e){}}
   function forget(){try{sessionStorage.removeItem(RK)}catch(e){}}
-  function rejoinLost(cc,nm){var n=0;status('Reconnexion au salon '+cc+'…');
-    (function tryIt(){if(code)return;join(cc,nm,function(err){if(!err){emit({t:'players',players:players},'host');if(PP.toast)PP.toast('Reconnecté au salon '+cc,'ok');return}if(++n<5)setTimeout(tryIt,2500);else{forget();emit({t:'closed'},'host')}})})()}
+  /* v37 : « quitter » annule toute reconnexion automatique en cours (avant, on pouvait être remis dans le salon qu'on venait de quitter) */
+  var quitGen=0;
+  function quit(q){quitGen++;forget();joining=null;if(pendingP){try{pendingP.destroy()}catch(e){}pendingP=null}leave(q)}
+  function rejoinLost(cc,nm){var n=0,g=quitGen;status('Reconnexion au salon '+cc+'…');
+    (function tryIt(){if(code||g!==quitGen)return;join(cc,nm,function(err){if(g!==quitGen){if(!err)quit();return}if(!err){emit({t:'players',players:players},'host');if(PP.toast)PP.toast('Reconnecté au salon '+cc,'ok');return}if(++n<3)setTimeout(tryIt,2500);else{forget();emit({t:'closed'},'host')}})})()}
   function resume(){var s;try{s=JSON.parse(sessionStorage.getItem(RK))}catch(e){}if(!s||!s.c||Date.now()-s.t>30*60000||code||!ready())return;
     if(s.h)host(s.n,function(err,c){if(err){forget();return}emit({t:'players',players:players},'host');if(PP.toast)PP.toast('Salon '+c+' rouvert : tes potes reviennent tout seuls','ok')},s.c);
     else rejoinLost(s.c,s.n)}
@@ -106,7 +109,7 @@ PP.net=(function(){
   var joining=null,pendingP=null;
   /* v27 : d'abord la connexion directe (rapide) ; si elle échoue (box, 4G ou wifi qui bloquent), on passe
      automatiquement par un serveur relais (MQTT sur WebSocket, port 443-like) qui marche sur tous les réseaux. */
-  function join(c,name,cb){if(joining===c)return;joining=c;var fin=function(err,kind){joining=null;cb(err,kind)};
+  function join(c,name,cb){if(joining===c)return;joining=c;var g0=quitGen,fin=function(err,kind){joining=null;if(g0!==quitGen){if(!err)quit(true);return}cb(err,kind)};
     if(window.PP_FORCE_RELAY&&window.mqtt){leave(migrating);joinRelay(c,name,fin);return}
     join1(c,name,function(err,kind){if(!err||kind===undefined||!window.mqtt){fin(err,kind);return}
       status('Connexion par le relais…');
@@ -196,7 +199,7 @@ PP.net=(function(){
   function inRoom(){return !!code}
   /* changement de chef : l'ancien chef donne le salon (même code) à un autre joueur, les autres se reconnectent tout seuls */
   var migrating=false;
-  function rejoin(cc,nm,n){join(cc,nm,function(err){if(!err){migrating=false;emit({t:'migrated'},'host');return}if(n<6)setTimeout(function(){rejoin(cc,nm,n+1)},1500);else{migrating=false;emit({t:'closed'},'host')}})}
+  function rejoin(cc,nm,n,g){if(g===undefined)g=quitGen;if(g!==quitGen){migrating=false;return}join(cc,nm,function(err){if(!err){migrating=false;emit({t:'migrated'},'host');return}if(n<6)setTimeout(function(){rejoin(cc,nm,n+1,g)},1500);else{migrating=false;emit({t:'closed'},'host')}})}
   var preP=null,hand=null;
   function handover(id,thenLeave){if(!isHost||hand)return false;var p=players.filter(function(q){return q.id===id})[0];if(!p)return false;hand={id:id,name:p.name,leave:thenLeave};to(id,{t:'mkhost'});
     setTimeout(function(){if(hand&&hand.id===id){hand=null;emit({t:'handfail'},'host')}},12000);return true}
@@ -204,7 +207,7 @@ PP.net=(function(){
     migrating=true;broadcast({t:'migrate',to:h.id,name:h.name,code:m.code});emit({t:'migrating',chef:h.name,mine:false,me:true},'host');var nm=me.name;
     setTimeout(function(){leave(true);if(h.leave){forget();migrating=false;emit({t:'players',players:[]},'host')}else rejoin(m.code,nm,0)},400)});
 
-  return {relay:relay,slot:slot,host:host,join:join,leave:function(q){forget();leave(q)},send:send,all:all,to:to,broadcast:broadcast,on:on,
+  return {relay:relay,slot:slot,host:host,join:join,leave:quit,send:send,all:all,to:to,broadcast:broadcast,on:on,
     get code(){return code},get isHost(){return isHost},get me(){return me},get players(){return players},
     inRoom:inRoom,ready:ready,setGate:function(f){gate=f},alive:function(){return !!(peer&&!peer.disconnected&&!peer.destroyed)},handover:handover,kick:kick,setAvatar:function(a){myAv=a;players.forEach(function(p){if(p.id===me.id)p.av=a})},get migrating(){return migrating},onStatus:function(f){statusCb=f},
     inviteLink:function(){return location.origin+location.pathname+'?salon='+code}};
