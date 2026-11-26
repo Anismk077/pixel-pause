@@ -27,6 +27,7 @@ window.ARCADE_LIST=[
   {id:'snakeio',n:'Serpents',sub:'Arène · grandis et avale les plus petits',pl:'1',cat:'pc tel solo',modes:[['solo','Arène','13 serpents'],['big','Grosse arène','20 serpents']]},
   {id:'chess',img:'thumb-chess.svg?v=1',n:'Échecs',sub:'Stratégie · chrono, niveaux, 2 plateaux à 4',pl:'1–4',cat:'pc tel solo',modes:[['solo','Solo','Contre l\'ordinateur'],['duel','2 joueurs','Chacun son tour, même écran'],['online','En ligne','À 4 : deux parties en même temps']]},
   {id:'wire',img:'thumb-wire.svg?v=1',n:'Câbles',sub:'Réflexes · rebranche les câbles de couleur',pl:'1',cat:'pc tel solo',modes:[['solo','Chrono','60 secondes, un max de panneaux'],['zen','Zen','Sans chrono']]},
+  {id:'tours',img:'thumb-tours.svg?v=1',n:'Guerre des Tours',sub:'Stratégie · cartes, tours et énergie en temps réel',pl:'1',cat:'pc tel solo',modes:[['easy','Facile','L\'ordi réfléchit lentement'],['mid','Moyen','Un bon adversaire'],['hard','Difficile','Il vise ta tour la plus faible']]},
   {id:'marz',img:'thumb-marz.svg?v=2',n:'Marzoukeur',sub:'Fun · attrape les burgers, enchaîne les combos',pl:'1',cat:'pc tel solo',modes:[['solo','Solo','Le plus de kilos avant la ruine']]}
 ];
 (function(){

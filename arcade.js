@@ -18,7 +18,7 @@
       C.shake=function(k){cv.classList.remove('ag-shake');void cv.offsetWidth;cv.style.setProperty('--sh',(k||6)+'px');cv.classList.add('ag-shake')};
       C.listen=function(fn){C.subs.push(net.on(function(m,from){if(PP.cur()===L.id)fn(m,from)}))};
       /* v36 : 3, 2, 1, GO avant les jeux d'action, et un badge « Tu es … » quand on joue en salon */
-      var CDG={hockey:1,bricks:1,pong:1,plane:1,snakeio:1,marz:1,stack:1,tanks:1,wire:1}[L.id],cdTok=0;
+      var CDG={hockey:1,bricks:1,pong:1,plane:1,snakeio:1,marz:1,stack:1,tanks:1,wire:1,tours:1}[L.id],cdTok=0;
       C.stop=function(){C.running=false;cdTok++};
       function badge(){var st=cv.parentNode,b=st.querySelector('.ag-who');if(!net.inRoom()||C.mode!=='online'){if(b)b.hidden=true;return}
         if(!b){b=document.createElement('div');b.className='ag-who';st.appendChild(b)}var i=net.slot(net.me.id),pic='';try{pic=PP.perso.img(PP.perso.get(),24,'ag-who-pic')}catch(e){}

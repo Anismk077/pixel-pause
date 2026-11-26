@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360">
+  <rect width="640" height="360" fill="#5aa34a"/>
+  <rect x="0" y="0" width="300" height="322" fill="#3a8cff" opacity=".14"/><rect x="340" y="0" width="300" height="322" fill="#e2361b" opacity=".14"/>
+  <rect x="300" y="0" width="40" height="322" fill="#3a8cd8"/>
+  <g stroke="#141210" stroke-width="4"><rect x="290" y="70" width="60" height="56" fill="#9a6a3a"/><rect x="290" y="200" width="60" height="56" fill="#9a6a3a"/></g>
+  <g stroke="#141210" stroke-width="4">
+    <rect x="96" y="66" width="60" height="60" rx="6" fill="#b9b3a6"/><rect x="108" y="78" width="36" height="36" rx="4" fill="#3a8cff"/>
+    <rect x="96" y="198" width="60" height="60" rx="6" fill="#b9b3a6"/><rect x="108" y="210" width="36" height="36" rx="4" fill="#3a8cff"/>
+    <rect x="484" y="66" width="60" height="60" rx="6" fill="#b9b3a6"/><rect x="496" y="78" width="36" height="36" rx="4" fill="#e2361b"/>
+    <rect x="484" y="198" width="60" height="60" rx="6" fill="#b9b3a6"/><rect x="496" y="210" width="36" height="36" rx="4" fill="#e2361b"/>
+    <rect x="18" y="122" width="76" height="76" rx="7" fill="#b9b3a6"/><rect x="33" y="137" width="46" height="46" rx="5" fill="#3a8cff"/>
+    <rect x="546" y="122" width="76" height="76" rx="7" fill="#b9b3a6"/><rect x="561" y="137" width="46" height="46" rx="5" fill="#e2361b"/>
+    <path d="M42 172 V150 L50 160 L56 146 L62 160 L70 150 V172 Z" fill="#f3c623" stroke-width="3"/><path d="M570 172 V150 L578 160 L584 146 L590 160 L598 150 V172 Z" fill="#f3c623" stroke-width="3"/>
+    <circle cx="230" cy="98" r="20" fill="#3a8cff"/><rect x="386" y="212" width="40" height="40" rx="7" fill="#e2361b"/><rect x="196" y="216" width="22" height="22" fill="#3a8cff"/><rect x="224" y="232" width="22" height="22" fill="#3a8cff"/>
+  </g>
+  <rect y="322" width="640" height="38" fill="#141210"/><rect y="322" width="640" height="5" fill="#e2361b"/>
+  <text x="320" y="350" font-family="Anton, Impact, sans-serif" font-size="24" fill="#f1ece2" text-anchor="middle">GUERRE DES TOURS</text>
+</svg>
