@@ -319,51 +319,54 @@
   }
   /* ---------- Animaux ---------- */
   function animalMesh(kind,antlers){
-    /* style « low poly » facetté comme les arbres : silhouettes fines, deux tons, museau, oreilles et queue bien lisibles */
-    var wolf=kind==='wolf',g=new THREE.Group();
-    function fm(c){return new THREE.MeshLambertMaterial({color:c,flatShading:true})}
-    var coat=fm(wolf?0x8a8a8e:0xa86a3c),back=fm(wolf?0x55565c:0x7e4a26),belly=fm(wolf?0xe4e0d8:0xf0e2c4),dark=fm(0x1a1716),muz=fm(wolf?0x3a3a3e:0x5a3a22),hoof=fm(0x2a2420),white=fm(0xfaf6ee);
-    var S=wolf?.8:1;
-    function m(geo,mat,x,y,z,sx,sy,sz,par){var o=new THREE.Mesh(geo,mat);o.position.set(x*S,y*S,z*S);if(sx)o.scale.set(sx,sy,sz);o.castShadow=true;(par||g).add(o);return o}
-    function sph(r,w,h){return new THREE.SphereGeometry(r,w||9,h||7)}
-    // corps : torse affiné, dos plus sombre, ventre clair, poitrail, croupe
-    var bodyY=wolf?1.0:1.18;
-    m(sph(.5,10,8),coat,0,bodyY,0,.6,.62,1.45);
-    m(sph(.46,10,6),back,0,bodyY+.16,.05,.52,.38,1.38);
-    m(sph(.4,9,6),belly,0,bodyY-.17,0,.5,.36,1.15);
-    m(sph(.4,9,7),coat,0,bodyY+.04,-.52,.62,.78,.7);
-    m(sph(.4,9,7),coat,0,bodyY+.05,.52,.64,.7,.72);
-    if(!wolf){m(sph(.18,8,6),white,0,bodyY+.02,.82,.9,1.1,.5)}
-    else{m(sph(.4,9,7),fm(0x9a9896),0,bodyY+.12,-.62,.62,.72,.55)} // collerette du loup
-    // cou et tête (le groupe « neck » pivote : tête basse pour brouter)
-    var neck=new THREE.Group();neck.position.set(0,(bodyY+.18)*S,-.68*S);g.add(neck);
-    var nk=new THREE.Mesh(new THREE.CylinderGeometry(.1*S,.17*S,(wolf?.42:.66)*S,8),coat);nk.rotation.x=wolf?-1.2:-.42;nk.position.set(0,(wolf?.06:.26)*S,(wolf?-.12:-.08)*S);nk.castShadow=true;neck.add(nk);
-    var hy=wolf?.16:.56,hz=wolf?-.36:-.22;
-    var head=new THREE.Mesh(sph(.17*S,9,7),coat);head.scale.set(.85,.82,1.15);head.position.set(0,hy*S,hz*S);head.userData.head=true;head.castShadow=true;neck.add(head);
-    var sn=new THREE.Mesh(new THREE.CylinderGeometry(.045*S,.1*S,(wolf?.34:.3)*S,7),muz);sn.rotation.x=-Math.PI/2+(wolf?.08:.35);sn.position.set(0,(hy-(wolf?.04:.08))*S,(hz-(wolf?.26:.22))*S);sn.castShadow=true;neck.add(sn);
-    var nose=new THREE.Mesh(sph(.04*S,6,5),dark);nose.position.set(0,(hy-(wolf?.05:.13))*S,(hz-(wolf?.43:.36))*S);neck.add(nose);
-    if(wolf){var jaw=new THREE.Mesh(new THREE.BoxGeometry(.1*S,.04*S,.22*S),belly);jaw.position.set(0,(hy-.11)*S,(hz-.2)*S);neck.add(jaw)}
+    /* v43 : animaux refaits. Formes rondes et lisses, vraies proportions : corps en tonneau, ventre clair, encolure,
+       tête avec museau, oreilles, yeux, pattes en deux parties avec sabots ou coussinets, queue. Le loup a une
+       crinière et une grosse queue touffue, le cerf une croupe blanche et des bois. */
+    var wolf=kind==='wolf',g=new THREE.Group(),b=new THREE.Group();g.add(b);b.scale.setScalar(wolf?.9:1);
+    function fm(c){return new THREE.MeshLambertMaterial({color:c})}
+    var coat=fm(wolf?0x8d9096:0xb0703c),back=fm(wolf?0x565a62:0x8a5228),belly=fm(wolf?0xdcd8d0:0xead8b4),dark=fm(0x1a1716),muz=fm(wolf?0xcfcac2:0xd9bf96),hoof=fm(0x2a2420),white=fm(0xfaf6ee),inner=fm(wolf?0x3a3c42:0xe8b89a);
+    function m(geo,mat,x,y,z,par,sx,sy,sz){var o=new THREE.Mesh(geo,mat);o.position.set(x,y,z);if(sx)o.scale.set(sx,sy,sz);o.castShadow=true;(par||b).add(o);return o}
+    function cap(r,l){var c=new THREE.CapsuleGeometry(r,l,6,16);c.rotateX(Math.PI/2);return c}
+    function sph(r){return new THREE.SphereGeometry(r,16,12)}
+    var Y=wolf?.86:1.12,L=wolf?.78:.72,R=wolf?.25:.3;
+    m(cap(R,L),coat,0,Y,0,b,.86,1,1);
+    m(cap(R*.8,L*.85),back,0,Y+R*.33,.02,b,.7,.72,1);
+    m(cap(R*.82,L*.75),belly,0,Y-R*.3,0,b,.72,.72,1);
+    m(sph(R*1.06),coat,0,Y+.02,-L*.5,b,.84,1,.9);
+    m(sph(R*1.04),coat,0,Y+.01,L*.5,b,.86,.98,.9);
+    if(wolf)m(sph(R*1.2),fm(0xa4a7ad),0,Y+.06,-L*.56,b,.82,.96,.72);else m(sph(.15),white,0,Y+.04,L*.5+R*.8,b,1,1.25,.45);
+    /* cou et tête (le groupe « neck » pivote pour brouter) */
+    var neck=new THREE.Group();neck.position.set(0,Y+R*.45,-L*.5-R*.55);b.add(neck);
+    var nk=new THREE.Mesh(new THREE.CylinderGeometry(wolf?.13:.1,wolf?.19:.17,wolf?.34:.62,14),coat);nk.rotation.x=wolf?-1.15:-.5;nk.position.set(0,wolf?.06:.24,wolf?-.1:-.1);nk.castShadow=true;neck.add(nk);
+    var hy=wolf?.14:.56,hz=wolf?-.3:-.26;
+    var head=new THREE.Mesh(sph(wolf?.17:.155),coat);head.scale.set(wolf?.95:.85,wolf?.9:.92,wolf?1.1:1.2);head.position.set(0,hy,hz);head.userData.head=true;head.castShadow=true;neck.add(head);
+    var sn=new THREE.Mesh(new THREE.CylinderGeometry(wolf?.055:.06,wolf?.1:.095,wolf?.26:.24,14),muz);sn.rotation.x=-Math.PI/2+(wolf?.06:.3);sn.position.set(0,hy-(wolf?.035:.07),hz-(wolf?.24:.22));sn.castShadow=true;neck.add(sn);
+    m(sph(wolf?.045:.04),dark,0,hy-(wolf?.03:.115),hz-(wolf?.385:.345),neck,1,.8,.9);
+    if(wolf)m(new THREE.BoxGeometry(.1,.035,.2),belly,0,hy-.1,hz-.2,neck);
     [-1,1].forEach(function(sd){
-      var ear=new THREE.Mesh(wolf?new THREE.ConeGeometry(.065*S,.2*S,4):sph(.09*S,7,5),wolf?back:coat);
-      if(wolf){ear.position.set(sd*.09*S,(hy+.17)*S,(hz+.04)*S);ear.rotation.z=-sd*.12}else{ear.scale.set(.45,1.5,.25);ear.position.set(sd*.15*S,(hy+.12)*S,(hz+.08)*S);ear.rotation.z=-sd*1.05;ear.rotation.x=-.3}
-      neck.add(ear);
-      var eye=new THREE.Mesh(sph(.026*S,6,5),wolf?new THREE.MeshBasicMaterial({color:0xf2c23a}):dark);eye.position.set(sd*.1*S,(hy+.04)*S,(hz-.09)*S);neck.add(eye);
-      var shine=new THREE.Mesh(sph(.009*S,4,3),new THREE.MeshBasicMaterial({color:0xffffff}));shine.position.set(sd*.105*S,(hy+.055)*S,(hz-.11)*S);neck.add(shine);
-      if(antlers&&!wolf){var ant=new THREE.Group();ant.position.set(sd*.07,hy+.12,hz+.02);ant.rotation.z=-sd*.45;ant.rotation.x=-.15;neck.add(ant);var am=fm(0xe0d2b4);
-        var main=new THREE.Mesh(new THREE.CylinderGeometry(.018,.032,.6,5),am);main.position.y=.3;ant.add(main);
-        [[.2,.24,.75,-.5],[.38,.2,-.6,-.3],[.52,.17,.8,-.4],[.6,.13,-.5,.2]].forEach(function(t){var tn=new THREE.Mesh(new THREE.CylinderGeometry(.01,.02,t[1]*1.3,4),am);tn.position.set(0,t[0]+.08,0);tn.rotation.z=t[2]*sd;tn.rotation.x=t[3];ant.add(tn)})}
+      if(wolf){var ear=m(new THREE.ConeGeometry(.07,.2,10),back,sd*.1,hy+.17,hz+.05,neck,1,1,.6);ear.rotation.z=-sd*.15;m(new THREE.ConeGeometry(.04,.13,8),inner,sd*.1,hy+.15,hz+.03,neck,1,1,.5).rotation.z=-sd*.15}
+      else{var e2=m(sph(.085),coat,sd*.16,hy+.11,hz+.08,neck,.5,1.5,.28);e2.rotation.z=-sd*1.0;e2.rotation.x=-.25;var e3=m(sph(.06),inner,sd*.165,hy+.115,hz+.07,neck,.4,1.3,.2);e3.rotation.z=-sd*1.0;e3.rotation.x=-.25}
+      m(sph(.027),wolf?new THREE.MeshBasicMaterial({color:0xf2c23a}):dark,sd*(wolf?.095:.092),hy+.045,hz-(wolf?.11:.1),neck);
+      m(sph(.009),new THREE.MeshBasicMaterial({color:0xffffff}),sd*(wolf?.1:.097),hy+.058,hz-(wolf?.132:.12),neck);
+      if(wolf)m(sph(.012),dark,sd*.095,hy+.045,hz-.132,neck);
+      if(antlers&&!wolf){var ant=new THREE.Group();ant.position.set(sd*.07,hy+.12,hz+.03);ant.rotation.z=-sd*.42;ant.rotation.x=-.15;neck.add(ant);var am=fm(0xe6d8b8);
+        var main=new THREE.Mesh(new THREE.CylinderGeometry(.016,.032,.62,8),am);main.position.y=.31;main.castShadow=true;ant.add(main);
+        [[.2,.24,.75,-.5],[.38,.2,-.6,-.3],[.52,.17,.8,-.4],[.6,.13,-.5,.2]].forEach(function(t){var tn=new THREE.Mesh(new THREE.CylinderGeometry(.009,.02,t[1]*1.3,6),am);tn.position.set(0,t[0]+.08,0);tn.rotation.z=t[2]*sd;tn.rotation.x=t[3];ant.add(tn)})}
     });
-    // queue : touffe blanche pour le cerf, grosse queue touffue pour le loup
+    /* queue */
     var tail=new THREE.Group();
-    if(wolf){tail.position.set(0,(bodyY+.12)*S,.78*S);var tm=new THREE.Mesh(new THREE.CapsuleGeometry(.11*S,.42*S,3,7),back);tm.rotation.x=-2.35;tm.position.set(0,-.18*S,.2*S);tm.castShadow=true;tail.add(tm);var tip=new THREE.Mesh(sph(.08*S,6,5),belly);tip.position.set(0,-.36*S,.4*S);tail.add(tip)}
-    else{tail.position.set(0,bodyY+.18,.84);var tw=new THREE.Mesh(sph(.09,7,5),white);tw.scale.set(.8,1.3,.6);tail.add(tw);var tb=new THREE.Mesh(sph(.06,6,5),back);tb.position.set(0,.07,-.02);tail.add(tb)}
-    g.add(tail);
-    // pattes fines : cuisse, canon, sabot / patte
-    var legs=[],ly=bodyY-.1;[[-.17,-.5],[.17,-.5],[-.17,.5],[.17,.5]].forEach(function(p,i){
-      var lg=new THREE.Group();lg.position.set(p[0]*S,ly*S,p[1]*S);g.add(lg);var rear=i>1;
-      var up=new THREE.Mesh(new THREE.CylinderGeometry((rear?.1:.075)*S,.05*S,.42*S,7),coat);up.position.y=-.2*S;up.castShadow=true;lg.add(up);
-      var lo=new THREE.Mesh(new THREE.CylinderGeometry(.035*S,.03*S,(ly-.48)*S,6),wolf?back:fm(0x8a5630));lo.position.y=-(.41+(ly-.48)/2)*S;lo.castShadow=true;lg.add(lo);
-      var hf=new THREE.Mesh(new THREE.CylinderGeometry(.04*S,.05*S,.08*S,6),wolf?dark:hoof);hf.position.y=-(ly-.04)*S;lg.add(hf);legs.push(lg)});
+    if(wolf){tail.position.set(0,Y+R*.35,L*.5+R*.75);var tm=new THREE.Mesh(new THREE.CapsuleGeometry(.105,.4,6,12),back);tm.rotation.x=-2.3;tm.position.set(0,-.18,.2);tm.castShadow=true;tail.add(tm);var tip=new THREE.Mesh(sph(.085),belly);tip.position.set(0,-.36,.4);tail.add(tip)}
+    else{tail.position.set(0,Y+R*.5,L*.5+R*.95);var tw=new THREE.Mesh(sph(.085),white);tw.scale.set(.8,1.3,.6);tail.add(tw);var tb=new THREE.Mesh(sph(.06),back);tb.position.set(0,.07,-.02);tail.add(tb)}
+    b.add(tail);
+    /* pattes : cuisse musclée, canon fin, sabot (cerf) ou patte à coussinets (loup) */
+    var legs=[],hipY=Y-R*.25,fz=L*.5+R*.25;[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(function(p,i){
+      var lg=new THREE.Group();lg.position.set(p[0]*R*.52,hipY,p[1]*fz);b.add(lg);var rear=i>1,ul=wolf?.36:.46,ll=hipY-ul-.06;
+      var up=new THREE.Mesh(new THREE.CylinderGeometry(rear?(wolf?.105:.115):(wolf?.085:.09),wolf?.058:.052,ul,12),coat);up.position.y=-ul/2;up.castShadow=true;lg.add(up);
+      var kn=new THREE.Mesh(sph(wolf?.058:.052),coat);kn.position.y=-ul;lg.add(kn);
+      var lo=new THREE.Mesh(new THREE.CylinderGeometry(wolf?.05:.04,wolf?.045:.034,ll,10),wolf?coat:back);lo.position.y=-ul-ll/2;lo.castShadow=true;lg.add(lo);
+      if(wolf){var paw=new THREE.Mesh(sph(.065),back);paw.scale.set(1,.55,1.35);paw.position.set(0,-(hipY-.035),-.03);lg.add(paw)}
+      else{var hf=new THREE.Mesh(new THREE.CylinderGeometry(.04,.052,.085,10),hoof);hf.position.y=-(hipY-.045);lg.add(hf)}
+      legs.push(lg)});
     g.userData.parts={legs:legs,arms:[],neck:neck,tail:tail};return g;
   }
   function buildSky(){
@@ -745,22 +748,29 @@ SEED=seed;makeIslands();terrains=[];vlights=[];houseList=[];cullT=0;boats=[];hdo
     if(k==='viande'&&Math.random()<.3){P.hp-=8;msg('La viande crue te rend malade')}
     sfx.play(u[0]==='food'?'eat':'pickup');hudInv();invPanel(true);
   }
+  /* v43 : inventaire rangé par familles, avec une fiche pour l'objet choisi (utiliser, jeter 1, tout jeter) */
+  var ivSel=null,IVG=[['Ressources',['bois','pierre','fer','tissu','cuir','radio']],['À manger et à boire',['cuite','conserve','baies','viande','eau']],['Soin et munitions',['bandage','munitions','fleches']]];
   function invPanel(refresh){
     var el=$('sv-invp');if(!refresh&&!el.hidden){el.hidden=true;lock();return}
     if(refresh&&el.hidden)return;
     $('sv-build').hidden=true;$('sv-craft').hidden=true;buildMode=null;
-    var ks=['bois','pierre','fer','tissu','cuir','baies','viande','cuite','conserve','eau','bandage','munitions','fleches','radio'],slots=[];
-    ks.forEach(function(k){if(inv[k]>0)slots.push(k)});
-    var h='<div class="iv-head"><b>Inventaire</b><span>Jour '+day+' · '+st.kills+' créatures abattues · objectif '+(goalI+1)+'/'+GOALS.length+'</span></div><div class="iv-cols"><div><p class="iv-l">Sac</p><div class="iv-grid">';
-    for(var i=0;i<20;i++){var k=slots[i];h+=k?'<button type="button" class="iv-slot'+(USE[k]?' use':'')+'" data-it="'+k+'" style="animation-delay:'+(i*18)+'ms"><img src="'+icon(k)+'" alt=""><b>'+inv[k]+'</b><small>'+esc(NAMES[k])+'</small></button>':'<span class="iv-slot empty" style="animation-delay:'+(i*18)+'ms"></span>'}
-    h+='</div><p class="iv-desc" id="sv-ivdesc">Survole un objet pour le décrire. Clic sur la nourriture, l\'eau ou un bandage pour l\'utiliser.</p></div><div><p class="iv-l">Outils et armes</p><div class="iv-tools">';
+    if(ivSel&&!(inv[ivSel]>0))ivSel=null;var n=0,total=0;IVG.forEach(function(G){G[1].forEach(function(k){total+=inv[k]||0})});
+    var h='<div class="iv-head"><b>Inventaire</b><span>Jour '+day+' · '+total+' objets · '+st.kills+' créatures abattues · objectif '+(goalI+1)+'/'+GOALS.length+'</span></div><div class="iv-cols"><div>';
+    IVG.forEach(function(G){var own=G[1].filter(function(k){return inv[k]>0});h+='<p class="iv-l">'+G[0]+'</p><div class="iv-grid">';
+      own.forEach(function(k){h+='<button type="button" class="iv-slot'+(USE[k]?' use':'')+(ivSel===k?' sel':'')+'" data-it="'+k+'" style="animation-delay:'+((n++)*18)+'ms"><img src="'+icon(k)+'" alt=""><b>'+inv[k]+'</b><small>'+esc(NAMES[k])+'</small></button>'});
+      if(!own.length)h+='<span class="iv-none">Rien pour l\'instant</span>';h+='</div>'});
+    if(ivSel){var k=ivSel;h+='<div class="iv-card"><img src="'+icon(k)+'" alt=""><div><b>'+esc(NAMES[k])+' <i>× '+inv[k]+'</i></b><span>'+esc(DESC[k]||'')+'</span><div class="iv-act">'+(USE[k]?'<button type="button" class="go" data-iva="use">Utiliser</button>':'')+'<button type="button" data-iva="drop1">Jeter 1</button><button type="button" data-iva="dropall">Tout jeter</button></div></div></div>'}
+    else h+='<p class="iv-desc" id="sv-ivdesc">Clique un objet pour voir sa fiche. Double-clic sur la nourriture, l\'eau ou un bandage pour l\'utiliser tout de suite.</p>';
+    h+='</div><div><p class="iv-l">Outils et armes</p><div class="iv-tools">';
     TORDER.forEach(function(t){var own=t==='axe'||inv[t];h+='<button type="button" class="iv-tool'+(tool===t?' on':'')+(own?'':' off')+'" data-tool="'+t+'"'+(own?'':' disabled')+'><img src="'+icon(t)+'" alt=""><small>'+(t==='axe'&&inv.iaxe?'Hache en fer':TOOLS[t].n)+(TOOLS[t].ammo&&own?' · '+inv[TOOLS[t].ammo]:'')+'</small></button>'});
     h+='</div><p class="iv-l">Armure</p><div class="iv-arm"><img src="'+icon('armure')+'" alt="" style="opacity:'+(inv.armure?1:.25)+'"><span>'+(inv.armure===2?'Armure en fer · −55 % de dégâts':inv.armure===1?'Armure en cuir · −30 % de dégâts':'Aucune armure. Fabrique-en une à l\'établi (C).')+'</span></div>';
     h+='<p class="iv-l">État</p><div class="iv-stats">'+[['Vie',P.hp,'#f1ece2'],['Faim',P.food,'#d4a32a'],['Soif',P.water,'#3fa9ff']].map(function(s){return '<label>'+s[0]+'<i><em style="width:'+Math.max(0,s[1])+'%;background:'+s[2]+'"></em></i><b>'+Math.round(s[1])+'</b></label>'}).join('')+'</div></div></div><small class="hint">Tab ou I pour fermer.</small>';
     el.innerHTML=h;el.hidden=false;unlock();
   }
-  $('sv-invp').addEventListener('click',function(e){var s=e.target.closest('[data-it]');if(s){useItem(s.dataset.it);return}var t=e.target.closest('[data-tool]');if(t){setTool(t.dataset.tool);invPanel(true)}});
-  $('sv-invp').addEventListener('mouseover',function(e){var s=e.target.closest('[data-it]');if(s){var d=$('sv-ivdesc');if(d)d.textContent=NAMES[s.dataset.it]+' : '+(DESC[s.dataset.it]||'')}});
+  $('sv-invp').addEventListener('click',function(e){
+    var a=e.target.closest('[data-iva]');if(a&&ivSel){var k=ivSel,w=a.dataset.iva;if(w==='use'){useItem(k)}else{var q=w==='drop1'?1:inv[k];inv[k]=Math.max(0,inv[k]-q);msg('Jeté : '+q+' '+NAMES[k].toLowerCase());sfx.play('ui');hudInv();invPanel(true)}return}
+    var s=e.target.closest('[data-it]');if(s){ivSel=s.dataset.it;invPanel(true);return}var t=e.target.closest('[data-tool]');if(t){setTool(t.dataset.tool);invPanel(true)}});
+  $('sv-invp').addEventListener('dblclick',function(e){var s=e.target.closest('[data-it]');if(s&&USE[s.dataset.it])useItem(s.dataset.it)});
 
   /* ---------- Lieux à explorer : maisons, châteaux, sous-sols ---------- */
   var floors=[],traps=[],rooms=[],castles=[];
@@ -1475,11 +1485,18 @@ SEED=seed;makeIslands();terrains=[];vlights=[];houseList=[];cullT=0;boats=[];hdo
   function viewModel(){
     while(vscene.children.length>2)vscene.remove(vscene.children[2]);
     var g=new THREE.Group(),skin=lam({color:0xd9a77c}),dark=lam({color:0x252525}),wood=lam({color:0x7a5230}),metal=lam({color:0xb8bcc4});
-    var sleeve=[0x56643a,0x6b4a2a,0x6c7078][inv.armure||0];
-    var arm=new THREE.Mesh(new THREE.CapsuleGeometry(.062,.34,4,12),lam({color:sleeve}));arm.rotation.x=Math.PI/2.4;arm.position.set(.03,-.12,.2);g.add(arm);
-    var cuff=new THREE.Mesh(new THREE.CylinderGeometry(.068,.068,.05,12),lam({color:0x2b2420}));cuff.rotation.x=Math.PI/2.4;cuff.position.set(.02,-.05,.07);g.add(cuff);
-    var hand=new THREE.Mesh(new THREE.SphereGeometry(.065,14,10),skin);hand.scale.set(1,.8,1.15);g.add(hand);var th=new THREE.Mesh(new THREE.CapsuleGeometry(.018,.05,3,6),skin);th.position.set(-.05,.02,-.02);th.rotation.z=.8;g.add(th);
-    [-.025,0,.025].forEach(function(fx){var f=new THREE.Mesh(new THREE.CapsuleGeometry(.014,.04,3,6),skin);f.position.set(fx+.01,.035,-.05);f.rotation.x=-.6;g.add(f)});
+    /* v43 : vraie main. Avant-bras effilé avec manche (couleur de ta tenue ou de ton armure), poignet, paume,
+       quatre doigts enroulés autour du manche et le pouce par-dessus, à la couleur de peau de ton perso */
+    var PA=null;try{PA=PP.perso.get()}catch(e){}if(PA&&PA.skin)skin=lam({color:PA.skin});
+    var sleeve=inv.armure?[0,0x6b4a2a,0x6c7078][inv.armure]:(PA&&PA.topCol?new THREE.Color(PA.topCol).getHex():0x56643a),slM=lam({color:sleeve});
+    var arm=new THREE.Mesh(new THREE.CylinderGeometry(.05,.07,.44,16),slM);arm.rotation.x=Math.PI/2.4;arm.position.set(.03,-.135,.235);g.add(arm);
+    var cuff=new THREE.Mesh(new THREE.CylinderGeometry(.058,.056,.045,16),lam({color:new THREE.Color(sleeve).multiplyScalar(.6).getHex()}));cuff.rotation.x=Math.PI/2.4;cuff.position.set(.022,-.055,.075);g.add(cuff);
+    var wrist=new THREE.Mesh(new THREE.SphereGeometry(.046,14,10),skin);wrist.scale.set(1,.85,1.1);wrist.position.set(.016,-.03,.05);g.add(wrist);
+    var palm=new THREE.Mesh(new THREE.SphereGeometry(.058,16,12),skin);palm.scale.set(.8,1.12,.6);palm.position.set(.012,.004,.034);g.add(palm);
+    for(var fi=0;fi<4;fi++){var fr=.035+(fi===1||fi===2?.002:0),fg=new THREE.Mesh(new THREE.TorusGeometry(fr,.0125,8,14,Math.PI*1.18),skin);fg.rotation.x=-Math.PI/2;fg.rotation.z=-.25;fg.position.set(.002,-.04+fi*.0262,0);g.add(fg);
+      var tipF=new THREE.Mesh(new THREE.SphereGeometry(.0128,8,6),skin);var ta=Math.PI*1.18-.25;tipF.position.set(.002+Math.cos(ta)*fr,-.04+fi*.0262,Math.sin(ta)*fr);g.add(tipF)}
+    var th=new THREE.Mesh(new THREE.TorusGeometry(.036,.014,8,12,Math.PI*.62),skin);th.rotation.x=Math.PI/2;th.rotation.z=Math.PI*.55;th.position.set(.002,.066,0);g.add(th);
+    var thT=new THREE.Mesh(new THREE.SphereGeometry(.0145,8,6),skin);var tb=Math.PI*.55+Math.PI*.62;thT.position.set(.002+Math.cos(tb)*.036,.066,-Math.sin(tb)*.036);g.add(thT);
     var woodS=new THREE.MeshStandardMaterial({color:0x8a5a30,roughness:.7}),steelS=new THREE.MeshStandardMaterial({color:inv.iaxe||tool==='sword'?0xc4c8d0:0x8f8d88,roughness:.42,metalness:.3}),edge=new THREE.MeshStandardMaterial({color:0xf2f4f6,roughness:.2,metalness:.35}),wrap=new THREE.MeshStandardMaterial({color:0x5a3d22,roughness:.9});
     function ring(y,r,par){var t=new THREE.Mesh(new THREE.TorusGeometry(r,.008,6,12),wrap);t.rotation.x=Math.PI/2;t.position.y=y;(par||g).add(t)}
     if(tool==='axe'){var h=new THREE.Mesh(new THREE.CylinderGeometry(.02,.026,.66,10),woodS);h.position.set(0,.2,0);g.add(h);for(var w2=0;w2<4;w2++)ring(-.05+w2*.03,.027);
@@ -1520,7 +1537,7 @@ SEED=seed;makeIslands();terrains=[];vlights=[];houseList=[];cullT=0;boats=[];hdo
       var sw=swing>0?Math.sin(swing*Math.PI):0,now=performance.now()/1000,mv=Math.min(1,P.spd||0),br=Math.sin(now*1.6)*.006;
       /* marche : la main se balance en 8 et la tête roule un peu ; au repos on respire */
       var bx=Math.cos(P.bob*.5)*.022*mv,by=-Math.abs(Math.sin(P.bob*.5))*.03*mv+br;
-      vm.position.set(.26+bx,-.3+by,-.45);
+      vm.position.set(.25+bx,-.235+by,-.45);
       if(TOOLS[tool].melee){var tt=1-swing,rx=-.3+Math.sin(P.bob*.5)*.04*mv,ry=0,rz=Math.cos(P.bob*.5)*.05*mv,py=0,pz=0,px=0;
         if(swing>0){
           if(tt<.3){var u=tt/.3,e=u*u*(3-2*u);rx=-.3+e*.85;ry=e*.2;rz=-e*.25;py=e*.12;pz=e*.05;px=e*.05}
@@ -1550,7 +1567,7 @@ SEED=seed;makeIslands();terrains=[];vlights=[];houseList=[];cullT=0;boats=[];hdo
   }
   function hudInv(){
     var ks=['bois','pierre','fer','baies','viande','cuite','conserve','eau','bandage','tissu','cuir','munitions','fleches','radio'];
-    $('sv-inv').innerHTML=ks.filter(function(k){return inv[k]>0}).map(function(k){return '<span><b>'+inv[k]+'</b> '+esc(NAMES[k].toLowerCase())+'</span>'}).join('')+(inv.armure?'<span class="arm">'+(inv.armure>1?'armure en fer':'armure en cuir')+'</span>':'');
+    $('sv-inv').innerHTML=ks.filter(function(k){return inv[k]>0}).map(function(k){return '<span title="'+esc(NAMES[k])+'"><img src="'+icon(k)+'" alt=""><b>'+inv[k]+'</b></span>'}).join('')+(inv.armure?'<span class="arm">'+(inv.armure>1?'armure en fer':'armure en cuir')+'</span>':'');
     $('sv-bar').innerHTML=TORDER.map(function(t,i){var own=t==='axe'||inv[t];if(!own)return '';var T=TOOLS[t];return '<span class="'+(tool===t&&!buildMode?'on':'')+'"><i>'+(i+1)+'</i>'+(t==='axe'&&inv.iaxe?'Hache en fer':T.n)+(T.ammo?' · '+inv[T.ammo]:'')+'</span>'}).join('')+'<span class="'+(buildMode?'on':'')+'"><i>B</i>Construire</span><span><i>C</i>Fabriquer</span><span><i>Tab</i>Sac</span>';
     $('sv-best').textContent=PP.store('sv-best');
   }
