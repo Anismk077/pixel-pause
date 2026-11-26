@@ -1,0 +1,15 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360">
+  <rect width="640" height="360" fill="#1b1a1d"/>
+  <rect x="60" y="34" width="520" height="262" rx="12" fill="#0f1114" stroke="#3a3d44" stroke-width="4"/>
+  <path d="M60 46 a12 12 0 0 1 12 -12 h496 a12 12 0 0 1 12 12 v22 h-520 z" fill="#2a2d33"/>
+  <circle cx="86" cy="51" r="8" fill="#e2361b"/><circle cx="112" cy="51" r="8" fill="#f3c623"/><circle cx="138" cy="51" r="8" fill="#3fe09a"/>
+  <g font-family="'IBM Plex Mono', Consolas, monospace" font-size="22" font-weight="600">
+    <text x="84" y="108" fill="#3fe09a">joueur@pixel:~$ <tspan fill="#f1ece2">ls</tspan></text>
+    <text x="84" y="142" fill="#6fb8ff">documents/  projets/  <tspan fill="#3fe09a">lance.sh</tspan></text>
+    <text x="84" y="176" fill="#3fe09a">joueur@pixel:~$ <tspan fill="#f1ece2">cd projets</tspan></text>
+    <text x="84" y="210" fill="#3fe09a">joueur@pixel:~/projets$ <tspan fill="#f1ece2">cat todo</tspan></text>
+  </g>
+  <rect x="510" y="192" width="13" height="24" fill="#f1ece2"/>
+  <rect y="322" width="640" height="38" fill="#141210"/><rect y="322" width="640" height="5" fill="#e2361b"/>
+  <text x="320" y="350" font-family="Anton, Impact, sans-serif" font-size="24" fill="#f1ece2" text-anchor="middle">TERMINAL</text>
+</svg>
