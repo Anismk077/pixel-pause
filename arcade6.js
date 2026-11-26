@@ -183,14 +183,20 @@
         if(d.t==='pd-go'&&d.tb){duelStart(C,d.tb);OPP.name=oppName(C,m.from)}
         if(d.t==='pd-st'&&OPP&&d.tb){OPP.tubes=d.tb;OPP.name=oppName(C,m.from)}
         if(d.t==='pd-win'&&P&&!P.won&&OPP)duelEnd(C,false,oppName(C,m.from))});
-      if(duel(C)){C.keysText('Duel : le premier qui range toutes les couleurs gagne · <kbd>1</kbd>…<kbd>9</kbd> <kbd>0</kbd> choisissent les fioles · <kbd>Z</kbd> annule · <kbd>H</kbd> indice');duelIntro(C);return}
-      C.keysText('Clique une fiole puis une autre pour verser (tu peux enchaîner vite) · <kbd>1</kbd>…<kbd>9</kbd> <kbd>0</kbd> choisissent les fioles · <kbd>Z</kbd> annule · <kbd>R</kbd> recommence · <kbd>H</kbd> indice');
+      if(duel(C)){C.keysText('Duel au clavier ou à la souris : <kbd>←</kbd><kbd>→</kbd> choisissent une fiole, <kbd>Espace</kbd> prend puis verse · ou <kbd>1</kbd>…<kbd>9</kbd> <kbd>0</kbd> · <kbd>Z</kbd> annule · <kbd>H</kbd> indice');duelIntro(C);return}
+      C.keysText('Souris : clique une fiole puis une autre · Clavier : <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> choisissent une fiole, <kbd>Espace</kbd> prend puis verse (ou <kbd>1</kbd>…<kbd>9</kbd> <kbd>0</kbd>) · <kbd>Z</kbd> annule · <kbd>R</kbd> recommence · <kbd>T</kbd> +1 tube · <kbd>H</kbd> indice');
       C.over('Potions','Range les couleurs : chaque fiole doit finir remplie d\'une seule couleur.<br>On ne verse que sur la même couleur ou dans une fiole vide. Moins tu fais de coups, plus tu gagnes d\'étoiles.','Jouer')},
     start:function(C){if(C.mode==='bot'){duelStart(C,genSolvable(C));return}pReset(C,false)},
-    mouse:function(C,t,x,y){if(t==='down'&&C.running)pClick(C,x,y);pHover(C,x,y)},
+    mouse:function(C,t,x,y){if(P&&t!=='up')P.kb=0;if(t==='down'&&C.running)pClick(C,x,y);pHover(C,x,y)},
     key:function(C,code,down){if(!down||!C.running||!P||P.won)return;
+      /* v41 : tout au clavier. Flèches = déplacer le curseur de fiole en fiole, Espace ou Entrée = prendre / verser */
+      var nT=P.tubes.length,per=nT>8?Math.ceil(nT/2):nT;if(P.cur==null||P.cur>=nT)P.cur=0;
+      if(code==='ArrowRight'){P.cur=(P.cur+1)%nT;P.kb=1;sfx.play('tick');return}
+      if(code==='ArrowLeft'){P.cur=(P.cur+nT-1)%nT;P.kb=1;sfx.play('tick');return}
+      if(code==='ArrowDown'||code==='ArrowUp'){if(nT>8){var o=P.cur<per?Math.min(nT-1,P.cur+per):P.cur-per;P.cur=o;sfx.play('tick')}P.kb=1;return}
+      if(code==='Space'||code==='Enter'||code==='NumpadEnter'){P.kb=1;pSelect(C,P.cur);return}
       var m=/^(Digit|Numpad)(\d)$/.exec(code);if(m){var i=m[2]==='0'?9:+m[2]-1;if(i<P.tubes.length)pSelect(C,i);return}
-      if(code==='KeyZ'||code==='KeyW'||code==='Backspace')pUndo();else if(code==='KeyR')pRestart();else if(code==='KeyH')pHintGo();else if(code==='Escape')P.sel=-1},
+      if(code==='KeyZ'||code==='KeyW'||code==='Backspace')pUndo();else if(code==='KeyR')pRestart();else if(code==='KeyH')pHintGo();else if(code==='KeyT'){if(!P.extra){P.extra=true;P.tubes.push([]);pLay();sfx.play('ui')}}else if(code==='Escape')P.sel=-1},
     step:function(C,dt){botStep(C);P.t+=dt;Object.keys(P.shake).forEach(function(k){P.shake[k]=Math.max(0,P.shake[k]-dt)});Object.keys(P.flash).forEach(function(k){P.flash[k]=Math.max(0,P.flash[k]-dt)});
       P.lift=P.lift.map(function(l,i){var tg=i===P.sel?1:(i===P.hov&&!P.anim&&P.sel<0&&P.tubes[i].length&&!full(P.tubes[i]))?.22:0;return l+(tg-l)*Math.min(1,dt*30)});
       P.spark.forEach(function(s){s.t-=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;s.vy+=520*dt});P.spark=P.spark.filter(function(s){return s.t>0});
@@ -211,7 +217,8 @@
         if(P.flash[i]){g.fillStyle='rgba(255,255,255,'+(P.flash[i]*1.4)+')';rr(g,p.x-6,p.y-8,p.w+12,p.h+14,14);g.fill()}
         drawTube(g,p,t,sh,lf,0,0,add,a?a.col:0,dn,dn?Math.min(1,1-(P.flash[i]||0)*1.2+.4):0);
         /* numéro de touche sous la fiole */
-        if(i<10)mono(g,String((i+1)%10),p.x+p.w/2,p.y+p.h+29,11,'rgba(20,18,16,.45)')});
+        if(i<10)mono(g,String((i+1)%10),p.x+p.w/2,p.y+p.h+29,11,'rgba(20,18,16,.45)');
+        if(P.kb&&i===P.cur&&C.running){var cy=p.y+p.h+40+Math.sin(P.t*6)*2;g.fillStyle=RED;g.strokeStyle=INK;g.lineWidth=2.5;g.beginPath();g.moveTo(p.x+p.w/2,cy-9);g.lineTo(p.x+p.w/2+10,cy+5);g.lineTo(p.x+p.w/2-10,cy+5);g.closePath();g.fill();g.stroke();g.strokeStyle=RED;g.lineWidth=3;rr(g,p.x-6,p.y-9+lf,p.w+12,p.h+15,13);g.stroke()}});
       if(hint){var HA=P.pos[hint.a],HB=P.pos[hint.b],y0=Math.min(HA.y,HB.y)-44;g.strokeStyle='rgba(30,130,140,.9)';g.lineWidth=4;g.setLineDash([8,6]);g.beginPath();g.moveTo(HA.x+HA.w/2,HA.y-14);g.quadraticCurveTo((HA.x+HB.x+HB.w)/2,y0-30,HB.x+HB.w/2,HB.y-14);g.stroke();g.setLineDash([])}
       if(a){var A=P.pos[a.a],B=P.pos[a.b],e=function(u){return 1-Math.pow(1-u,3)};
         /* la fiole file au-dessus de la cible, s'incline, verse, puis revient (tout en 0,3 s) */
