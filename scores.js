@@ -17,6 +17,7 @@
     wire:[['ag-wire-pts','Panneaux',0,'']],
     tours:[['ag-tours-cr','Tours détruites',0,'']],
     term:[['ag-term-t','Histoire',1,' s'],['ag-term-pts','Chrono',0,'']],
+    blocs:[['ag-blocs-pts','Marathon',0,' pts'],['ag-blocs-sprint','Sprint',1,' s'],['ag-blocs-chrono','2 minutes',0,' pts']],saut:[['ag-saut-pts','Aventure',0,' pts'],['ag-saut-hard','Expert',0,' pts']],
     volt:[['ag-volt-course','Course',1,'dec'],['ag-volt-temps','Cibles',1,'dec'],['ag-volt-pts','Zombies',0,' pts']]};
   /* v23 : chaque jeu a aussi un classement « Victoires » (nombre de parties gagnées) */
   Object.keys(B).forEach(function(g){B[g].push(['st-'+g+'-win','Victoires',0,'win'])});
