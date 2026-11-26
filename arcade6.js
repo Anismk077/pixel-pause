@@ -84,19 +84,26 @@
   /* fin du versement : on applique le coup (appelé à la fin de l'animation, ou tout de suite si on clique entre-temps) */
   function pFinish(C){var a=P.anim;if(!a)return;P.anim=null;var A=P.tubes[a.a],B=P.tubes[a.b];for(var k=0;k<a.k;k++)B.push(A.pop());
     if(full(B)&&!P.done[a.b]){P.done[a.b]=1;P.flash[a.b]=.5;sfx.play('pickup');var p=P.pos[a.b];for(var s=0;s<14;s++)P.spark.push({x:p.x+p.w/2+(Math.random()-.5)*p.w,y:p.y-4,vx:(Math.random()-.5)*260,vy:-60-Math.random()*220,t:.55,c:COLS[B[0]]})}
-    if(solved())pWin(C)}
+    if(solved()){pWin(C);return}
+    /* v34 : si on tourne en rond (même position vue 3 fois) ou s'il n'y a plus aucun coup utile, écran « Bloqué » */
+    P.seen=P.seen||{};var key=JSON.stringify(P.tubes);P.seen[key]=(P.seen[key]||0)+1;
+    if(P.seen[key]>=3)pStuck(C,'Tu refais les mêmes coups en boucle : cette position est revenue 3 fois.');else if(!findHint())pStuck(C,'Il ne reste plus aucun coup utile.')}
+  var CP=null;
+  function pStuck(C,why){CP=C;P.stuck=true;P.sel=-1;P.hint=null;C.stop();sfx.play('lose');C.shake(6);
+    setTimeout(function(){if(!P||P.won)return;C.over('Bloqué !',why+'<br>Recommence le niveau'+(P.extra?'.':', ou ajoute un tube vide pour t\'en sortir.<br><button type="button" data-pot-tube style="margin-top:12px;font:700 13px \'IBM Plex Mono\',monospace;padding:10px 16px;border:2px solid #f1ece2;background:transparent;color:#f1ece2;cursor:pointer">+ 1 TUBE ET CONTINUER</button>'),'Recommencer',function(){pRestart();P.seen={};C.go()})},350)}
+  document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-pot-tube]');if(!b||!CP||!P||PP.cur()!=='potion')return;e.preventDefault();if(!P.extra){P.extra=true;P.tubes.push([]);pLay()}P.seen={};P.stuck=false;sfx.play('ui');CP.go()});
   function stars(){var par=P.nc*2+2;return P.moves<=par?3:P.moves<=par*1.5?2:1}
   function pWin(C){P.won=true;P.sel=-1;C.stop();sfx.play('win');var key=C.mode,nb=C.best('lvl-'+key,P.level),st=stars();C.pop('BRAVO !',RED,'70px');if(P.level>=5)C.win();
     setTimeout(function(){C.over('Niveau '+P.level+' réussi','<span style="font-size:30px;letter-spacing:6px;color:#f3c623">'+'★★★'.slice(0,st)+'<span style="opacity:.3">'+'★★★'.slice(st)+'</span></span><br>En '+P.moves+' coups.'+(nb?'<br><b>Record de niveaux !</b>':''),'Niveau suivant',function(){var lv=P.level+1;pReset(C,true);P.level=lv;C.go()})},450)}
-  function pSelect(C,hit){if(P.won)return;if(P.anim)pFinish(C);if(P.won)return;P.hint=null;
+  function pSelect(C,hit){if(P.won||P.stuck)return;if(P.anim)pFinish(C);if(P.won||P.stuck)return;P.hint=null;
     if(hit<0){P.sel=-1;return}
     if(P.sel<0){if(P.tubes[hit].length&&!full(P.tubes[hit])){P.sel=hit;sfx.play('tick')}else if(P.tubes[hit].length)P.shake[hit]=.2;return}
     if(hit===P.sel){P.sel=-1;return}
     var k=canPour(P.sel,hit);if(!k){P.shake[hit]=.25;sfx.play('lose');/* on garde la sélection si on clique une autre fiole pleine : elle devient la sélection */if(P.tubes[hit].length&&!full(P.tubes[hit]))P.sel=hit;else P.sel=-1;return}
     P.undo.push(JSON.stringify({t:P.tubes,d:P.done}));P.anim={a:P.sel,b:hit,k:k,col:P.tubes[P.sel][P.tubes[P.sel].length-1],t:0};P.sel=-1;P.moves++;sfx.play('eat')}
-  function pClick(C,x,y){if(P.won)return;var b=pBtnAt(x,y);if(b>=0){if(P.anim)pFinish(C);if(!P.won){pBtns()[b].fn(C);sfx.play('ui')}return}pSelect(C,pHit(x,y))}
+  function pClick(C,x,y){if(P.won)return;var b=pBtnAt(x,y);if(b>=0){if(P.anim)pFinish(C);if(!P.won&&!P.stuck){pBtns()[b].fn(C);sfx.play('ui')}return}pSelect(C,pHit(x,y))}
   function pUndo(){if(P.anim){P.anim=null}if(!P.undo.length)return;var u=JSON.parse(P.undo.pop());P.tubes=u.t;P.done=u.d;P.sel=-1;P.hint=null}
-  function pRestart(){P.anim=null;P.tubes=JSON.parse(P.start);P.undo=[];P.moves=0;P.done={};P.sel=-1;P.hint=null;if(P.extra)P.tubes.push([]);pLay()}
+  function pRestart(){P.seen={};P.stuck=false;P.anim=null;P.tubes=JSON.parse(P.start);P.undo=[];P.moves=0;P.done={};P.sel=-1;P.hint=null;if(P.extra)P.tubes.push([]);pLay()}
   function pHintGo(){if(P.anim)return;var h=findHint();if(h){P.hint={a:h[0],b:h[1],t:2.2};P.sel=-1}else{PP.toast&&PP.toast('Plus de coup utile : annule ou ajoute un tube','warn')}}
   function pHit(x,y){var hit=-1;P.pos.forEach(function(p,i){if(x>p.x-10&&x<p.x+p.w+10&&y>p.y-34&&y<p.y+p.h+12)hit=i});return hit}
   function pBtnAt(x,y){var bs=pBtns();for(var b=0;b<bs.length;b++){var B=bs[b];if(x>B.x&&x<B.x+B.w&&y>B.y&&y<B.y+B.h)return b}return -1}
