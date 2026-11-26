@@ -151,7 +151,11 @@
     return '<div class="rl-card"><div class="rl-av">'+pls.map(function(p){return pic(p,34)}).join('')+(r.n>5?'<span>+'+(r.n-5)+'</span>':'')+'</div><div class="rl-i"><b>'+esc(r.name||('Salon de '+r.host))+'</b><small>'+(tag?'<i class="tg-f">'+esc(tag)+'</i> ':'')+esc(r.host)+' · '+r.n+' '+T(r.n>1?'joueurs':'joueur')+(r.game?' · '+esc(GN[r.game]||r.game):'')+(r.acc?' · '+T('comptes seulement'):'')+'</small></div><button type="button" class="primary mini" data-join="'+esc(r.code)+'">'+T('Rejoindre')+'</button></div>'}
   function lists(){
     var el=$('rl-lists');if(!el)return;var now=Date.now(),fu=C&&C.friendUids?C.friendUids():[],seen={};
-    var live=dir.filter(function(r){return r.t>now-35000&&!dead[r.code]});
+    /* v28 : un salon dont l'hôte ne donne plus signe de vie depuis 25 s disparaît (avant 35 s, et la liste ne se rafraîchissait pas).
+       Ton propre salon d'avant un rechargement (« salon fantôme ») est caché et effacé dès 12 s sans nouvelles. */
+    var mu=myUid(),live=dir.filter(function(r){if(dead[r.code])return false;if(net.inRoom()&&r.code===net.code)return true;
+      if(mu&&r.hostUid===mu&&!(net.inRoom()&&net.isHost)&&r.t<now-12000){dead[r.code]=1;if(C&&C.db)C.db.collection('rooms').doc(r.code).delete().catch(function(){});return false}
+      return r.t>now-25000});
     var fr=live.filter(function(r){return r.hostUid&&fu.indexOf(r.hostUid)>=0});fr.forEach(function(r){seen[r.code]=1});
     (C&&C.friends||[]).forEach(function(f){var p=f.prof;if(f.status==='friends'&&p&&p.room&&p.room.code&&!seen[p.room.code]&&C.statusOf(p)!=='off'){seen[p.room.code]=1;fr.push({code:p.room.code,name:p.room.name,host:p.name,n:p.room.n||1,pl:[{n:p.name,av:p.av}],via:p.name})}});
     var pub=live.filter(function(r){return r.vis==='public'&&!seen[r.code]});
@@ -166,6 +170,8 @@
       if(kind==='none'){dead[code]=1;if(C&&C.db)C.db.collection('rooms').doc(code).delete().catch(function(){});lists();PP.toast(T('Ce salon est fermé, il est retiré de la liste'),'warn')}else PP.toast(err,'warn');return}sfx.play('win');render()})}
   function watchDir(){if(dirUn||!C||!C.whenReady)return;C.whenReady(function(db){if(dirUn)return;dirUn=db.collection('rooms').where('t','>',Date.now()-60000).onSnapshot(function(s){dir=[];s.forEach(function(d){dir.push(d.data())});dir.sort(function(a,b){return b.n-a.n});lists()},function(){})})}
   function unwatchDir(){if(dirUn){dirUn();dirUn=null}}
+  /* quand l'hôte ferme ou recharge la page, son salon est retiré tout de suite de la liste */
+  window.addEventListener('pagehide',function(){try{if(net.inRoom()&&net.isHost&&lastPub&&C&&C.db)C.db.collection('rooms').doc(lastPub).delete()}catch(e){}});
   function onlineTxt(){var n=PP.site&&PP.site.online;return n?'<b>'+n+'</b> '+T(n>1?'joueurs en ligne sur le site':'joueur en ligne sur le site'):T('Joueurs en ligne…')}
   function setup(){
     var named=C&&C.name;
