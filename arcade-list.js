@@ -25,7 +25,7 @@ window.ARCADE_LIST=[
   {id:'flap',n:'Envol',sub:'Arcade · ton perso vole entre les cheminées',pl:'1',cat:'pc tel solo',modes:[['solo','Normal','Passages larges'],['hard','Difficile','Plus serré et plus rapide']]},
   {id:'potion',n:'Potions',sub:'Réflexion · range les couleurs dans les fioles',pl:'1',cat:'pc tel solo',modes:[['easy','Facile','4 couleurs'],['mid','Moyen','7 couleurs'],['hard','Difficile','10 couleurs'],['exp','Expert','12 couleurs']]},
   {id:'snakeio',n:'Serpents',sub:'Arène · grandis et avale les plus petits',pl:'1',cat:'pc tel solo',modes:[['solo','Arène','13 serpents'],['big','Grosse arène','20 serpents']]},
-  {id:'chess',img:'thumb-chess.svg?v=1',n:'Échecs',sub:'Stratégie · échec et mat',pl:'1–2',cat:'pc tel solo',modes:[['solo','Solo','Contre l\'ordinateur'],['duel','2 joueurs','Chacun son tour, même écran'],['online','En ligne','Contre un pote du salon']]},
+  {id:'chess',img:'thumb-chess.svg?v=1',n:'Échecs',sub:'Stratégie · chrono, niveaux, 2 plateaux à 4',pl:'1–4',cat:'pc tel solo',modes:[['solo','Solo','Contre l\'ordinateur'],['duel','2 joueurs','Chacun son tour, même écran'],['online','En ligne','À 4 : deux parties en même temps']]},
   {id:'marz',img:'thumb-marz.svg?v=2',n:'Marzoukeur',sub:'Fun · attrape les burgers, enchaîne les combos',pl:'1',cat:'pc tel solo',modes:[['solo','Solo','Le plus de kilos avant la ruine']]}
 ];
 (function(){

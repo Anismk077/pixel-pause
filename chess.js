@@ -1,5 +1,5 @@
 /* Pixel Pause — Échecs : solo contre l'ordinateur, à deux sur le même écran, ou en ligne dans un salon
-   (les deux premiers joueurs jouent, les autres regardent). Toutes les règles : roque, prise en passant,
+   (à 4 dans le salon : deux parties en même temps). Toutes les règles : roque, prise en passant,
    promotion (en dame), échec, mat et pat. */
 (function(){
   'use strict';
@@ -49,57 +49,115 @@
   function search(G,d,a,b){var mv=gen(G);if(!mv.length)return inCheck(G,G.turn)?-99999-d:0;if(!d)return evalG(G);
     mv.sort(function(x,y){return (y.cap?VAL[y.cap.toLowerCase()]:0)-(x.cap?VAL[x.cap.toLowerCase()]:0)});
     for(var i=0;i<mv.length;i++){var v=-search(apply(G,mv[i]),d-1,-b,-a);if(v>=b)return v;if(v>a)a=v}return a}
-  function aiMove(G){var mv=gen(G),best=-1e9,cands=[];mv.forEach(function(m){var v=-search(apply(G,m),2,-1e9,1e9)+Math.random()*8;if(v>best){best=v;cands=[m]}});return cands[0]||mv[0]}
+  /* v33 : niveaux de l'ordi. Facile : regarde 1 coup et se trompe souvent. Moyen : 2 coups. Difficile : 3 coups. */
+  var LV=['','Facile','Moyen','Difficile'],TMS=[0,3,5,10];
+  function lvl(){var v=PP.store('ch-lv');return v>=1&&v<=3?v:2}
+  function aiMove(G){var mv=gen(G),L=lvl();if(!mv.length)return null;if(L===1&&Math.random()<.3)return mv[Math.floor(Math.random()*mv.length)];
+    var d=L-1,best=-1e9,pick=mv[0],noise=L===1?60:L===2?14:4;mv.forEach(function(m){var v=-search(apply(G,m),d,-1e9,1e9)+Math.random()*noise;if(v>best){best=v;pick=m}});return pick}
 
-  var S,BX=240,BY=30,SQ=60,GLY={k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'};
-  function fresh(){return {G:start(),sel:-1,moves:[],last:null,over:false,me:'w',flip:false,score:{w:0,b:0},names:null,thinking:false}}
-  function mine(C){if(S.over)return false;if(C.mode==='duel')return true;if(C.mode==='solo')return S.G.turn==='w';return S.me===S.G.turn}
+  /* ---------- pièces dessinées (plus de caractères « police ») ---------- */
+  function piece(g,t,cx,cy,s,white){
+    var f=white?'#fbf8f1':'#2a241e',o=white?'#141210':'#e6d6b4',u=s/60;g.save();g.translate(cx,cy+2*u);g.scale(u,u);g.lineJoin='round';g.lineCap='round';g.lineWidth=2.4;g.fillStyle=f;g.strokeStyle=o;
+    function fs(){g.fill();g.stroke()}
+    function base(w){g.beginPath();g.moveTo(-w,22);g.lineTo(w,22);g.lineTo(w-2,15);g.lineTo(-w+2,15);g.closePath();fs()}
+    function body(wb,wt,top){g.beginPath();g.moveTo(-wb,15);g.quadraticCurveTo(-wt*.6,2,-wt,top);g.lineTo(wt,top);g.quadraticCurveTo(wt*.6,2,wb,15);g.closePath();fs()}
+    if(t==='p'){base(13);body(10,4,-4);g.beginPath();g.arc(0,-11,8,0,7);fs()}
+    else if(t==='r'){base(16);body(12,10,-10);g.beginPath();g.moveTo(-14,-10);g.lineTo(-14,-21);g.lineTo(-8,-21);g.lineTo(-8,-16);g.lineTo(-3,-16);g.lineTo(-3,-21);g.lineTo(3,-21);g.lineTo(3,-16);g.lineTo(8,-16);g.lineTo(8,-21);g.lineTo(14,-21);g.lineTo(14,-10);g.closePath();fs()}
+    else if(t==='n'){base(16);g.beginPath();g.moveTo(-11,15);g.quadraticCurveTo(-9,2,-2,-3);g.lineTo(-13,1);g.lineTo(-15,-5);g.lineTo(-5,-15);g.lineTo(-5,-23);g.lineTo(1,-18);g.quadraticCurveTo(15,-14,13,15);g.closePath();fs();g.fillStyle=o;g.beginPath();g.arc(-3,-11,1.8,0,7);g.fill();g.fillStyle=f}
+    else if(t==='b'){base(15);body(11,4,-6);g.beginPath();g.ellipse(0,-13,8,11,0,0,7);fs();g.beginPath();g.moveTo(-3,-17);g.lineTo(4,-10);g.stroke();g.beginPath();g.arc(0,-26,2.6,0,7);fs()}
+    else if(t==='q'){base(17);body(13,9,-6);g.beginPath();g.moveTo(-12,-6);g.lineTo(-16,-22);g.lineTo(-8,-13);g.lineTo(-5,-25);g.lineTo(0,-13);g.lineTo(5,-25);g.lineTo(8,-13);g.lineTo(16,-22);g.lineTo(12,-6);g.closePath();fs();[[-16,-23],[-5,-26],[5,-26],[16,-23]].forEach(function(p){g.beginPath();g.arc(p[0],p[1],2.4,0,7);fs()})}
+    else{base(17);body(13,9,-8);g.beginPath();g.moveTo(-11,-8);g.quadraticCurveTo(-15,-20,0,-19);g.quadraticCurveTo(15,-20,11,-8);g.closePath();fs();g.lineWidth=4.2;g.strokeStyle=o;g.beginPath();g.moveTo(0,-19);g.lineTo(0,-30);g.moveTo(-5,-25.5);g.lineTo(5,-25.5);g.stroke();g.lineWidth=1.8;g.strokeStyle=f;g.beginPath();g.moveTo(0,-19.5);g.lineTo(0,-29.5);g.moveTo(-4.5,-25.5);g.lineTo(4.5,-25.5);g.stroke()}
+    g.restore()}
+
+  /* ---------- partie : un ou deux plateaux (en salon à 3–4, deux parties en même temps) ---------- */
+  var S,CUR=null,BX=220,BY=30,SQ=60,UB={x:742,y:330,w:176,h:40};
+  function tm(){return S&&S.tm||0}
+  function newBoard(names){var t=tm()*60;return {G:start(),last:null,hist:[],over:false,res:'',names:names||null,clock:{w:t,b:t},sc:{w:0,b:0}}}
+  function mb(){return S.bd[S.bi]}
+  function local(C){return C.mode!=='online'}
+  function mine(C){var b=mb();if(b.over)return false;if(C.mode==='duel')return true;if(C.mode==='solo')return b.G.turn==='w';return S.me===b.G.turn}
   function sqAt(x,y){var c=Math.floor((x-BX)/SQ),r=Math.floor((y-BY)/SQ);if(c<0||c>7||r<0||r>7)return -1;if(S.flip){r=7-r;c=7-c}return r*8+c}
   function xy(sq){var r=sq>>3,c=sq&7;if(S.flip){r=7-r;c=7-c}return {x:BX+c*SQ,y:BY+r*SQ}}
-  function pname(C,c){if(C.mode==='solo')return c==='w'?'Toi':'L\'ordi';if(S.names)return S.names[c==='w'?0:1]||(c==='w'?'Blancs':'Noirs');return c==='w'?'Blancs':'Noirs'}
-  function play(C,m,remote){S.G=apply(S.G,m);S.last=m;S.sel=-1;S.moves=[];sfx.play(m.cap?'hit':'ui');if(m.cap)C.shake(3);
-    if(C.mode==='online'&&!remote)C.net.relay({t:'ch',f:m.f,to:m.t});
-    var legal=gen(S.G),chk=inCheck(S.G,S.G.turn);
-    if(!legal.length){S.over=true;var winner=chk?(S.G.turn==='w'?'b':'w'):null;
-      if(winner){S.score[winner]++;C.pop('ÉCHEC ET MAT !',RED);if((C.mode==='solo'&&winner==='w')||(C.mode==='online'&&S.me===winner))C.win();sfx.play((C.mode==='solo'&&winner!=='w')||(C.mode==='online'&&S.me!==winner)?'lose':'win')}else C.pop('PAT',YEL);
-      setTimeout(function(){C.over(winner?pname(C,winner)+' gagne !':'Pat : égalité',winner?'Échec et mat.':'Plus aucun coup possible, mais pas d\'échec.','Rejouer',function(){again(C,true)})},1100);return}
-    if(chk){C.pop('ÉCHEC',RED,'54px');sfx.play('tick')}
+  function pname(C,b,c){if(C.mode==='solo')return c==='w'?'Toi':'L\'ordi';if(b.names)return b.names[c==='w'?0:1]||(c==='w'?'Blancs':'Noirs');return c==='w'?'Blancs':'Noirs'}
+  function fmt(t){t=Math.max(0,Math.ceil(t));return Math.floor(t/60)+':'+('0'+t%60).slice(-2)}
+  function finish(C,bi,winner,why){var b=S.bd[bi];if(b.over)return;b.over=true;b.res=why;if(winner)b.sc[winner]++;if(bi!==S.bi)return;S.sel=-1;S.moves=[];
+    var iWin=winner&&((C.mode==='solo'&&winner==='w')||(C.mode==='online'&&S.me===winner)),iLose=winner&&((C.mode==='solo'&&winner==='b')||(C.mode==='online'&&S.me!=='x'&&S.me!==winner));
+    if(winner){C.pop(why==='temps'?'TEMPS ÉCOULÉ !':'ÉCHEC ET MAT !',RED);if(iWin)C.win();sfx.play(iLose?'lose':'win')}else C.pop('PAT',YEL);
+    setTimeout(function(){if(!S||S.bd[bi]!==b)return;C.over(winner?pname(C,b,winner)+' gagne !':'Pat : égalité',(why==='temps'?'Le temps est écoulé.':winner?'Échec et mat.':'Plus aucun coup possible, mais pas d\'échec.')+'<br>Score : <b>'+b.sc.w+' – '+b.sc.b+'</b>','Rejouer',function(){again(C,bi,true)})},1100)}
+  function play(C,bi,m,remote){var b=S.bd[bi],isMine=bi===S.bi;if(b.over)return;b.hist.push({G:b.G,last:b.last});b.G=apply(b.G,m);b.last=m;
+    if(isMine){S.sel=-1;S.moves=[];sfx.play(m.cap?'hit':'ui');if(m.cap)C.shake(3)}
+    if(C.mode==='online'&&!remote)C.net.relay({t:'ch',b:bi,f:m.f,to:m.t});
+    var legal=gen(b.G),chk=inCheck(b.G,b.G.turn);
+    if(!legal.length){finish(C,bi,chk?(b.G.turn==='w'?'b':'w'):null,'mat');return}
+    if(chk&&isMine){C.pop('ÉCHEC',RED,'54px');sfx.play('tick')}
     aiTurn(C)}
-  function again(C,send){var sc=S.score,nm=S.names,me=S.me,fl=S.flip;S=fresh();S.score=sc;S.names=nm;S.me=me;S.flip=fl;C.go();if(send&&C.mode==='online'&&C.net.isHost)C.net.relay({t:'chnew'});aiTurn(C)}
-  function aiTurn(C){if(C.mode!=='solo'||S.G.turn!=='b'||S.over||S.thinking)return;S.thinking=true;setTimeout(function(){var m=aiMove(S.G);S.thinking=false;if(m&&!S.over)play(C,m)},350)}
-  function click(C,sq){if(sq<0||!mine(C))return;var p=S.G.B[sq];
-    var mv=S.moves.filter(function(m){return m.t===sq})[0];if(mv){play(C,mv);return}
-    if(p&&col(p)===S.G.turn){S.sel=sq;S.moves=gen(S.G).filter(function(m){return m.f===sq});sfx.play('tick')}else{S.sel=-1;S.moves=[]}}
+  function again(C,bi,send){var o=S.bd[bi],n=newBoard(o.names);n.sc=o.sc;S.bd[bi]=n;if(bi===S.bi){S.sel=-1;S.moves=[];C.go()}if(send&&C.mode==='online')C.net.relay({t:'chnew',b:bi});aiTurn(C)}
+  function aiTurn(C){var b=mb();if(C.mode!=='solo'||b.G.turn!=='b'||b.over||S.thinking)return;S.thinking=true;setTimeout(function(){S.thinking=false;if(!S||mb()!==b||b.over||b.G.turn!=='b')return;var m=aiMove(b.G);if(m)play(C,S.bi,m)},380)}
+  function undo(C){var b=mb();if(!local(C)||b.over||S.thinking||!b.hist.length)return;var n=C.mode==='solo'?(b.G.turn==='w'?2:1):1;while(n-->0&&b.hist.length){var h=b.hist.pop();b.G=h.G;b.last=h.last}S.sel=-1;S.moves=[];sfx.play('ui');aiTurn(C)}
+  function click(C,sq){if(sq<0||!mine(C))return;var b=mb(),p=b.G.B[sq];
+    var mv=S.moves.filter(function(m){return m.t===sq})[0];if(mv){play(C,S.bi,mv);return}
+    if(p&&col(p)===b.G.turn){S.sel=sq;S.moves=gen(b.G).filter(function(m){return m.f===sq});sfx.play('tick')}else{S.sel=-1;S.moves=[]}}
+  /* réglages dans l'écran de départ : niveau de l'ordi et temps par joueur */
+  function opt(lbl,attr,vals,cur,dis){return '<div style="margin-top:10px"><small style="opacity:.75;display:block;margin-bottom:4px">'+lbl+'</small>'+vals.map(function(v){var on=v[0]===cur;return '<button type="button" '+attr+'="'+v[0]+'"'+(dis?' disabled':'')+' style="font:700 12px \'IBM Plex Mono\',monospace;padding:7px 11px;margin:2px;border:2px solid #f1ece2;cursor:'+(dis?'default':'pointer')+';background:'+(on?'#f1ece2':'transparent')+';color:'+(on?'#141210':'#f1ece2')+';opacity:'+(dis&&!on?.4:1)+'">'+v[1]+'</button>'}).join('')+'</div>'}
+  function intro(C){var np=C.mode==='online'?C.net.players.length:0,host=C.mode!=='online'||C.net.isHost,h;
+    if(C.mode==='solo')h='Tu joues les blancs contre l\'ordinateur. Mets le roi adverse échec et mat.';
+    else if(C.mode==='duel')h='Blancs contre noirs, chacun son tour sur le même écran.';
+    else h=(S.me==='x'?'Tu regardes la partie.':'Tu joues les <b>'+(S.me==='w'?'blancs (tu commences)':'noirs')+'</b> contre <b>'+PP.esc(mb().names[S.me==='w'?1:0])+'</b>.')+(S.bd.length>1?'<br>Vous êtes '+np+' : <b>deux parties en même temps</b>, l\'autre plateau s\'affiche en petit à droite.':'');
+    if(C.mode==='solo')h+=opt('Niveau de l\'ordinateur','data-ch-lv',[[1,'Facile'],[2,'Moyen'],[3,'Difficile']],lvl());
+    h+=opt('Temps par joueur'+(host?'':' (choisi par le chef)'),'data-ch-tm',TMS.map(function(v){return [v,v?v+' min':'Sans chrono']}),tm(),!host);
+    C.over('Échecs',h,'Jouer')}
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('[data-ch-lv],[data-ch-tm]');if(!a||!CUR||!S||PP.cur()!=='chess')return;e.preventDefault();var C=CUR;
+    if(a.dataset.chLv)PP.store('ch-lv',+a.dataset.chLv);
+    if(a.dataset.chTm!==undefined&&a.hasAttribute('data-ch-tm')){if(C.mode==='online'&&!C.net.isHost)return;setTm(+a.dataset.chTm);if(C.mode==='online')C.net.relay({t:'chcfg',tm:S.tm})}
+    sfx.play('ui');intro(C)});
+  function setTm(v){S.tm=v;PP.store('ch-tm',v);S.bd.forEach(function(b){if(!b.hist.length){b.clock.w=b.clock.b=v*60}})}
   PP.arcade({id:'chess',
-    setup:function(C){S=fresh();
-      if(C.mode==='online'){var pl=C.net.players,ids=pl.map(function(p){return p.id}),i=ids.indexOf(C.net.me.id);S.me=i===0?'w':i===1?'b':'x';S.flip=S.me==='b';S.names=[pl[0]?pl[0].name:'Blancs',pl[1]?pl[1].name:'Noirs'];
-        C.listen(function(m){if(m.t!=='rel')return;var d=m.d;if(d.t==='ch'){var mv=gen(S.G).filter(function(x){return x.f===d.f&&x.t===d.to})[0];if(mv)play(C,mv,true)}if(d.t==='chnew')again(C,false)})}
-      C.keysText('Clique une pièce, puis la case où l\'envoyer · les points montrent les coups possibles');
-      C.over('Échecs',C.mode==='solo'?'Tu joues les blancs contre l\'ordinateur. Mets le roi adverse échec et mat.':C.mode==='duel'?'Blancs contre noirs, chacun son tour sur le même écran.':(S.me==='x'?'Les deux premiers joueurs du salon s\'affrontent : tu regardes la partie.':'Tu joues les <b>'+(S.me==='w'?'blancs (tu commences)':'noirs')+'</b> contre '+PP.esc(S.names[S.me==='w'?1:0])+'.'),'Jouer')},
-    start:function(C){aiTurn(C)},
-    mouse:function(C,t,x,y){S.hov=sqAt(x,y);if(t==='down'&&C.running)click(C,S.hov)},
-    step:function(C){C.hud('<span>Trait aux <b>'+(S.G.turn==='w'?'blancs':'noirs')+'</b></span><span>Score <b>'+S.score.w+' – '+S.score.b+'</b></span>')},
-    draw:function(C){var g=C.g;g.fillStyle=INK;g.fillRect(0,0,960,540);
+    setup:function(C){CUR=C;S={bd:[],bi:0,me:'w',flip:false,sel:-1,moves:[],hov:-1,thinking:false,tm:PP.store('ch-tm')||0};
+      if(C.mode==='online'){var pl=C.net.players.slice(0,4),ids=pl.map(function(p){return p.id}),i=C.net.players.map(function(p){return p.id}).indexOf(C.net.me.id),nb=pl.length>=4?2:1;
+        for(var k=0;k<nb;k++)S.bd.push(newBoard([pl[k*2]?pl[k*2].name:'Blancs',pl[k*2+1]?pl[k*2+1].name:'Noirs']));
+        if(i>=0&&i<nb*2){S.bi=i>>1;S.me=i%2?'b':'w'}else{S.bi=0;S.me='x'}S.flip=S.me==='b';
+        C.listen(function(m){if(m.t!=='rel'||!S)return;var d=m.d,b=S.bd[d.b||0];
+          if(d.t==='ch'&&b){var mv=gen(b.G).filter(function(x){return x.f===d.f&&x.t===d.to})[0];if(mv)play(C,d.b||0,mv,true)}
+          if(d.t==='chnew'&&b)again(C,d.b||0,false);
+          if(d.t==='chflag'&&b)finish(C,d.b||0,d.w,'temps');
+          if(d.t==='chcfg'&&!C.net.isHost){setTm(+d.tm||0);if(!C.running)intro(C)}
+          if(d.t==='chask'&&C.net.isHost)C.net.relay({t:'chcfg',tm:S.tm})});
+        /* le chrono est celui du chef : il l'envoie à tout le monde, et les invités le demandent en arrivant */
+        if(C.net.isHost)C.net.relay({t:'chcfg',tm:S.tm});else C.net.relay({t:'chask'})}
+      else S.bd.push(newBoard(null));
+      C.keysText('Clique une pièce, puis la case où l\'envoyer · les points montrent les coups possibles'+(local(C)?' · <kbd>Z</kbd> annule le dernier coup':''));intro(C)},
+    start:function(C){S.lt=0;S.bd.forEach(function(b){if(!b.hist.length){b.clock.w=b.clock.b=tm()*60}});aiTurn(C)},
+    key:function(C,code,down){if(down&&C.running&&(code==='KeyZ'||code==='KeyW'||code==='Backspace'))undo(C)},
+    mouse:function(C,t,x,y){S.hov=sqAt(x,y);S.hu=local(C)&&x>UB.x&&x<UB.x+UB.w&&y>UB.y&&y<UB.y+UB.h;if(t==='down'&&C.running){if(S.hu)undo(C);else click(C,S.hov)}
+      C.cv.style.cursor=C.running&&(S.hu||(S.hov>=0&&mine(C)))?'pointer':'default'},
+    step:function(C,dt){var b0=mb(),now=performance.now();dt=Math.min(2,(now-(S.lt||now))/1000);S.lt=now;/* vrai temps écoulé : le chrono ne ralentit pas si l'ordi rame */
+      if(tm())S.bd.forEach(function(b,bi){if(b.over||!b.hist.length)return;var c=b.G.turn;b.clock[c]-=dt;if(b.clock[c]<=0){b.clock[c]=0;
+        if(local(C))finish(C,bi,c==='w'?'b':'w','temps');else if(bi===S.bi&&S.me===c){var w=c==='w'?'b':'w';C.net.relay({t:'chflag',b:bi,w:w});finish(C,bi,w,'temps')}}});
+      C.hud('<span>Trait aux <b>'+(b0.G.turn==='w'?'blancs':'noirs')+'</b></span><span>Score <b>'+b0.sc.w+' – '+b0.sc.b+'</b></span>'+(tm()?'<span>Chrono <b>'+tm()+' min</b></span>':''))},
+    draw:function(C){var g=C.g,b=mb(),G=b.G;g.fillStyle=INK;g.fillRect(0,0,960,540);
       g.fillStyle='rgba(0,0,0,.5)';g.fillRect(BX+6,BY+6,SQ*8,SQ*8);
-      var ck=inCheck(S.G,S.G.turn)?S.G.B.indexOf(S.G.turn==='w'?'K':'k'):-1;
-      for(var sq=0;sq<64;sq++){var P=xy(sq),r=sq>>3,c=sq&7,light=(r+c)%2===0;g.fillStyle=light?'#efe2c8':'#7d5a3a';g.fillRect(P.x,P.y,SQ,SQ);
-        if(S.last&&(sq===S.last.f||sq===S.last.t)){g.fillStyle='rgba(243,198,35,.38)';g.fillRect(P.x,P.y,SQ,SQ)}
-        if(sq===S.sel){g.fillStyle='rgba(63,169,255,.45)';g.fillRect(P.x,P.y,SQ,SQ)}
+      var ck=inCheck(G,G.turn)?G.B.indexOf(G.turn==='w'?'K':'k'):-1,sq,P;
+      for(sq=0;sq<64;sq++){P=xy(sq);var r=sq>>3,c=sq&7,light=(r+c)%2===0;g.fillStyle=light?'#ecdfc4':'#8a6744';g.fillRect(P.x,P.y,SQ,SQ);
+        if(b.last&&(sq===b.last.f||sq===b.last.t)){g.fillStyle='rgba(243,198,35,.4)';g.fillRect(P.x,P.y,SQ,SQ)}
+        if(sq===S.sel){g.fillStyle='rgba(63,169,255,.5)';g.fillRect(P.x,P.y,SQ,SQ)}
         if(sq===ck){var rg=g.createRadialGradient(P.x+SQ/2,P.y+SQ/2,4,P.x+SQ/2,P.y+SQ/2,SQ*.6);rg.addColorStop(0,'rgba(226,54,27,.9)');rg.addColorStop(1,'rgba(226,54,27,0)');g.fillStyle=rg;g.fillRect(P.x,P.y,SQ,SQ)}
         if(C.running&&sq===S.hov&&mine(C)){g.strokeStyle='rgba(20,18,16,.5)';g.lineWidth=3;g.strokeRect(P.x+1.5,P.y+1.5,SQ-3,SQ-3)}}
-      /* coordonnées */
-      for(var k=0;k<8;k++){var fl=S.flip?7-k:k;ag.mono(g,'abcdefgh'[fl],BX+k*SQ+SQ/2,BY+SQ*8+12,11,'rgba(241,236,226,.6)');ag.mono(g,String(8-fl),BX-12,BY+k*SQ+SQ/2,11,'rgba(241,236,226,.6)')}
-      g.textAlign='center';g.textBaseline='middle';g.font='46px "Segoe UI Symbol","Apple Symbols","Noto Sans Symbols 2","DejaVu Sans",serif';
-      for(sq=0;sq<64;sq++){var p=S.G.B[sq];if(!p)continue;var Q=xy(sq),wh=col(p)==='w',gl=GLY[p.toLowerCase()]+'︎';
-        g.lineWidth=3;g.strokeStyle=wh?'#141210':'#efe2c8';g.strokeText(gl,Q.x+SQ/2,Q.y+SQ/2+3);g.fillStyle=wh?'#fbf8f1':'#1a1612';g.fillText(gl,Q.x+SQ/2,Q.y+SQ/2+3)}
-      S.moves.forEach(function(m){var M=xy(m.t);g.fillStyle=m.cap?'rgba(226,54,27,.55)':'rgba(20,18,16,.35)';g.beginPath();if(m.cap){g.lineWidth=5;g.strokeStyle='rgba(226,54,27,.75)';g.arc(M.x+SQ/2,M.y+SQ/2,SQ*.42,0,7);g.stroke()}else{g.arc(M.x+SQ/2,M.y+SQ/2,SQ*.14,0,7);g.fill()}});
-      /* panneaux : joueurs, pièces prises */
-      function side(c,y){var on=C.running&&!S.over&&S.G.turn===c;if(on){g.fillStyle='rgba(241,236,226,.08)';ag.rr(g,22,y-34,196,68,10);g.fill()}
-        ag.txt(g,String(pname(C,c)).slice(0,12).toUpperCase(),120,y-8,26,on?YEL:CR);ag.mono(g,c==='w'?'BLANCS':'NOIRS',120,y+20,12,'rgba(241,236,226,.6)')}
-      side(S.flip?'w':'b',90);side(S.flip?'b':'w',450);
-      var cnt={},have={};S.G.B.forEach(function(p){if(p)have[p]=(have[p]||0)+1});var full={p:8,n:2,b:2,r:2,q:1};
-      ['w','b'].forEach(function(c,ci){var s='',x=740,y=ci?(S.flip?90:450):(S.flip?450:90);Object.keys(full).forEach(function(t){var pc=c==='w'?t.toUpperCase():t,lost=Math.max(0,full[t]-(have[pc]||0));for(var i=0;i<lost;i++)s+=GLY[t]+'︎'});
-        g.font='22px "Segoe UI Symbol","Apple Symbols","Noto Sans Symbols 2",serif';g.fillStyle=c==='w'?'#fbf8f1':'#9a8c78';g.textAlign='left';g.fillText(s.slice(0,32),x,y);g.textAlign='center'});
-      if(C.running&&!S.over)ag.mono(g,mine(C)?'À toi de jouer':C.mode==='solo'?'L\'ordi réfléchit…':'Au tour de '+pname(C,S.G.turn),840,270,14,YEL)}
+      g.strokeStyle='#f1ece2';g.lineWidth=3;g.strokeRect(BX-1.5,BY-1.5,SQ*8+3,SQ*8+3);
+      for(var k=0;k<8;k++){var fl=S.flip?7-k:k;ag.mono(g,'abcdefgh'[fl],BX+k*SQ+SQ/2,BY+SQ*8+13,11,'rgba(241,236,226,.6)');ag.mono(g,String(8-fl),BX-13,BY+k*SQ+SQ/2,11,'rgba(241,236,226,.6)')}
+      for(sq=0;sq<64;sq++){var p=G.B[sq];if(!p)continue;P=xy(sq);piece(g,p.toLowerCase(),P.x+SQ/2,P.y+SQ/2,SQ,col(p)==='w')}
+      S.moves.forEach(function(m){var M=xy(m.t);g.beginPath();if(m.cap){g.lineWidth=5;g.strokeStyle='rgba(226,54,27,.8)';g.arc(M.x+SQ/2,M.y+SQ/2,SQ*.43,0,7);g.stroke()}else{g.fillStyle='rgba(20,18,16,.38)';g.arc(M.x+SQ/2,M.y+SQ/2,SQ*.15,0,7);g.fill()}});
+      /* joueurs et chronos à gauche */
+      function side(c,y){var on=C.running&&!b.over&&G.turn===c;g.fillStyle=on?'rgba(241,236,226,.1)':'rgba(241,236,226,.04)';ag.rr(g,14,y-44,184,tm()?96:70,10);g.fill();
+        piece(g,'k',40,y-12,34,c==='w');ag.txt(g,String(pname(C,b,c)).slice(0,11).toUpperCase(),118,y-16,19,on?YEL:CR);ag.mono(g,(c==='w'?'BLANCS':'NOIRS')+(C.mode==='solo'&&c==='b'?' · '+LV[lvl()].toUpperCase():''),118,y+8,11,'rgba(241,236,226,.6)');
+        if(tm())ag.mono(g,fmt(b.clock[c]),106,y+34,22,b.clock[c]<20?RED:on?YEL:CR)}
+      side(S.flip?'w':'b',84);side(S.flip?'b':'w',tm()?430:456);
+      /* à droite : à qui de jouer, bouton annuler, et l'autre plateau en petit */
+      if(C.running&&!b.over)ag.mono(g,mine(C)?'À TOI DE JOUER':C.mode==='solo'?'L\'ORDI RÉFLÉCHIT…':'AU TOUR DE '+String(pname(C,b,G.turn)).slice(0,10).toUpperCase(),830,S.bd.length>1?44:250,13,YEL);
+      if(local(C)){var off=!b.hist.length||b.over,hv=S.hu&&!off&&C.running;g.fillStyle=off?'#5a554e':hv?RED:CR;ag.rr(g,UB.x,UB.y,UB.w,UB.h,8);g.fill();ag.mono(g,'↶ ANNULER (Z)',UB.x+UB.w/2,UB.y+UB.h/2,12,off?'#8d867c':hv?CR:INK)}
+      if(S.bd.length>1){var ob=S.bd[1-S.bi],q=26,ox=726,oy=110;ag.mono(g,'AUTRE PLATEAU',ox+q*4,oy-18,11,'rgba(241,236,226,.7)');
+        for(sq=0;sq<64;sq++){var r2=sq>>3,c2=sq&7;g.fillStyle=(r2+c2)%2===0?'#ecdfc4':'#8a6744';g.fillRect(ox+c2*q,oy+r2*q,q,q);if(ob.last&&(sq===ob.last.f||sq===ob.last.t)){g.fillStyle='rgba(243,198,35,.4)';g.fillRect(ox+c2*q,oy+r2*q,q,q)}var p2=ob.G.B[sq];if(p2)piece(g,p2.toLowerCase(),ox+c2*q+q/2,oy+r2*q+q/2,q,col(p2)==='w')}
+        g.strokeStyle='rgba(241,236,226,.6)';g.lineWidth=2;g.strokeRect(ox-1,oy-1,q*8+2,q*8+2);
+        ag.mono(g,String(ob.names[1]).slice(0,10)+(tm()?' '+fmt(ob.clock.b):''),ox+q*4,oy+q*8+16,11,ob.G.turn==='b'&&!ob.over?YEL:CR);ag.mono(g,String(ob.names[0]).slice(0,10)+(tm()?' '+fmt(ob.clock.w):''),ox+q*4,oy+q*8+34,11,ob.G.turn==='w'&&!ob.over?YEL:CR);
+        if(ob.over)ag.mono(g,'PARTIE FINIE · '+ob.sc.w+' – '+ob.sc.b,ox+q*4,oy+q*8+54,11,RED)}}
   });
 })();
