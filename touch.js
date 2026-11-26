@@ -16,6 +16,7 @@
   var VP={
     tanks:[['u','KeyW','▲'],['l','KeyA','◀'],['d','KeyS','▼'],['r','KeyD','▶'],['x','Space','TIR']],
     maze:[['u','ArrowUp','▲'],['l','ArrowLeft','◀'],['d','ArrowDown','▼'],['r','ArrowRight','▶']],
+    saut:[['l','ArrowLeft','◀'],['r','ArrowRight','▶'],['u','ArrowUp','▲'],['d','ArrowDown','▼'],['x','Space','SAUT'],['x','KeyF','FEU']],
     hoops:[['u','KeyW','▲'],['l','KeyA','◀'],['d','KeyS','▼'],['r','KeyD','▶'],['x','Space','TIR']]
   };
   var KEY={KeyW:'z',KeyA:'q',KeyS:'s',KeyD:'d',Space:' ',ArrowUp:'ArrowUp',ArrowDown:'ArrowDown',ArrowLeft:'ArrowLeft',ArrowRight:'ArrowRight'};

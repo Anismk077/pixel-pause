@@ -30,7 +30,7 @@ window.ARCADE_LIST=[
   {id:'tours',img:'thumb-tours.svg?v=1',n:'Guerre des Tours',sub:'Stratégie · cartes, tours et énergie en temps réel',pl:'1',cat:'pc tel solo',modes:[['easy','Facile','L\'ordi réfléchit lentement'],['mid','Moyen','Un bon adversaire'],['hard','Difficile','Il vise ta tour la plus faible']]},
   {id:'term',img:'thumb-term.svg?v=1',n:'Terminal',sub:'Apprends les commandes Linux · faux terminal, vraies commandes',pl:'1',cat:'pc solo',modes:[['story','Histoire','16 missions pour tout apprendre'],['chrono','Chrono','60 secondes, un max de commandes']]},
   {id:'blocs',img:'thumb-blocs.svg?v=1',n:'Blocs',sub:'Réflexion · des pièces tombent, remplis des lignes',pl:'1',cat:'pc solo',modes:[['marathon','Marathon','Ça accélère sans fin'],['sprint','Sprint','30 lignes, chrono'],['chrono','2 minutes','Un max de points']]},
-  {id:'saut',img:'thumb-saut.svg?v=1',n:'Saute-Pixel',sub:'Plateformes · cours, saute, écrase les gluants',pl:'1',cat:'pc solo',modes:[['run','Aventure','3 mondes, 5 vies'],['hard','Expert','Une seule vie']]},
+  {id:'saut',img:'thumb-saut.svg?v=1',n:'Saute-Pixel',sub:'Plateformes · 4 mondes, des boss, à 1 ou 2',pl:'1-2',cat:'pc solo',modes:[['run','Aventure','4 mondes, 5 vies'],['duo','2 joueurs','Même clavier'],['hard','Expert','Une seule vie']]},
   {id:'marz',img:'thumb-marz.svg?v=2',n:'Marzoukeur',sub:'Fun · attrape les burgers, enchaîne les combos',pl:'1',cat:'pc tel solo',modes:[['solo','Solo','Le plus de kilos avant la ruine']]}
 ];
 (function(){
