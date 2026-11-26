@@ -160,9 +160,10 @@
     el.innerHTML=h;el.querySelectorAll('[data-join]').forEach(function(b){b.onclick=function(){joinCode(b.dataset.join,b)}});
   }
   function joinCode(code,b){var n=(C&&C.name)||($('room-name')&&$('room-name').value.trim())||PP.myName()||'Joueur';PP.setName(n);if(b){b.disabled=true;b.textContent=T('Connexion…')}
-    net.join(code,n,function(err){if(err){if(b){b.disabled=false;b.textContent=T('Rejoindre')}
-      /* salon fermé : on le retire de la liste pour tout le monde */
-      if(/Aucun salon|impossible/i.test(err)){dead[code]=1;if(C&&C.db)C.db.collection('rooms').doc(code).delete().catch(function(){});lists();PP.toast(T('Ce salon est fermé, il est retiré de la liste'),'warn')}else PP.toast(err,'warn');return}sfx.play('win');render()})}
+    net.join(code,n,function(err,kind){if(err){if(b){b.disabled=false;b.textContent=T('Rejoindre')}
+      /* salon vraiment fermé (le serveur dit qu'il n'existe plus) : on le retire de la liste.
+         v25 : avant, une simple connexion lente le supprimait pour tout le monde, et le pote ne pouvait plus le voir */
+      if(kind==='none'){dead[code]=1;if(C&&C.db)C.db.collection('rooms').doc(code).delete().catch(function(){});lists();PP.toast(T('Ce salon est fermé, il est retiré de la liste'),'warn')}else PP.toast(err,'warn');return}sfx.play('win');render()})}
   function watchDir(){if(dirUn||!C||!C.whenReady)return;C.whenReady(function(db){if(dirUn)return;dirUn=db.collection('rooms').where('t','>',Date.now()-60000).onSnapshot(function(s){dir=[];s.forEach(function(d){dir.push(d.data())});dir.sort(function(a,b){return b.n-a.n});lists()},function(){})})}
   function unwatchDir(){if(dirUn){dirUn();dirUn=null}}
   function onlineTxt(){var n=PP.site&&PP.site.online;return n?'<b>'+n+'</b> '+T(n>1?'joueurs en ligne sur le site':'joueur en ligne sur le site'):T('Joueurs en ligne…')}

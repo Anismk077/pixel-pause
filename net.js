@@ -4,6 +4,12 @@
 PP.net=(function(){
   'use strict';
   var PREFIX='pixelpause-v2-';
+  /* v25 : serveurs STUN/TURN en plus de ceux de PeerJS. Sans TURN, deux joueurs derrière des box/4G « strictes »
+     ne peuvent pas se connecter (c'est ce qui empêchait certains potes de rejoindre). TURN en TCP 443 passe presque partout. */
+  var ICE=[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302','stun:stun.cloudflare.com:3478']},
+    {urls:['turn:eu-0.turn.peerjs.com:3478','turn:us-0.turn.peerjs.com:3478'],username:'peerjs',credential:'peerjsp'},
+    {urls:['turn:openrelay.metered.ca:80','turn:openrelay.metered.ca:443','turn:openrelay.metered.ca:443?transport=tcp'],username:'openrelayproject',credential:'openrelayproject'}];
+  function opts(){var c={iceServers:ICE,sdpSemantics:'unified-plan'};if(window.PP_RELAY_ONLY)c.iceTransportPolicy='relay';return {debug:0,config:c}}
   var peer=null,conns={},hostConn=null,isHost=false,code=null,me={id:null,name:''},players=[],handlers=[],statusCb=null,seq=0;
 
   function emit(msg,from){handlers.forEach(function(h){try{h(msg,from)}catch(e){console.error(e)}})}
@@ -20,7 +26,7 @@ PP.net=(function(){
     var tries=0;
     (function attempt(){
       var c=(want&&want!=='pre'?want:null)||String(Math.floor(100+Math.random()*900));
-      var p=new Peer(PREFIX+c,{debug:0});
+      var p=new Peer(PREFIX+c,opts());
       var done=false;
       p.on('open',function(){
         done=true;if(want==='pre'){cb(null,c,p);return}adopt(p,c,name);cb(null,c);
@@ -49,11 +55,15 @@ PP.net=(function(){
       conn.on('data',function(d){
         if(!d||typeof d!=='object')return;
         if(d.t==='join'){
-          var nm=String(d.name||'').slice(0,14)||'Joueur';
+          var nm=String(d.name||'').slice(0,14)||'Joueur',ds=typeof d.sid==='string'?d.sid.slice(0,40):null,du=typeof d.uid==='string'?d.uid.slice(0,40):null;
           if(players.some(function(p){return p.id===conn.peer}))return;
+          /* v25 : même navigateur (ou même compte) déjà dans le salon → on remplace l'ancienne connexion au lieu d'ajouter un doublon */
+          players.filter(function(p){return p.id!=='host'&&((ds&&p.sid===ds)||(du&&p.uid===du))}).forEach(function(old){players=players.filter(function(q){return q!==old});var oc=conns[old.id];delete conns[old.id];try{oc&&oc.close()}catch(e){}emit({t:'left',id:old.id},'host')});
+          /* deux joueurs différents avec le même pseudo : le second devient « Pseudo 2 » */
+          var base=nm,k=2;while(players.some(function(p){return p.name.toLowerCase()===nm.toLowerCase()}))nm=base.slice(0,12)+' '+(k++);
           if(banned[nm.toLowerCase()]){try{conn.send({t:'kicked',ban:1})}catch(e){}setTimeout(function(){try{conn.close()}catch(e){}},300);return}
           var gw=gate?gate(d):true;if(gw!==true){try{conn.send({t:'kicked',why:gw||'friends'})}catch(e){}setTimeout(function(){try{conn.close()}catch(e){}},300);return}
-          players.push({id:conn.peer,name:nm,av:d.av||null,uid:typeof d.uid==='string'?d.uid.slice(0,40):null});
+          players.push({id:conn.peer,name:nm,av:d.av||null,uid:du,sid:ds});
           conn.send({t:'hello',id:conn.peer,players:players,code:code});
           broadcast({t:'players',players:players});
           emit({t:'players',players:players},'host');
@@ -79,20 +89,27 @@ PP.net=(function(){
   function to(id,msg){if(id==='host')emit(msg,'host');else if(conns[id])try{conns[id].send(msg)}catch(e){}}
 
   /* ---- Invité ---- */
-  function join(c,name,cb){
+  /* v25 : si la connexion échoue pour une raison réseau, on retente une fois tout seul avant d'afficher l'erreur */
+  /* v25 : un seul « rejoindre » à la fois : cliquer 10 fois ne crée plus 10 joueurs dans le salon */
+  var joining=null,pendingP=null;
+  function join(c,name,cb){if(joining===c)return;joining=c;var fin=function(err,kind){joining=null;cb(err,kind)};
+    join1(c,name,function(err,kind){if(err&&(kind==='slow'||kind==='net')){status('Nouvelle tentative de connexion…');join1(c,name,fin);return}fin(err,kind)})}
+  function sid(){try{var s=localStorage.getItem('pp-sid');if(!s){s=Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem('pp-sid',s)}return s}catch(e){return null}}
+  function join1(c,name,cb){
     if(!ready())return cb('PeerJS ne s\'est pas chargé. Vérifie ta connexion Internet.');
     leave(migrating);
-    var p=new Peer(undefined,{debug:0}),done=false,timer,gone=false;
+    if(pendingP){try{pendingP.destroy()}catch(e){}}
+    var p=new Peer(undefined,opts()),done=false,timer,gone=false;pendingP=p;
     p.on('open',function(){
       var conn=p.connect(PREFIX+c,{reliable:true});
-      timer=setTimeout(function(){if(!done){done=true;try{p.destroy()}catch(e){};cb('Aucun salon avec le code '+c+'. Vérifie le code, et que l\'hôte a bien sa page ouverte.')}},8000);
+      timer=setTimeout(function(){if(!done){done=true;try{p.destroy()}catch(e){};cb('Connexion au salon '+c+' trop longue. Réessaie ; si ça recommence, demande à l\'hôte de recharger sa page et de recréer le salon.','slow')}},16000);
       conn.on('open',function(){
-        conn.send({t:'join',name:name,av:myAv,uid:myUid()});
+        conn.send({t:'join',name:name,av:myAv,uid:myUid(),sid:sid()});
       });
       conn.on('data',function(d){
         if(!d||typeof d!=='object')return;
         if(d.t==='hello'&&!done){
-          done=true;clearTimeout(timer);peer=p;hostConn=conn;isHost=false;code=d.code;me={id:d.id,name:name};players=d.players;
+          done=true;clearTimeout(timer);if(pendingP===p)pendingP=null;peer=p;hostConn=conn;isHost=false;code=d.code;me={id:d.id,name:name};players=d.players;
           cb(null,code);return;
         }
         if(d.t==='players')players=d.players;
@@ -104,9 +121,9 @@ PP.net=(function(){
       });
       var bye=function(){if(migrating||gone||peer!==p)return;if(done){status('Le salon a été fermé par l\'hôte.');emit({t:'closed'},'host');leave()}};
       conn.on('close',bye);
-      conn.on('error',function(){if(!done){done=true;clearTimeout(timer);cb('Connexion impossible au salon '+c+'.')}else bye()});
+      conn.on('error',function(){if(!done){done=true;clearTimeout(timer);cb('Connexion impossible au salon '+c+'.','net')}else bye()});
     });
-    p.on('error',function(e){if(!done){done=true;clearTimeout(timer);cb(e.type==='peer-unavailable'?'Aucun salon avec le code '+c+'.':'Erreur réseau : '+e.type)}});
+    p.on('error',function(e){if(!done){done=true;clearTimeout(timer);cb(e.type==='peer-unavailable'?'Aucun salon avec le code '+c+'.':'Erreur réseau : '+e.type,e.type==='peer-unavailable'?'none':'net')}});
   }
   /* Invité -> hôte */
   function send(msg){if(isHost)emit(msg,'host');else if(hostConn)try{hostConn.send(msg)}catch(e){}}
