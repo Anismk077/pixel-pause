@@ -12,8 +12,15 @@
     do{shuffle(right)}while(n>2&&right.every(function(c,i){return c===cols[i]}));
     S.n=n;S.left=cols;S.right=right;S.link=[];for(var i=0;i<n;i++)S.link.push(-1);S.used={};S.drag=null;S.doneT=0;S.mixT=S.level>=5?6:0;S.ry=right.map(function(c,i){return ys(n,i)})}
   function fresh(C){S={level:1,score:0,time:C.mode==='zen'?0:60,err:0,over:false,bad:0,spark:[],hov:-1};panel()}
-  function leftAt(x,y){for(var i=0;i<S.n;i++)if(S.link[i]<0&&Math.hypot(x-LX,y-ys(S.n,i))<34)return i;return -1}
-  function rightAt(x,y){for(var i=0;i<S.n;i++)if(Math.abs(x-RX)<60&&Math.abs(y-S.ry[i])<30)return i;return -1}
+  /* v47 : beaucoup plus facile à attraper. Toute la moitié gauche de la ligne attrape le câble, toute la moitié droite
+     vise la prise la plus proche. Et on peut jouer en deux clics (câble puis prise) au lieu de glisser. */
+  function tol(){return Math.max(30,S.n>1?370/(S.n-1)/2:60)}
+  function leftAt(x,y){if(x>440||x<150)return -1;var b=-1,bd=tol();for(var i=0;i<S.n;i++){if(S.link[i]>=0)continue;var d=Math.abs(y-ys(S.n,i));if(d<bd){bd=d;b=i}}return b}
+  function rightAt(x,y){if(x<520||x>810)return -1;var b=-1,bd=tol();for(var i=0;i<S.n;i++){var d=Math.abs(y-S.ry[i]);if(d<bd){bd=d;b=i}}return b}
+  function plugIn(C,i2,r){
+    if(S.right[r]===S.left[i2]&&!S.used[r]){S.link[i2]=r;S.used[r]=1;sfx.play('pickup');for(var k=0;k<8;k++)S.spark.push({x:RX-30,y:S.ry[r],vx:-Math.random()*200,vy:(Math.random()-.5)*260,t:.4,c:COL[S.left[i2]]});
+      if(S.link.every(function(v){return v>=0})){S.doneT=.55;S.score++;sfx.play('win');C.pop(S.score%5===0?S.score+' PANNEAUX !':'RÉPARÉ !','#3fbf6a','54px');if(C.mode!=='zen')S.time=Math.min(99,S.time+4)}}
+    else{S.err++;S.bad=.35;sfx.play('lose');C.shake(5);if(C.mode!=='zen')S.time=Math.max(0,S.time-3)}}
   function end(C){if(S.over)return;S.over=true;C.stop();sfx.play('lose');var nb=C.best('pts',S.score);if(S.score>=10)C.win();
     setTimeout(function(){C.over('Temps écoulé !','<b>'+S.score+'</b> panneau'+(S.score>1?'x':'')+' réparé'+(S.score>1?'s':'')+' · '+S.err+' erreur'+(S.err>1?'s':'')+(nb&&S.score?'<br><b>Nouveau record !</b>':'<br>Record : '+(C.best('pts')||0)),'Rejouer')},500)}
   function plug(g,x,y,c,left,on){g.save();g.translate(x,y);if(!left)g.scale(-1,1);
@@ -25,15 +32,18 @@
     g.beginPath();g.moveTo(x0,y0);g.bezierCurveTo(x0+dx,y0,x1-dx,y1,x1,y1);g.strokeStyle=INK;g.lineWidth=15;g.stroke();g.strokeStyle=COL[c];g.lineWidth=10;g.stroke();
     g.strokeStyle='rgba(255,255,255,.3)';g.lineWidth=2.5;g.stroke();g.globalAlpha=1}
   PP.arcade({id:'wire',
-    setup:function(C){fresh(C);C.keysText('Attrape un câble à gauche et tire-le jusqu\'à la prise de la même couleur à droite · une erreur coûte 3 secondes');
+    setup:function(C){fresh(C);C.keysText('Tire un câble de la gauche vers la prise de la même couleur à droite, ou clique le câble puis clique la prise · une erreur coûte 3 secondes');
       C.over('Câbles',C.mode==='zen'?'Rebranche chaque câble sur la prise de sa couleur, sans chrono.':'Tu as <b>60 secondes</b>. Rebranche chaque câble sur la prise de sa couleur : chaque panneau réparé te rend 4 secondes, chaque erreur t\'en enlève 3. Plus tu avances, plus il y a de câbles… et les prises finissent par se mélanger.','Jouer')},
     start:function(C){fresh(C)},
     mouse:function(C,t,x,y){if(!C.running||S.over)return;S.mx=x;S.my=y;S.hov=leftAt(x,y);
-      if(t==='down'){var i=S.hov;if(i>=0){S.drag={i:i};sfx.play('tick')}}
-      if(t==='up'&&S.drag){var r=rightAt(x,y),i2=S.drag.i;S.drag=null;if(r<0)return;
-        if(S.right[r]===S.left[i2]&&!S.used[r]){S.link[i2]=r;S.used[r]=1;sfx.play('pickup');for(var k=0;k<8;k++)S.spark.push({x:RX-30,y:S.ry[r],vx:-Math.random()*200,vy:(Math.random()-.5)*260,t:.4,c:COL[S.left[i2]]})
-          if(S.link.every(function(v){return v>=0})){S.doneT=.55;S.score++;sfx.play('win');C.pop(S.score%5===0?S.score+' PANNEAUX !':'RÉPARÉ !','#3fbf6a','54px');if(C.mode!=='zen')S.time=Math.min(99,S.time+4)}}
-        else{S.err++;S.bad=.35;sfx.play('lose');C.shake(5);if(C.mode!=='zen')S.time=Math.max(0,S.time-3)}}
+      if(t==='down'){
+        /* deuxième clic du mode « clic-clic » : sur une prise on branche, sur un autre câble on change, ailleurs on lâche */
+        if(S.drag&&S.drag.stick){var rr=rightAt(x,y),held=S.drag.i;if(rr>=0){S.drag=null;plugIn(C,held,rr);return}S.drag=null;if(S.hov<0||S.hov===held)return}
+        var i=S.hov;if(i>=0){S.drag={i:i,x0:x,y0:y};sfx.play('tick')}}
+      if(t==='up'&&S.drag&&!S.drag.stick){var r=rightAt(x,y),i2=S.drag.i;
+        /* relâché presque sans bouger : le câble reste en main, on cliquera la prise */
+        if(r<0&&Math.hypot(x-S.drag.x0,y-S.drag.y0)<14){S.drag.stick=true;return}
+        S.drag=null;if(r<0)return;plugIn(C,i2,r)}
       C.cv.style.cursor=S.drag?'grabbing':S.hov>=0?'grab':'default'},
     step:function(C,dt){S.bad=Math.max(0,S.bad-dt);S.spark.forEach(function(s){s.t-=dt;s.x+=s.vx*dt;s.y+=s.vy*dt});S.spark=S.spark.filter(function(s){return s.t>0});
       if(S.doneT>0){S.doneT-=dt;if(S.doneT<=0){S.level++;panel()}}
