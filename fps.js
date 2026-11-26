@@ -302,7 +302,7 @@
     return true;
   }
   function respawn(){var mate=null;Object.keys(remotes).forEach(function(k){var r=remotes[k];if(!mate&&r.al===1)mate=r});
-    dead=false;P.spect=false;P.down=false;P.hp=100;var s=mate?{x:mate.x+(Math.random()-.5),z:mate.z+(Math.random()-.5)}:spawnFar(0);if(!solid(s.x,s.z)){P.x=s.x;P.z=s.z}
+    dead=false;P.spect=false;P.down=false;P.hp=maxHp();var s=mate?{x:mate.x+(Math.random()-.5),z:mate.z+(Math.random()-.5)}:spawnFar(0);if(!solid(s.x,s.z)){P.x=s.x;P.z=s.z}
     var pa=P.guns.pistol;if(pa)pa.mag=12;center('DE RETOUR !');setTimeout(function(){if(UI.center.textContent==='DE RETOUR !')center('')},1500);sfx.play('go');sendAcc=0;sendState(1);hud()}
   /* chaque image : nouvelle vague = les spectateurs reviennent ; l'hôte vérifie si toute l'équipe est tombée */
   var overAcc=0;
@@ -1259,7 +1259,9 @@
     DEPS=DEPS.filter(function(d){if(d.t<=0){scene.remove(d.m);return false}return true})}
   /* v32 : les boissons apparaissent au hasard sur la carte (une par vague, 3 au maximum) : va dessus et achète-la avec E */
   function spawnPerk(){if(!P||mode!=='zombie'||PERKS.length>=3)return;var have=P.perks||{},ids=PK_ORDER.filter(function(k){return !have[k]&&!PERKS.some(function(p){return p.id===k})});if(!ids.length)return;
-    var id=PP.pick(ids),s=spawnFar(9),p={id:id,x:s.x,z:s.z};buildPerk(p);PERKS.push(p);addFeed(PK[id].n+' est apparue sur la carte');try{drawMiniBase()}catch(e){}}
+    /* v45 : jamais deux boissons dans la même salle (zone) */
+    var taken={},s=null;PERKS.forEach(function(q){taken[zoneOf(q.x,q.z)]=1});for(var tr=0;tr<40;tr++){var c=spawnFar(9);if(!taken[zoneOf(c.x,c.z)]){s=c;break}}if(!s)return;
+    var id=PP.pick(ids),p={id:id,x:s.x,z:s.z};buildPerk(p);PERKS.push(p);addFeed(PK[id].n+' est apparue sur la carte');try{drawMiniBase()}catch(e){}}
   function shopList(){var tr=shopStand?shopStand.tier||0:0;return tr===2?['minigun','ray','rocket','launcher','lmg','sniper','dmr']:tr===1?['sniper','lmg','dmr','pdw','rifle','shotgun']:['magnum','smg','rifle','shotgun','pdw']}
   function bar(v){return '<i><em style="--w:'+Math.round(Math.max(.06,Math.min(1,v))*100)+'%"></em></i>'}
   var XI={ammo:'M5 4h3v3H5zM10 4h3v3h-3zM15 4h3v3h-3zM5 8h3v12H5zM10 8h3v12h-3zM15 8h3v12h-3z',vest1:'M8 2l-5 4v15h8v-6h2v6h8V6l-5-4-2 4h-4z',vest2:'M8 2l-6 4v16h9v-6h2v6h9V6l-6-4-2 4h-4zM7 9h10v3H7z',heal:'M9 3h6v6h6v6h-6v6H9v-6H3V9h6z',fast:'M13 2L4 14h7l-2 8 9-12h-7z',turret:'M9 4h6v5h7v3h-7v2l4 7h-3l-3-5h-2l-3 5H5l4-7v-2H2V9h7z',wire:'M2 8l4 8 4-8 4 8 4-8 4 8M2 16l4-8 4 8 4-8 4 8 4-8M3 4v16M21 4v16',mine:'M12 5a2 2 0 0 1 2 2v2h3l4 6v3H3v-3l4-6h3V7a2 2 0 0 1 2-2z'};
