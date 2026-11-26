@@ -56,7 +56,7 @@
     if(ax==='y'){if(d<0){p.y=b.y1;V.vel.y=0;V.ground=true}else{p.y=b.y0-h-.001;V.vel.y=Math.min(0,V.vel.y)}return b}
     /* petite marche : on monte dessus */if(V.wasG&&b.y1-p.y<.6&&!hit(p.x-R,b.y1+.01,p.z-R,p.x+R,b.y1+h,p.z+R)){p.y=b.y1+.001;return null}
     if(ax==='x'){p.x=d>0?b.x0-R-.001:b.x1+R+.001;V.vel.x=0}else{p.z=d>0?b.z0-R-.001:b.z1+R+.001;V.vel.z=0}return b}
-  function wallNear(){var p=V.pos,h=height(),e=V.wr?.3:.55,y0=p.y+.3,y1=p.y+h-.2,res=null;
+  function wallNear(){var p=V.pos,h=height(),e=V.wr?.6:1.0,y0=p.y+.3,y1=p.y+h-.2,res=null;
     var sides=[[1,0,p.x+R,p.z-R+.05,p.x+R+e,p.z+R-.05],[-1,0,p.x-R-e,p.z-R+.05,p.x-R,p.z+R-.05],[0,1,p.x-R+.05,p.z+R,p.x+R-.05,p.z+R+e],[0,-1,p.x-R+.05,p.z-R-e,p.x+R-.05,p.z-R]];
     sides.forEach(function(s){if(res)return;var b=hit(s[2],y0,s[3],s[4],y1,s[5]);if(b)res={nx:-s[0],nz:-s[1],b:b}});return res}
   function rayBox(o,d,b){var t0=0,t1=1e9;['x','y','z'].forEach(function(a){var lo=b[a+'0'],hi=b[a+'1'];if(Math.abs(d[a])<1e-9){if(o[a]<lo||o[a]>hi)t0=1e9}else{var ta=(lo-o[a])/d[a],tb=(hi-o[a])/d[a];if(ta>tb){var s=ta;ta=tb;tb=s}t0=Math.max(t0,ta);t1=Math.min(t1,tb)}});return t0<=t1?t0:1e9}
@@ -99,13 +99,13 @@
   function spark(C,p,col){var m=new THREE.Mesh(new THREE.SphereGeometry(.08,6,4),new THREE.MeshBasicMaterial({color:col}));m.position.copy(p);C.scene.add(m);V.fx.push({m:m,t:.25,v:new THREE.Vector3()})}
   function burst(C,p,col){for(var i=0;i<14;i++){var m=new THREE.Mesh(new THREE.BoxGeometry(.14,.14,.14),new THREE.MeshBasicMaterial({color:i%2?col:0xf1ece2}));m.position.copy(p);C.scene.add(m);V.fx.push({m:m,t:.7,v:new THREE.Vector3((Math.random()-.5)*9,Math.random()*8,(Math.random()-.5)*9)})}}
   function finish(C){if(V.over)return;V.over=true;C.stop();if(document.pointerLockElement)document.exitPointerLock();sfx.play('win');
-    if(V.mode==='course'){var tc=Math.round(V.time*10)/10,nbc=C.best('course',tc,true);if(tc<90)C.win();C.over('Course terminée !','Les '+V.rings.length+' anneaux en <b>'+tc.toFixed(1)+' s</b>'+(nbc?'<br><b>Nouveau record !</b>':'<br>Record : '+C.best('course')+' s')+'<br>Astuce : lâche la corde en bas du balancement pour partir comme une fusée.','Rejouer')}
+    if(V.mode==='course'){var tc=Math.round(V.time*10)/10,nbc=C.best('course',tc,true);if(tc<90)C.win();C.over('Course terminée !','Les '+V.rings.length+' anneaux en <b>'+tc.toFixed(1)+' s</b>'+(nbc?'<br><b>Nouveau record !</b>':'<br>Record : '+C.best('course')+' s')+'<br>Astuce : grappin vers le haut, puis course sur les murs pour garder ta vitesse.','Rejouer')}
     else if(V.mode==='cibles'){var t=Math.round(V.time*10)/10,nb=C.best('temps',t,true);if(t<120)C.win();C.over('Toutes les cibles !','Temps : <b>'+t.toFixed(1)+' s</b>'+(nb?'<br><b>Nouveau record !</b>':'<br>Record : '+C.best('temps')+' s'),'Rejouer')}
     else{var nb2=C.best('pts',V.score);if(V.kills>=40)C.win();C.over('Fin de la partie','<b>'+V.score+'</b> points · '+V.kills+' zombies · vague '+V.wave+(nb2?'<br><b>Nouveau record !</b>':''),'Rejouer')}}
   /* ---------- interface (viseur, inventaire, mini-carte) ---------- */
   function ui(C){var st=C.cv.parentNode;if(!V.ui){var d=document.createElement('div');d.className='vt-ui';d.innerHTML='<div class="vt-cross"></div><canvas class="vt-map" width="160" height="160"></canvas><div class="vt-inv"></div><div class="vt-ammo"></div><div class="vt-speed"></div><div class="vt-hurt"></div><div class="vt-fast" style="position:absolute;inset:0;opacity:0;background:radial-gradient(ellipse at center,transparent 48%,rgba(255,255,255,.55) 135%)"></div><div class="vt-gr" style="position:absolute;left:50%;top:50%;width:36px;height:36px;margin:-18px 0 0 -18px;border:2px solid #f3c623;border-radius:50%;opacity:0;transition:opacity .1s"></div><div class="vt-combo" style="position:absolute;left:50%;top:14%;transform:translateX(-50%);text-align:center;color:#fff;font:400 34px Anton,Impact,sans-serif;text-shadow:0 2px 0 #141210;line-height:1;opacity:0"></div>';st.appendChild(d);V.ui=d}
     V.ui.hidden=false;inv()}
-  function inv(){if(!V||!V.ui)return;V.ui.querySelector('.vt-inv').innerHTML=WEAP.map(function(w,i){return '<span class="'+(i===V.w?'on':'')+'"><b>'+(i+1)+'</b>'+w.n+'</span>'}).join('')+'<span class="'+(V.grap&&V.gMode==='s'?'on':'')+'"><b>Clic droit</b>Corde</span><span class="'+(V.grap&&V.gMode==='z'?'on':'')+'"><b>E</b>Traction</span>'}
+  function inv(){if(!V||!V.ui)return;V.ui.querySelector('.vt-inv').innerHTML=WEAP.map(function(w,i){return '<span class="'+(i===V.w?'on':'')+'"><b>'+(i+1)+'</b>'+w.n+'</span>'}).join('')+'<span class="'+(V.grap?'on':'')+'"><b>E</b>Grappin</span>'}
   function drawMap(){var c=V.ui.querySelector('.vt-map'),g=c.getContext('2d'),L=V.lim,s=160/(2*L),px=(V.pos.x+L)*s,pz=(V.pos.z+L)*s;g.save();g.clearRect(0,0,160,160);g.beginPath();g.arc(80,80,78,0,7);g.clip();g.fillStyle='#2b2a30';g.fillRect(0,0,160,160);
     /* carte qui tourne avec le joueur, centrée sur lui */g.translate(80,80);g.rotate(V.yaw);g.scale(2.2,2.2);g.translate(-px,-pz);g.drawImage(V.mapImg,0,0,160,160);
     (V.tg||[]).forEach(function(t){if(!t.alive)return;g.fillStyle='#f3c623';g.fillRect((t.g.position.x+L)*s-1.4,(t.g.position.z+L)*s-1.4,2.8,2.8)});(V.zs||[]).forEach(function(z){if(!z.alive)return;g.fillStyle='#ff3b2a';g.beginPath();g.arc((z.x+L)*s,(z.z+L)*s,1.5,0,7);g.fill()});
@@ -124,8 +124,8 @@
       RND=rng(Date.now()%100000);if(V.mode==='cibles')spawnTargets(C);if(V.mode==='course')spawnRings(C);setWeapon(C,0);ui(C);V.ui.hidden=true;
       V.rope=new THREE.Mesh(new THREE.CylinderGeometry(.013,.013,1,6),new THREE.MeshBasicMaterial({color:0xf1ece2}));V.rope.frustumCulled=false;V.rope.visible=false;sc.add(V.rope);
       V.hook=new THREE.Mesh(new THREE.SphereGeometry(.16,10,8),new THREE.MeshBasicMaterial({color:0xf3c623}));V.hook.visible=false;sc.add(V.hook);
-      C.keysText('<kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> bouger · <kbd>Maj</kbd> sprint · <kbd>Espace</kbd> saut et double saut · saute contre un mur rouge (ou un bâtiment) en avançant pour courir dessus, re-saute pour rebondir · <kbd>C</kbd> glissade · <b>clic droit maintenu : corde pour se balancer</b> (lâche en bas pour t\'envoler, <kbd>Espace</kbd> pour sauter de la corde) · <kbd>E</kbd> maintenu : traction vers le point visé · tremplins jaunes · clic : tirer · <kbd>R</kbd> recharger · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> ou molette : armes · <kbd>K</kbd> <kbd>L</kbd> : souris moins ou plus rapide');
-      C.over('Voltige',(V.mode==='course'?'Traverse les 18 anneaux dans l\'ordre le plus vite possible. Le prochain anneau a un rayon de lumière jaune et un point sur la mini-carte.':V.mode==='cibles'?'Explose les 24 cibles cachées dans la ville le plus vite possible.':'Des zombies arrivent par vagues pendant 3 minutes : fais le plus de points.')+'<br><b>Clic droit maintenu</b> : une corde s\'accroche au bâtiment visé et tu te balances. Lâche en bas du balancement pour t\'envoler. Enchaîne murs, glissades, tremplins et balancements pour faire monter le combo.','Jouer');
+      C.keysText('<kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> bouger · <kbd>Maj</kbd> sprint · <kbd>Espace</kbd> saut et double saut · saute contre un mur rouge (ou un bâtiment) en avançant pour courir dessus, re-saute pour rebondir · <kbd>C</kbd> glissade · <kbd>E</kbd> ou clic droit maintenu : grappin · longe un mur, même en marchant, pour courir dessus · tremplins jaunes · clic : tirer · <kbd>R</kbd> recharger · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> ou molette : armes · <kbd>K</kbd> <kbd>L</kbd> : souris moins ou plus rapide');
+      C.over('Voltige',(V.mode==='course'?'Traverse les 18 anneaux dans l\'ordre le plus vite possible. Le prochain anneau a un rayon de lumière jaune et un point sur la mini-carte.':V.mode==='cibles'?'Explose les 24 cibles cachées dans la ville le plus vite possible.':'Des zombies arrivent par vagues pendant 3 minutes : fais le plus de points.')+'<br>Longe un mur pour courir dessus, lance ton grappin (<b>E</b> ou clic droit maintenu) sur les bâtiments, prends les tremplins jaunes. Enchaîne les figures pour faire monter le combo.','Jouer');
       C.cam.position.set(V.pos.x,1.6,V.pos.z);C.R.render(sc,C.cam)},
     start:function(C){if(V.time>0||V.over){this.setup(C)}ui(C);V.ui.hidden=false;V.C=C},
     close:function(C){if(V&&V.ui)V.ui.hidden=true},
@@ -141,24 +141,27 @@
       if(V.slide>0){V.slide-=dt;if(V.slide<=0&&hit(p.x-R,p.y,p.z-R,p.x+R,p.y+1.8,p.z+R))V.slide=.05}
       /* grappin */
       /* v51 : clic droit = vraie corde (on se balance comme un pendule, la corde se raccourcit toute seule), E = traction directe */
-      if((k.KeyE||V.grapKey)&&!V.grap&&!V.grapFail){var ap=anchor(C,!!V.grapKey);
-        if(ap){V.grap=ap;V.gMode=V.grapKey?'s':'z';V.ropeL=Math.max(4,ap.distanceTo(new THREE.Vector3(p.x,p.y+1.2,p.z))*.94);V.ropeMin=Math.max(3.5,V.ropeL*.6);if(V.ground||V.gMode==='z')v.y=Math.max(v.y,5);V.ground=false;sfx.play('shoot');inv()}
-        else{V.grapFail=true;C.pop('rien à accrocher','#f1ece2','22px')}}
-      if(V.grap&&!(V.gMode==='s'?V.grapKey:k.KeyE))release(C);
+      /* v52 : retour au grappin d'avant (demande d'Anis) : E ou clic droit, ça tire droit vers le point visé */
+      if((k.KeyE||V.grapKey)&&!V.grap&&!V.grapFail){var ap=anchor(C,false);
+        if(ap){V.grap=ap;V.gMode='z';V.ropeL=Math.max(4,ap.distanceTo(new THREE.Vector3(p.x,p.y+1.2,p.z))*.94);V.ropeMin=Math.max(3.5,V.ropeL*.6);if(V.ground||V.gMode==='z')v.y=Math.max(v.y,5);V.ground=false;sfx.play('shoot');inv()}
+        else{V.grapFail=true;C.pop('trop loin','#f1ece2','22px')}}
+      if(V.grap&&!(V.grapKey||k.KeyE))release(C);
       if(!k.KeyE&&!V.grapKey)V.grapFail=false;
-      if(V.grap&&V.gMode==='z'){var to=V.grap.clone().sub(new THREE.Vector3(p.x,p.y+1.2,p.z)),dd=to.length();if(dd<2){V.grap=null;v.y=Math.max(v.y,8);V.jumps=1;trick(C,'TRACTION',40);V.grapFail=true;inv()}else{to.normalize();v.addScaledVector(to,70*dt);v.x+=dx*10*dt;v.z+=dz*10*dt;var sp2=v.length();if(sp2>30)v.multiplyScalar(30/sp2);V.ground=false}}
+      if(V.grap&&V.gMode==='z'){var to=V.grap.clone().sub(new THREE.Vector3(p.x,p.y+1.2,p.z)),dd=to.length();if(dd<1.8){V.grap=null;V.jumps=Math.min(V.jumps,1);trick(C,'GRAPPIN',40);inv()}else{to.normalize();v.addScaledVector(to,62*dt);v.x+=dx*10*dt;v.z+=dz*10*dt;var sp2=v.length();if(sp2>26)v.multiplyScalar(26/sp2);V.ground=false}}
       var swing=V.grap&&V.gMode==='s'&&!V.ground;
       if(swing){if(p.y+1.2<V.grap.y)V.ropeL=Math.max(V.ropeMin,V.ropeL-4*dt);v.x+=dx*15*dt;v.z+=dz*15*dt}
       /* course sur les murs */
       var wn=!V.ground?wallNear():null,hsp=Math.hypot(v.x,v.z);
       if(V.ground)V.lastWall=null;
-      if(wn&&!V.grap&&fw>0&&hsp>4.5&&(V.wr?V.wrT<1.7:wn.b!==V.lastWall)){if(!V.wr){V.wr=wn;V.wrT=0;V.jumps=1;v.y=Math.min(Math.max(v.y,1.5),3.2);sfx.play('tick');trick(C,'MUR',50)}V.wr=wn;V.wrT+=dt;
-        var tx=-wn.nz,tz=wn.nx;if(tx*v.x+tz*v.z<0){tx=-tx;tz=-tz}var along=Math.max(hsp,9);v.x=tx*along-wn.nx*1.5;v.z=tz*along-wn.nz*1.5;v.y-=6*dt;if(v.y<-1.8)v.y=-1.8;
+      /* v52 : les murs accrochent bien plus facilement : même en marchant, de plus loin, plus longtemps, et on peut reprendre le même mur */
+      V.wallCd=Math.max(0,(V.wallCd||0)-dt);
+      if(wn&&!V.grap&&dl>0&&hsp>2.2&&(V.wr?V.wrT<3:(wn.b!==V.lastWall||V.wallCd<=0))){if(!V.wr){V.wr=wn;V.wrT=0;V.jumps=1;v.y=Math.min(Math.max(v.y,1.5),3.2);sfx.play('tick');trick(C,'MUR',50)}V.wr=wn;V.wrT+=dt;
+        var tx=-wn.nz,tz=wn.nx;if(tx*v.x+tz*v.z<0){tx=-tx;tz=-tz}var along=Math.max(hsp,9);v.x=tx*along-wn.nx*2.5;v.z=tz*along-wn.nz*2.5;v.y-=3.2*dt;if(v.y<-1)v.y=-1;
         var rs=(-sy*wn.nz+cy*wn.nx);V.roll+=((wn.nx*cy-wn.nz*sy>0?-.16:.16)-V.roll)*Math.min(1,dt*8)}
-      else{if(V.wr){V.lastWall=V.wr.b;V.wr=null}var rt=-st*.025;if(V.grap&&V.gMode==='s')rt=Math.max(-.2,Math.min(.2,-(v.x*cy-v.z*sy)*.011));V.roll+=(rt-V.roll)*Math.min(1,dt*6);if(V.ground)V.wrT=0}
+      else{if(V.wr){V.lastWall=V.wr.b;V.wr=null;V.wallCd=.5}var rt=-st*.025;if(V.grap&&V.gMode==='s')rt=Math.max(-.2,Math.min(.2,-(v.x*cy-v.z*sy)*.011));V.roll+=(rt-V.roll)*Math.min(1,dt*6);if(V.ground)V.wrT=0}
       /* saut, double saut, saut de mur */
       if(V.jumpQ>0&&V.grap&&V.gMode==='s'){release(C);v.y+=4.5;V.jumpQ=0;V.grapFail=true;sfx.play('ui')}
-      if(V.jumpQ>0){if(V.wr){var w2=V.wr;v.x+=w2.nx*9;v.z+=w2.nz*9;v.y=JV;V.lastWall=w2.b;V.wr=null;V.jumpQ=0;V.jumps=1;sfx.play('ui');trick(C,'SAUT DE MUR',80)}
+      if(V.jumpQ>0){if(V.wr){var w2=V.wr;v.x+=w2.nx*9;v.z+=w2.nz*9;v.y=JV;V.lastWall=w2.b;V.wallCd=.35;V.wr=null;V.jumpQ=0;V.jumps=1;sfx.play('ui');trick(C,'SAUT DE MUR',80)}
         else if(V.ground||V.coyote>0){v.y=JV;V.ground=false;V.coyote=0;V.jumpQ=0;V.jumps=1;if(V.slide>0){V.slide=0;v.x*=1.08;v.z*=1.08}sfx.play('ui')}
         else if(V.jumps<2){v.y=JV*.92;V.jumps=2;V.jumpQ=0;if(dl>0){var hs2=Math.max(Math.hypot(v.x,v.z),WALK);v.x=dx*hs2;v.z=dz*hs2}sfx.play('ui');for(var i=0;i<6;i++)spark(C,new THREE.Vector3(p.x+(Math.random()-.5),p.y,p.z+(Math.random()-.5)),0xf1ece2)}}
       /* accélération (sol / air) */
@@ -168,6 +171,9 @@
       /* escalade automatique d'un rebord */
       var wasGround=V.ground;V.wasG=wasGround;V.ground=false;var bxh=moveAxis('x',v.x*dt),bzh=moveAxis('z',v.z*dt),hb=bxh||bzh;
       /* on tape une façade au bout de la corde : la corde lâche et on rebondit vers le haut au lieu de rester collé */
+      /* v52 : en marchant le long d'un mur haut, un petit saut automatique lance la course sur le mur */
+      if(hb&&wasGround&&dl>0&&!V.grap&&V.slide<=0&&hb.y1-p.y>2.2&&Math.hypot(v.x,v.z)>2.5&&(V.hopCd||0)<=0){v.y=5.2;V.hopCd=.8}
+      V.hopCd=Math.max(0,(V.hopCd||0)-dt);
       if(hb&&V.grap&&V.gMode==='s'&&!wasGround){V.grap=null;V.grapFail=true;v.y=Math.max(v.y,10);V.jumps=1;trick(C,'REBOND',40);inv()}
       if(hb&&fw>0&&!wasGround&&hb.y1-p.y<1.6&&hb.y1-p.y>0&&!hit(p.x-R,hb.y1+.05,p.z-R,p.x+R,hb.y1+1.85,p.z+R)){v.y=Math.max(v.y,7.5);V.jumps=1}
       var yb=moveAxis('y',v.y*dt);if(!V.ground&&hit(p.x-R,p.y-.05,p.z-R,p.x+R,p.y,p.z+R)&&v.y<=0)V.ground=true;if(p.y<0){p.y=0;v.y=0;V.ground=true}
@@ -207,9 +213,9 @@
       V.fx.forEach(function(f){f.t-=dt;f.v.y-=20*dt;f.m.position.addScaledVector(f.v,dt);if(f.t<=0)C.scene.remove(f.m)});V.fx=V.fx.filter(function(f){return f.t>0});
       V.hurt=Math.max(0,V.hurt-dt);
       /* interface */
-      if(V.ui){drawMap();var W=WEAP[V.w];V.ui.querySelector('.vt-ammo').innerHTML=V.reload>0?'<b>RECHARGE…</b>':'<b>'+V.ammo[V.w]+'</b> / '+W.mag;var s3d=v.length();V.ui.querySelector('.vt-speed').textContent=Math.round(s3d*3.6)+' km/h'+(V.wr?' · MUR':V.slide>0?' · GLISSE':V.grap?(V.gMode==='s'?' · CORDE':' · TRACTION'):'');V.ui.querySelector('.vt-hurt').style.opacity=V.hurt*2;
+      if(V.ui){drawMap();var W=WEAP[V.w];V.ui.querySelector('.vt-ammo').innerHTML=V.reload>0?'<b>RECHARGE…</b>':'<b>'+V.ammo[V.w]+'</b> / '+W.mag;var s3d=v.length();V.ui.querySelector('.vt-speed').textContent=Math.round(s3d*3.6)+' km/h'+(V.wr?' · MUR':V.slide>0?' · GLISSE':V.grap?' · GRAPPIN':'');V.ui.querySelector('.vt-hurt').style.opacity=V.hurt*2;
         V.ui.querySelector('.vt-fast').style.opacity=Math.max(0,Math.min(.8,(s3d-16)/22));
-        V.gT=(V.gT||0)-dt;if(V.gT<=0){V.gT=.1;V.ui.querySelector('.vt-gr').style.opacity=!V.grap&&anchor(C,true)?.9:0}
+        V.gT=(V.gT||0)-dt;if(V.gT<=0){V.gT=.1;V.ui.querySelector('.vt-gr').style.opacity=!V.grap&&anchor(C,false)?.9:0}
         var cb=V.ui.querySelector('.vt-combo');if(V.combo>0){cb.style.opacity=Math.min(1,V.comboT);cb.innerHTML='x'+V.combo+'<div style="font:700 12px \'IBM Plex Mono\',monospace;margin-top:4px">'+V.trickN+'</div>'}else cb.style.opacity=0}
       C.hud('<span>'+(V.mode==='course'?'Anneaux <b>'+V.ri+' / '+V.rings.length+'</b>':V.mode==='cibles'?'Cibles <b>'+V.hits+' / '+V.tg.length+'</b>':'Vague <b>'+V.wave+'</b>')+'</span><span>'+(V.mode!=='zombies'?'Temps <b>'+V.time.toFixed(1)+' s</b>':'Reste <b>'+Math.max(0,Math.ceil(180-V.time))+' s</b>')+'</span><span>Points <b>'+V.score+'</b></span>'+(V.mode==='zombies'?'<span>Zombies <b>'+V.kills+'</b></span>':''))},
     draw:function(C){C.R.render(C.scene,C.cam)}});
