@@ -137,6 +137,13 @@ window.PP_CLOUD_CFG=window.PP_CLOUD_CFG||{apiKey:'AIzaSyBM4-trHYAvg0bPShkUOhJAIt
     return db.collection('usernames').doc(key).get().then(function(d){if(d.exists&&d.data().uid!==u.uid)throw {message:'Ce pseudo est déjà pris.'};if(!d.exists)return db.collection('usernames').doc(key).set({uid:u.uid,name:name})})
       .then(function(){return db.collection('profiles').doc(u.uid).set({name:name,av:av(),seen:Date.now()},{merge:true})}).then(function(){return u.updateProfile({displayName:name}).catch(noop)}).then(function(){proceed(u)});
   };
+  /* v58 : changer de pseudo — le nouveau doit être libre, l'ancien est libéré pour les autres */
+  C.rename=function(name){var u=auth&&auth.currentUser;if(!u)return Promise.reject({message:'Pas connecté'});name=clean(name);if(name.length<2)return Promise.reject({message:'Choisis un pseudo d\'au moins 2 lettres.'});
+    var key=name.toLowerCase(),old=String(C.name||'').toLowerCase();if(name===C.name)return Promise.resolve(name);
+    return db.collection('usernames').doc(key).get().then(function(d){if(d.exists&&d.data().uid!==u.uid)throw {message:'Ce pseudo est déjà pris.'};if(!d.exists)return db.collection('usernames').doc(key).set({uid:u.uid,name:name})})
+      .then(function(){return db.collection('profiles').doc(u.uid).set({name:name},{merge:true})})
+      .then(function(){if(old&&old!==key)return db.collection('usernames').doc(old).delete().catch(noop)})
+      .then(function(){return u.updateProfile({displayName:name}).catch(noop)}).then(function(){C.name=name;emit();return name})};
   C.cancel=function(){C.state='ready';C.note='';C.pendingEmail=null;emit()};
   C.logout=function(){stopSocial();var p=push(true);setTimeout(function(){p.then(function(){return auth.signOut()},function(){return auth.signOut()}).then(function(){localStorage.setItem('pp-profile','');location.hash='account';location.reload()})},200)};
   C.syncNow=function(){return push(true)};

@@ -40,7 +40,7 @@
     var x='<div class="acc-hero">';
     /* carte du perso */
     x+='<div class="acc-card"><div class="acc-stage"><canvas id="acc-cv"></canvas></div><div class="acc-id"><span class="lbl">'+(online?'Compte en ligne':cur?'Profil local':'Pas connecté')+'</span><div class="acc-name">'+esc(name)+'</div>'+
-      (online?'<p class="muted acc-mail">'+esc(CL.user.email||'')+(CL.verified?' <span class="cl-ok">✓ confirmé</span>':'')+'</p>':'')+
+      (online?'<p class="muted acc-mail">'+esc(CL.user.email||'')+(CL.verified?' <span class="cl-ok">✓ confirmé</span>':'')+'</p><button type="button" class="ghost mini" id="cl-ren">Changer de pseudo</button>':'')+
       '<div class="row"><button type="button" class="primary" data-go="perso">Personnaliser mon perso</button></div></div></div>';
     /* colonne de droite */
     x+='<div class="acc-side">';
@@ -70,6 +70,7 @@
     var on=function(id,f){var b=$(id);if(b)b.onclick=f};
     if(CL){
       on('cl-out',function(){CL.logout()});
+      on('cl-ren',function(){var n=prompt('Ton nouveau pseudo (2 à 14 caractères) :',CL.name||'');if(n===null)return;CL.rename(n).then(function(v){PP.toast('Ton pseudo est maintenant '+v,'ok');render()}).catch(function(e){PP.toast(CL.msg?CL.msg(e):(e&&e.message)||'Impossible','warn')})});
       on('cl-pw',function(){CL.reset(CL.user.email).then(function(){PP.toast('Mail envoyé à '+CL.user.email+' pour changer ton mot de passe','ok')}).catch(function(e){PP.toast(CL.msg(e),'warn')})});
       on('cl-rev',function(){CL.resendVerify().then(function(){PP.toast('Mail renvoyé','ok')}).catch(function(e){PP.toast(CL.msg(e),'warn')})});
       on('cl-chk',function(){CL.checkVerified().then(function(ok){PP.toast(ok?'Adresse confirmée, merci !':'Pas encore confirmée : clique sur le lien dans le mail.',ok?'ok':'warn');render()})});
