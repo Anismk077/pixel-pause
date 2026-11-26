@@ -68,7 +68,13 @@
   /* ================= AIR HOCKEY ================= */
   (function(){
     var S,W=960,H=540,GOAL=170,R_M=34,R_P=20,WIN=7;
-    function reset(srv){S.p={x:W/2+(srv?-60:60)*0,y:H/2,vx:0,vy:0};S.p.x=W/2+(srv===1?-120:srv===2?120:0);S.m=[{x:150,y:H/2,vx:0,vy:0,px:150,py:H/2},{x:W-150,y:H/2,vx:0,vy:0,px:W-150,py:H/2}];S.wait=.8}
+    function reset(srv){S.tr=[];S.still=0;S.p={x:W/2+(srv?-60:60)*0,y:H/2,vx:0,vy:0};S.p.x=W/2+(srv===1?-120:srv===2?120:0);S.m=[{x:150,y:H/2,vx:0,vy:0,px:150,py:H/2},{x:W-150,y:H/2,vx:0,vy:0,px:W-150,py:H/2}];S.wait=.8}
+    /* v53 : le palet ne se coince plus. Coins arrondis comme sur le dessin, palet coincé contre une bande qui ressort tout seul,
+       et petit coup de pouce vers le centre s'il reste immobile. */
+    var RC=56;PP._hk=function(){return S};
+    function corner(o,r,b){if(!((o.x<12+RC||o.x>W-12-RC)&&(o.y<12+RC||o.y>H-12-RC)))return false;var cx=o.x<W/2?12+RC:W-12-RC,cy=o.y<H/2?12+RC:H-12-RC,dx=o.x-cx,dy=o.y-cy,d=Math.hypot(dx,dy),mx=RC-r;
+      if(d>mx&&d>0){var nx=dx/d,ny=dy/d;o.x=cx+nx*mx;o.y=cy+ny*mx;if(b){var vn=o.vx*nx+o.vy*ny;if(vn>0){o.vx-=1.92*vn*nx;o.vy-=1.92*vn*ny}}return true}return false}
+    function clampP(P){var ox=P.x,oy=P.y;if(P.y<R_P+12)P.y=R_P+12;if(P.y>H-R_P-12)P.y=H-R_P-12;if(Math.abs(P.y-H/2)>=GOAL/2){if(P.x<R_P+12)P.x=R_P+12;if(P.x>W-R_P-12)P.x=W-R_P-12}corner(P,R_P,false);return Math.hypot(P.x-ox,P.y-oy)>.3}
     PP.arcade({id:'hockey',
       setup:function(C){S={sc:[0,0],mouse:null,fx:[]};reset(0);C.keysText(C.mode==='solo'?'Ton palet suit la souris (ou <kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd>) · premier à '+WIN:'J1 <kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> · J2 <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> · premier à '+WIN);
         C.over('Air Hockey','Marque dans le but d\'en face. Frappe fort en arrivant vite sur le palet. Premier à '+WIN+' buts.','Engagement')},
@@ -81,16 +87,24 @@
         ctl(m0,0,'KeyW','KeyA','KeyS','KeyD');ctl(m0,0,'KeyZ','KeyQ','KeyS','KeyD');
         if(C.mode==='duel')ctl(m1,1,'ArrowUp','ArrowLeft','ArrowDown','ArrowRight');
         else{var p=S.p,tx=W-110,ty=H/2;if(p.x>W/2-40){tx=p.x+28;ty=p.y;if(p.vx>200&&p.x<W-200){tx=W-120;ty=p.y}}else{ty=H/2+(p.y-H/2)*.5}var sp=430*dt,dx=tx-m1.x,dy=ty-m1.y,dl=Math.hypot(dx,dy);if(dl>1){m1.x+=dx/dl*Math.min(dl,sp);m1.y+=dy/dl*Math.min(dl,sp)}}
-        [m0,m1].forEach(function(m,i){m.x=Math.max(i?W/2+R_M:R_M+12,Math.min(i?W-R_M-12:W/2-R_M,m.x));m.y=Math.max(R_M+12,Math.min(H-R_M-12,m.y));m.vx=(m.x-m.px)/Math.max(dt,1e-3);m.vy=(m.y-m.py)/Math.max(dt,1e-3)});
+        [m0,m1].forEach(function(m,i){m.x=Math.max(i?W/2+R_M:R_M+12,Math.min(i?W-R_M-12:W/2-R_M,m.x));m.y=Math.max(R_M+12,Math.min(H-R_M-12,m.y));corner(m,R_M,false);m.vx=(m.x-m.px)/Math.max(dt,1e-3);m.vy=(m.y-m.py)/Math.max(dt,1e-3)});
         if(S.wait>0){S.wait-=dt;return}
-        var P=S.p,steps=4;for(var s=0;s<steps;s++){var h=dt/steps;P.x+=P.vx*h;P.y+=P.vy*h;
+        S.hitCd=Math.max(0,(S.hitCd||0)-dt);
+        var P=S.p,steps=6;for(var s=0;s<steps;s++){var h=dt/steps;P.x+=P.vx*h;P.y+=P.vy*h;
           if(P.y<R_P+12){P.y=R_P+12;P.vy=Math.abs(P.vy)*.92;sfx.play('tick')}if(P.y>H-R_P-12){P.y=H-R_P-12;P.vy=-Math.abs(P.vy)*.92;sfx.play('tick')}
           var inGoal=Math.abs(P.y-H/2)<GOAL/2;
           if(P.x<R_P+12&&!inGoal){P.x=R_P+12;P.vx=Math.abs(P.vx)*.92;sfx.play('tick')}if(P.x>W-R_P-12&&!inGoal){P.x=W-R_P-12;P.vx=-Math.abs(P.vx)*.92;sfx.play('tick')}
+          if(corner(P,R_P,true)&&S.hitCd<=0&&Math.hypot(P.vx,P.vy)>80){sfx.play('tick');S.hitCd=.08}
           if(P.x<-R_P||P.x>W+R_P){var sc=P.x<0?1:0;S.sc[sc]++;C.pop('BUT !',sc?'#3fa9ff':'#e2361b');C.shake(10);sfx.play(sc===0||C.mode==='duel'?'win':'lose');for(var f=0;f<30;f++)S.fx.push({x:P.x<0?20:W-20,y:P.y,vx:(Math.random()-.5)*500,vy:(Math.random()-.5)*500,t:1});
             if(S.sc[sc]>=WIN){C.stop();if(C.mode==='solo'&&sc===0)C.win();C.over(C.mode==='solo'?(sc===0?'Victoire !':'Perdu'):(sc===0?'J1 gagne !':'J2 gagne !'),S.sc[0]+' – '+S.sc[1],'Revanche');return}reset(sc===0?2:1);return}
-          S.m.forEach(function(m){var dx=P.x-m.x,dy=P.y-m.y,d=Math.hypot(dx,dy),md=R_M+R_P;if(d<md&&d>0){var nx=dx/d,ny=dy/d;P.x=m.x+nx*md;P.y=m.y+ny*md;var rv=(P.vx-m.vx)*nx+(P.vy-m.vy)*ny;if(rv<0){P.vx-=1.9*rv*nx;P.vy-=1.9*rv*ny}sfx.play('hit')}})}
-        P.vx*=Math.pow(.55,dt);P.vy*=Math.pow(.55,dt);var spd=Math.hypot(P.vx,P.vy);if(spd>1500){P.vx*=1500/spd;P.vy*=1500/spd}
+          S.m.forEach(function(m){var dx=P.x-m.x,dy=P.y-m.y,d=Math.hypot(dx,dy),md=R_M+R_P;if(d<md){if(d<=0){dx=m.x<W/2?1:-1;dy=0;d=1}var nx=dx/d,ny=dy/d;P.x=m.x+nx*md;P.y=m.y+ny*md;var rv=(P.vx-m.vx)*nx+(P.vy-m.vy)*ny;
+              if(rv<0){P.vx-=1.9*rv*nx;P.vy-=1.9*rv*ny;if(S.hitCd<=0){sfx.play('hit');S.hitCd=.12;for(var q=0;q<6;q++)S.fx.push({x:P.x-nx*R_P,y:P.y-ny*R_P,vx:(Math.random()-.5)*260,vy:(Math.random()-.5)*260,t:.5})}}
+              /* palet écrasé entre un maillet et la bande : le maillet recule et le palet file le long de la bande vers le centre */
+              if(clampP(P)){m.x=P.x-nx*md;m.y=P.y-ny*md;var tx=-ny,ty=nx;if(tx*(W/2-P.x)+ty*(H/2-P.y)<0){tx=-tx;ty=-ty}var ps=Math.max(320,Math.hypot(m.vx,m.vy)*.6);P.vx=tx*ps+(W/2-P.x>0?40:-40);P.vy=ty*ps+(H/2-P.y>0?40:-40)}}})}
+        P.vx*=Math.pow(.6,dt);P.vy*=Math.pow(.6,dt);var spd=Math.hypot(P.vx,P.vy);if(spd>1500){P.vx*=1500/spd;P.vy*=1500/spd}
+        /* palet immobile trop longtemps : la table le renvoie doucement vers le centre */
+        S.still=spd<35?(S.still||0)+dt:0;if(S.still>2.2){var cd=Math.hypot(W/2-P.x,H/2-P.y)||1;P.vx+=(W/2-P.x)/cd*190+(Math.random()-.5)*60;P.vy+=(H/2-P.y)/cd*190+(Math.random()-.5)*60;S.still=0}
+        S.tr=S.tr||[];S.tr.push([P.x,P.y,spd]);if(S.tr.length>9)S.tr.shift();
         S.fx=S.fx.filter(function(f){f.t-=dt*1.5;f.x+=f.vx*dt;f.y+=f.vy*dt;return f.t>0});
         C.hud('<span>J1 <b>'+S.sc[0]+'</b></span><span>'+(C.mode==='solo'?'Ordi':'J2')+' <b>'+S.sc[1]+'</b></span>')},
       draw:function(C){var g=C.g;var bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#dfe9ef');bg.addColorStop(1,'#c9d8e2');g.fillStyle=INK;g.fillRect(0,0,W,H);ag.rr(g,8,8,W-16,H-16,60);g.fillStyle=bg;g.fill();
@@ -98,7 +112,8 @@
         for(var i=0;i<40;i++){g.fillStyle='rgba(20,18,16,.08)';g.beginPath();g.arc(40+(i%10)*98,60+Math.floor(i/10)*140,2,0,7);g.fill()}
         g.fillStyle=INK;g.fillRect(0,H/2-GOAL/2,14,GOAL);g.fillRect(W-14,H/2-GOAL/2,14,GOAL);
         ag.txt(g,S.sc[0]+'',W/2-80,60,54,'rgba(226,54,27,.35)');ag.txt(g,S.sc[1]+'',W/2+80,60,54,'rgba(63,169,255,.45)');
-        var P=S.p;g.fillStyle='rgba(0,0,0,.18)';g.beginPath();g.ellipse(P.x+5,P.y+6,R_P,R_P*.8,0,0,7);g.fill();g.fillStyle=INK;g.beginPath();g.arc(P.x,P.y,R_P,0,7);g.fill();g.strokeStyle='#444';g.lineWidth=3;g.beginPath();g.arc(P.x,P.y,R_P-6,0,7);g.stroke();
+        var P=S.p;(S.tr||[]).forEach(function(t,i){if(t[2]<350)return;g.fillStyle='rgba(20,18,16,'+(.03+i*.012)+')';g.beginPath();g.arc(t[0],t[1],R_P*(.45+i*.055),0,7);g.fill()});
+        g.fillStyle='rgba(0,0,0,.18)';g.beginPath();g.ellipse(P.x+5,P.y+6,R_P,R_P*.8,0,0,7);g.fill();g.fillStyle=INK;g.beginPath();g.arc(P.x,P.y,R_P,0,7);g.fill();g.strokeStyle='#444';g.lineWidth=3;g.beginPath();g.arc(P.x,P.y,R_P-6,0,7);g.stroke();
         S.m.forEach(function(m,i){var c=i?BLU:RED;g.fillStyle='rgba(0,0,0,.2)';g.beginPath();g.arc(m.x+6,m.y+8,R_M,0,7);g.fill();var gr=g.createRadialGradient(m.x-10,m.y-12,4,m.x,m.y,R_M);gr.addColorStop(0,i?'#9fd4ff':'#ff8a6a');gr.addColorStop(1,c);g.fillStyle=gr;g.beginPath();g.arc(m.x,m.y,R_M,0,7);g.fill();g.fillStyle='rgba(255,255,255,.85)';g.beginPath();g.arc(m.x,m.y,13,0,7);g.fill();g.fillStyle=c;g.beginPath();g.arc(m.x,m.y,8,0,7);g.fill()});
         S.fx.forEach(function(f){g.globalAlpha=f.t;g.fillStyle=YEL;g.fillRect(f.x,f.y,5,5)});g.globalAlpha=1;
         if(S.wait>0&&C.running)ag.txt(g,'PRÊTS',W/2,H/2,64,'rgba(20,18,16,.25)')}
