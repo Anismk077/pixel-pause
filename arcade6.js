@@ -77,12 +77,16 @@
   function pClick(C,x,y){if(P.anim||P.won)return;
     /* boutons du bas */
     var bs=pBtns();for(var b=0;b<bs.length;b++){var B=bs[b];if(x>B.x&&x<B.x+B.w&&y>B.y&&y<B.y+B.h){B.fn(C);sfx.play('ui');return}}
-    var hit=-1;P.pos.forEach(function(p,i){if(x>p.x-8&&x<p.x+p.w+8&&y>p.y-30&&y<p.y+p.h+10)hit=i});
+    var hit=pHit(x,y);
     if(hit<0){P.sel=-1;return}
     if(P.sel<0){if(P.tubes[hit].length&&!(P.tubes[hit].length===4&&P.tubes[hit].every(function(z){return z===P.tubes[hit][0]}))){P.sel=hit;sfx.play('tick')}return}
     if(hit===P.sel){P.sel=-1;return}
     var k=canPour(P.sel,hit);if(!k){P.shake[hit]=.35;sfx.play('lose');P.sel=-1;return}
     P.undo.push(JSON.stringify(P.tubes));P.anim={a:P.sel,b:hit,k:k,col:P.tubes[P.sel][P.tubes[P.sel].length-1],t:0};P.sel=-1;P.moves++;sfx.play('eat')}
+  function pHit(x,y){var hit=-1;P.pos.forEach(function(p,i){if(x>p.x-8&&x<p.x+p.w+8&&y>p.y-30&&y<p.y+p.h+10)hit=i});return hit}
+  function pBtnAt(x,y){var bs=pBtns();for(var b=0;b<bs.length;b++){var B=bs[b];if(x>B.x&&x<B.x+B.w&&y>B.y&&y<B.y+B.h)return b}return -1}
+  /* survol : la fiole sous la souris se soulève un peu, et la main apparaît sur ce qui est cliquable */
+  function pHover(C,x,y){if(!P)return;P.hov=pHit(x,y);P.hb=pBtnAt(x,y);var can=C.running&&!P.won&&(P.hb>=0||(P.hov>=0&&(P.sel>=0||P.tubes[P.hov].length)));C.cv.style.cursor=can?'pointer':'default'}
   function pBtns(){return [{x:W/2-250,y:H-58,w:150,h:40,l:'↶ ANNULER',fn:function(){if(P.undo.length){P.tubes=JSON.parse(P.undo.pop());P.moves++}}},
     {x:W/2-75,y:H-58,w:150,h:40,l:'⟳ RECOMMENCER',fn:function(C){if(P.undo.length){P.tubes=JSON.parse(P.undo[0]);P.undo=[];P.moves=0;if(P.extra){P.tubes.push([]);pLay()}}}},
     {x:W/2+100,y:H-58,w:150,h:40,l:P&&P.extra?'TUBE AJOUTÉ':'+ 1 TUBE',fn:function(){if(!P.extra){P.extra=true;P.tubes.push([]);pLay()}}}]}
@@ -104,10 +108,10 @@
     setup:function(C){pReset(C);C.keysText('Clique (ou tape) une fiole puis une autre pour verser · une couleur ne va que sur la même couleur ou dans une fiole vide · <kbd>Z</kbd> annule');
       C.over('Potions','Range les couleurs : chaque fiole doit finir remplie d\'une seule couleur.<br>On ne verse que sur la même couleur ou dans une fiole vide. Tu peux annuler, recommencer, ou ajouter une fiole vide une fois par niveau.','Jouer')},
     start:function(C){pReset(C,false)},
-    mouse:function(C,t,x,y){if(t==='down'&&C.running)pClick(C,x,y)},
+    mouse:function(C,t,x,y){if(t==='down'&&C.running)pClick(C,x,y);pHover(C,x,y)},
     key:function(C,code,down){if(down&&C.running&&code==='KeyZ'&&!P.anim&&P.undo.length){P.tubes=JSON.parse(P.undo.pop())}},
     step:function(C,dt){P.t+=dt;Object.keys(P.shake).forEach(function(k){P.shake[k]=Math.max(0,P.shake[k]-dt)});
-      P.lift=P.lift.map(function(l,i){return l+(((i===P.sel)?1:0)-l)*Math.min(1,dt*14)});
+      P.lift=P.lift.map(function(l,i){var tg=i===P.sel?1:(i===P.hov&&!P.anim&&P.sel<0&&P.tubes[i].length)?.25:0;return l+(tg-l)*Math.min(1,dt*14)});
       P.spark.forEach(function(s){s.t-=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;s.vy+=300*dt});P.spark=P.spark.filter(function(s){return s.t>0});
       if(P.anim){var a=P.anim;a.t+=dt/.85;if(a.t>=1){var A=P.tubes[a.a],B=P.tubes[a.b];for(var k=0;k<a.k;k++)B.push(A.pop());P.anim=null;
           if(B.length===4&&B.every(function(z){return z===B[0]})){sfx.play('win');var p=P.pos[a.b];for(var s=0;s<18;s++)P.spark.push({x:p.x+p.w/2,y:p.y,vx:(Math.random()-.5)*240,vy:-Math.random()*240,t:.8,c:COLS[B[0]]})}
@@ -115,12 +119,19 @@
             setTimeout(function(){C.over('Niveau '+P.level+' réussi','En '+P.moves+' coups.'+(nb?'<br><b>Record de niveaux !</b>':''),'Niveau suivant',function(){var lv=P.level+1;pReset(C,true);P.level=lv;C.go()})},900)}}}
       C.hud('<span>Niveau <b>'+P.level+'</b></span><span>Coups <b>'+P.moves+'</b></span><span>'+({easy:'Facile',mid:'Moyen',hard:'Difficile',exp:'Expert'}[C.mode]||'')+'</span>')},
     draw:function(C){var g=C.g;if(!P)pReset(C);
-      g.fillStyle='#efe6d4';g.fillRect(0,0,W,H);g.fillStyle='#e6dbc4';for(var i=0;i<W;i+=40)g.fillRect(i,0,20,H);
-      g.fillStyle='#d8c9ac';g.fillRect(0,P.pos[0].y+P.pos[0].h+6,W,10);if(P.pos.length>8)g.fillRect(0,P.pos[P.pos.length-1].y+P.pos[0].h+6,W,10);
+      /* fond : mur clair dégradé avec une lueur douce derrière les fioles, et des étagères en bois */
+      var bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#f6efe2');bg.addColorStop(1,'#e4d6bb');g.fillStyle=bg;g.fillRect(0,0,W,H);
+      var gl=g.createRadialGradient(W/2,H*.45,40,W/2,H*.45,W*.6);gl.addColorStop(0,'rgba(255,255,255,.55)');gl.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gl;g.fillRect(0,0,W,H);
+      function shelf(y){g.fillStyle='rgba(20,18,16,.10)';g.fillRect(40,y+14,W-80,8);g.fillStyle='#b8834a';g.fillRect(40,y,W-80,14);g.fillStyle='#d19a5e';g.fillRect(40,y,W-80,4);g.strokeStyle=INK;g.lineWidth=2.5;g.strokeRect(40,y,W-80,14)}
+      shelf(P.pos[0].y+P.pos[0].h+4);if(P.pos.length>8)shelf(P.pos[P.pos.length-1].y+P.pos[0].h+4);
       var a=P.anim;
+      /* fioles où l'on peut verser : petite flèche au-dessus */
+      if(P.sel>=0&&!a)P.pos.forEach(function(p,i){if(i===P.sel||!canPour(P.sel,i))return;var bob=Math.sin(P.t*6)*3,cx=p.x+p.w/2,cy=p.y-26+bob;g.fillStyle=COLS[P.tubes[P.sel][P.tubes[P.sel].length-1]];g.strokeStyle=INK;g.lineWidth=2.5;g.beginPath();g.moveTo(cx-9,cy-8);g.lineTo(cx+9,cy-8);g.lineTo(cx,cy+4);g.closePath();g.fill();g.stroke()});
       P.tubes.forEach(function(t,i){if(a&&i===a.a)return;var p=P.pos[i],sh=P.shake[i]?Math.sin(P.t*60)*6*P.shake[i]/.35:0,lf=-P.lift[i]*22;
         var add=0;if(a&&i===a.b){var pp=Math.max(0,Math.min(1,(a.t-.3)/.42));add=a.k*pp}
         var done=t.length===4&&t.every(function(z){return z===t[0]})&&!(a&&i===a.b);
+        if(i===P.sel){var hg=g.createRadialGradient(p.x+p.w/2,p.y+p.h/2+lf,10,p.x+p.w/2,p.y+p.h/2+lf,p.h*.75);hg.addColorStop(0,'rgba(243,198,35,.45)');hg.addColorStop(1,'rgba(243,198,35,0)');g.fillStyle=hg;g.fillRect(p.x-p.h,p.y-p.h*.4+lf,p.w+p.h*2,p.h*1.8)}
+        if(done){g.fillStyle='rgba(63,191,106,.18)';g.beginPath();g.ellipse(p.x+p.w/2,p.y+p.h+2,p.w*.8,8,0,0,7);g.fill()}
         drawTube(g,p,t,i,sh,lf,0,0,add,a?a.col:0,done)});
       if(a){var A=P.pos[a.a],B=P.pos[a.b],e=function(u){return u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2};
         var mv=a.t<.3?e(a.t/.3):a.t>.75?1-e((a.t-.75)/.25):1,dir=B.x>A.x?1:-1,tx=B.x-A.x-dir*(A.w*.85),ty=B.y-A.y-A.h*.55;
@@ -128,7 +139,9 @@
         if(pp2>0&&pp2<1){var lipx=A.x+ox+A.w/2+dir*Math.cos(ang)*A.w*.45,lipy=A.y+oy+Math.sin(Math.abs(ang))*A.w*.3+4;g.strokeStyle=COLS[a.col];g.lineWidth=7;g.lineCap='round';g.beginPath();g.moveTo(lipx,lipy);g.quadraticCurveTo(B.x+B.w/2,lipy-6,B.x+B.w/2,B.y+B.h-6-(P.tubes[a.b].length+a.k*pp2)*38);g.stroke()}
         drawTube(g,A,P.tubes[a.a],a.a,ox,oy,ang,a.k*pp2,0,0,false)}
       P.spark.forEach(function(s){g.fillStyle=s.c;g.globalAlpha=Math.min(1,s.t*2);g.fillRect(s.x,s.y,6,6);g.globalAlpha=1});
-      pBtns().forEach(function(b){g.fillStyle=INK;rr(g,b.x,b.y,b.w,b.h,6);g.fill();mono(g,b.l,b.x+b.w/2,b.y+b.h/2,12,CR)});
+      pBtns().forEach(function(b,i){var off=(i===0&&!P.undo.length)||(i===1&&!P.undo.length)||(i===2&&P.extra),hv=P.hb===i&&!off&&C.running,yy=b.y-(hv?2:0);
+        g.fillStyle='rgba(20,18,16,.18)';rr(g,b.x+3,b.y+4,b.w,b.h,8);g.fill();
+        g.fillStyle=off?'#8d867c':hv?RED:INK;rr(g,b.x,yy,b.w,b.h,8);g.fill();mono(g,b.l,b.x+b.w/2,yy+b.h/2,12,CR)});
       txt(g,'NIVEAU '+P.level,W/2,P.pos.length>8?26:80,26,INK)}
   });
 

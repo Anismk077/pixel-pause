@@ -658,7 +658,7 @@ body.fs-mode::after{content:"";position:fixed;inset:0;background:#000;z-index:99
 @keyframes agShake{0%,100%{transform:translate(0,0)}20%{transform:translate(var(--sh),calc(var(--sh)*-.6))}40%{transform:translate(calc(var(--sh)*-.8),calc(var(--sh)*.5))}60%{transform:translate(calc(var(--sh)*.5),calc(var(--sh)*.7))}80%{transform:translate(calc(var(--sh)*-.4),calc(var(--sh)*-.3))}}
 .maze-mini{position:absolute!important;left:auto!important;right:10px;top:10px!important;width:150px!important;height:150px!important;aspect-ratio:auto!important;z-index:3;border:2px solid #141210;pointer-events:none}
 
-.stage canvas.nocur,#sumo-cv,#foot-cv,#kt-cv,#rn-cv,#sn-cv,#pa-cv{cursor:none}
+.stage canvas.nocur,#sumo-cv,#foot-cv,#rn-cv,#sn-cv,#pa-cv{cursor:none}
 .ag-cur{position:absolute;z-index:5;pointer-events:none;transform:translate(-50%,-50%)}
 .ag-cur.dot{width:18px;height:18px;border-radius:50%;background:#f3c623;border:3px solid #141210;box-shadow:0 0 0 2px rgba(241,236,226,.7)}
 .ag-cur.brush{width:14px;height:14px;border-radius:50%;border:2px solid #141210;background:rgba(255,255,255,.4)}
@@ -700,3 +700,24 @@ body.fs-mode::after{content:"";position:fixed;inset:0;background:#000;z-index:99
 
 /* classements sous chaque jeu */
 .lb{max-width:640px;margin:22px auto 6px;border:2px solid #141210;background:#fbf8f1;padding:14px 16px}.lb-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.lb h3{margin:0;font:400 24px Anton,Impact,sans-serif;letter-spacing:.02em}.lb-tabs{display:flex;gap:4px;flex-wrap:wrap}.lb-tabs button{font:700 11px 'IBM Plex Mono',monospace;padding:5px 9px;border:2px solid #141210;background:transparent;cursor:pointer}.lb-tabs button.on{background:#141210;color:#f1ece2}.lb-list{list-style:none;margin:10px 0 0;padding:0}.lb-list li{display:flex;align-items:center;gap:10px;padding:6px 4px;border-bottom:1px solid rgba(20,18,16,.15);font:500 14px 'IBM Plex Mono',monospace}.lb-list li b{margin-left:auto;font-weight:700}.lb-r{width:22px;text-align:center;font:400 18px Anton,Impact,sans-serif}.lb-pic{width:30px;height:30px;border-radius:50%;background:#e8e0d0;object-fit:cover}.lb-list li.top1 .lb-r{color:#d4a32a}.lb-list li.top2 .lb-r{color:#8a8f96}.lb-list li.top3 .lb-r{color:#b0703a}.lb-list li.me{background:#e2361b;color:#fff}.lb-wait{opacity:.7;justify-content:center}.lb-me{margin:10px 0 0;font:500 12px 'IBM Plex Mono',monospace;opacity:.85}
+
+/* v23 : podium des classements */
+.lb-podium{display:grid;grid-template-columns:1fr 1fr 1fr;align-items:end;gap:8px;margin:14px 0 4px}
+.lb-step{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;text-align:center}
+.lb-step.empty{visibility:hidden}
+.lb-ppic,.lb-nopic{width:56px;height:56px;border-radius:50%;background:#e8e0d0;border:3px solid #141210;object-fit:cover;display:block}
+.lb-step.p1 .lb-ppic,.lb-step.p1 .lb-nopic{width:72px;height:72px;border-color:#d4a32a}
+.lb-pn{font:700 13px 'IBM Plex Mono',monospace;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-step b{font:700 12px 'IBM Plex Mono',monospace;opacity:.85}
+.lb-block{width:100%;border:2px solid #141210;border-bottom:0;display:flex;align-items:flex-start;justify-content:center;padding-top:6px;color:#141210;font:400 30px Anton,Impact,sans-serif;margin-top:4px}
+.lb-step.p1 .lb-block{height:86px;background:#f3c623}
+.lb-step.p2 .lb-block{height:62px;background:#cfd3d8}
+.lb-step.p3 .lb-block{height:44px;background:#d89a62}
+.lb-step.me .lb-pn{color:#e2361b}
+.lb-podium+.lb-list{border-top:2px solid #141210;margin-top:0}
+.lb-list:empty{display:none}
+@keyframes lbUp{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+.lb-step{animation:lbUp .45s ease-out both}.lb-step.p1{animation-delay:.15s}.lb-step.p3{animation-delay:.08s}
+#kt-cv{cursor:grab;touch-action:none}#kt-cv.drag{cursor:grabbing}
+/* v23 : écran de chargement de la Survie */
+#sv-ov.sv-loading button,#sv-ov.sv-loading #sv-savelist,#sv-ov.sv-loading .sv-saves{display:none!important}#sv-ov.sv-loading h2::after,#sv-ov.sv-loading #sv-title::after{content:'';display:inline-block;width:.8em;height:.8em;margin-left:.4em;border:3px solid currentColor;border-right-color:transparent;border-radius:50%;animation:svSpin .8s linear infinite;vertical-align:middle}@keyframes svSpin{to{transform:rotate(360deg)}}

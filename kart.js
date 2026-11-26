@@ -21,9 +21,15 @@
   function tex(w,h,fn,rx,ry){var c=document.createElement('canvas');c.width=w;c.height=h;fn(c.getContext('2d'),w,h);var t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;if(rx)t.repeat.set(rx,ry);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;return t}
   function lam(c,o){return new THREE.MeshLambertMaterial(Object.assign({color:c},o||{}))}
   function buildScene(){scene=new THREE.Scene();var M=TRK.M;scene.background=new THREE.Color(M.sky);scene.fog=new THREE.Fog(M.sky,120,420);
-    scene.add(new THREE.HemisphereLight(0xffffff,0x707060,1.0));var sun=new THREE.DirectionalLight(0xfff0d6,1.2);sun.position.set(80,140,60);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);var sc=sun.shadow.camera;sc.left=sc.bottom=-260;sc.right=sc.top=260;sc.far=500;scene.add(sun);
-    var gr=new THREE.Mesh(new THREE.PlaneGeometry(1400,1400),lam(M.grass));gr.rotation.x=-Math.PI/2;gr.position.y=-.05;gr.receiveShadow=true;scene.add(gr);
-    var road=tex(64,256,function(g,w,h){g.fillStyle=M.deco==='neige'?'#8a929c':M.deco==='desert'?'#7a6a5a':'#3e3d44';g.fillRect(0,0,w,h);for(var i=0;i<500;i++){g.fillStyle='rgba(255,255,255,'+Math.random()*.06+')';g.fillRect(Math.random()*w,Math.random()*h,2,2)}g.fillStyle='rgba(255,255,255,.75)';g.fillRect(w/2-2,0,4,h*.45)});
+    scene.add(new THREE.HemisphereLight(0xffffff,0x707060,.95));
+    /* v23 : le soleil suit le joueur avec une petite zone d'ombre → ombres nettes au lieu de grosses taches floues */
+    var sun=new THREE.DirectionalLight(0xfff0d6,1.35);sun.position.set(40,70,30);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.bias=-.0004;sun.shadow.normalBias=.03;var sc=sun.shadow.camera;sc.left=sc.bottom=-70;sc.right=sc.top=70;sc.near=1;sc.far=220;scene.add(sun);scene.add(sun.target);S.sun=sun;
+    /* sol avec un peu de grain (au lieu d'un aplat) */
+    var grT=tex(128,128,function(g,w,h){var c=new THREE.Color(M.grass);g.fillStyle='#'+c.getHexString();g.fillRect(0,0,w,h);for(var i=0;i<900;i++){var v=Math.random();g.fillStyle=v<.5?'rgba(0,0,0,'+(.03+Math.random()*.05)+')':'rgba(255,255,255,'+(.03+Math.random()*.05)+')';g.fillRect(Math.random()*w,Math.random()*h,2+Math.random()*3,2+Math.random()*3)}},90,90);
+    var gr=new THREE.Mesh(new THREE.PlaneGeometry(1400,1400),new THREE.MeshLambertMaterial({map:grT}));gr.rotation.x=-Math.PI/2;gr.position.y=-.05;gr.receiveShadow=true;scene.add(gr);
+    var road=tex(64,256,function(g,w,h){g.fillStyle=M.deco==='neige'?'#8a929c':M.deco==='desert'?'#7a6a5a':'#3e3d44';g.fillRect(0,0,w,h);for(var i=0;i<500;i++){g.fillStyle='rgba(255,255,255,'+Math.random()*.06+')';g.fillRect(Math.random()*w,Math.random()*h,2,2)}g.fillStyle='rgba(255,255,255,.75)';g.fillRect(w/2-2,0,4,h*.45);
+      /* lignes blanches continues le long des bords + légère usure au centre des voies */
+      g.fillStyle='rgba(255,255,255,.85)';g.fillRect(2,0,3,h);g.fillRect(w-5,0,3,h);g.fillStyle='rgba(0,0,0,.08)';g.fillRect(w*.22,0,6,h);g.fillRect(w*.72,0,6,h)});
     ribbon(-W/2,W/2,0,new THREE.MeshLambertMaterial({map:road}),10);
     var curb=tex(16,64,function(g,w,h){g.fillStyle='#e2361b';g.fillRect(0,0,w,h/2);g.fillStyle='#f1ece2';g.fillRect(0,h/2,w,h/2)});ribbon(W/2,W/2+1.4,.02,new THREE.MeshLambertMaterial({map:curb}),4);ribbon(-W/2-1.4,-W/2,.02,new THREE.MeshLambertMaterial({map:curb}),4);
     /* barrières */
@@ -37,7 +43,10 @@
     /* caisses à objets */
     S.boxes=[];[.18,.5,.78].forEach(function(f){var k=Math.floor(f*NS);for(var l=-1.5;l<=1.5;l++){var p=TRK.P[k],n=TRK.N[k],m=itemBoxMesh();m.position.set(p.x+n.x*l*3.2,1.1,p.z+n.z*l*3.2);scene.add(m);S.boxes.push({m:m,t:0})}});
     S.slicks=[];S.balls=[]}
-  function deco(kind){var g=new THREE.Group();if(kind==='ville'){var h=8+Math.random()*30,c=[0xc9b79a,0x9fb3c8,0xd29a7a,0xb5c2a0,0xe0c98a][Math.floor(Math.random()*5)];var b=new THREE.Mesh(new THREE.BoxGeometry(8+Math.random()*8,h,8+Math.random()*8),lam(c));b.position.y=h/2;b.castShadow=true;g.add(b);var r=new THREE.Mesh(new THREE.BoxGeometry(3,1.2,3),lam(0x5a5560));r.position.y=h+.6;g.add(r)}
+  var WIN=null;function winTex(){if(!WIN)WIN=tex(64,64,function(g,w,h){g.fillStyle='#fff';g.fillRect(0,0,w,h);for(var y=6;y<h;y+=16)for(var x=6;x<w;x+=16){g.fillStyle=Math.random()<.25?'#f6e2a0':'#5d6a7a';g.fillRect(x,y,8,9)}});return WIN}
+  function deco(kind){var g=new THREE.Group();if(kind==='ville'){var h=8+Math.random()*30,c=[0xc9b79a,0x9fb3c8,0xd29a7a,0xb5c2a0,0xe0c98a][Math.floor(Math.random()*5)],bw=8+Math.random()*8,bd=8+Math.random()*8;
+    /* façades avec fenêtres (texture partagée, répétée selon la taille) */
+    var wt=winTex().clone();wt.needsUpdate=true;wt.repeat.set(Math.round(bw/4),Math.round(h/4));var b=new THREE.Mesh(new THREE.BoxGeometry(bw,h,bd),new THREE.MeshLambertMaterial({color:c,map:wt}));b.position.y=h/2;b.castShadow=true;g.add(b);var r=new THREE.Mesh(new THREE.BoxGeometry(3,1.2,3),lam(0x5a5560));r.position.y=h+.6;g.add(r)}
     else if(kind==='desert'){if(Math.random()<.6){var cm=lam(0x4f8a3a);var t=new THREE.Mesh(new THREE.CylinderGeometry(.6,.7,5,8),cm);t.position.y=2.5;g.add(t);[-1,1].forEach(function(s){var a=new THREE.Mesh(new THREE.CylinderGeometry(.4,.4,2.2,8),cm);a.position.set(s*1.1,3,0);g.add(a);var a2=new THREE.Mesh(new THREE.CylinderGeometry(.4,.4,1.2,8),cm);a2.rotation.z=Math.PI/2;a2.position.set(s*.7,2.1,0);g.add(a2)})}else{var rk=new THREE.Mesh(new THREE.DodecahedronGeometry(2+Math.random()*4,0),lam(0xb0703a,{flatShading:true}));rk.position.y=1;rk.scale.y=.7;g.add(rk)}}
     else{var tr=new THREE.Mesh(new THREE.CylinderGeometry(.3,.4,1.6,6),lam(0x6b4a2a));tr.position.y=.8;g.add(tr);for(var i=0;i<3;i++){var f=new THREE.Mesh(new THREE.ConeGeometry(2.2-i*.5,2.6,8),lam(i%2?0xf4f7fb:0x2f6a4a,{flatShading:true}));f.position.y=2.2+i*1.5;g.add(f)}}
     g.traverse(function(o){if(o.isMesh)o.castShadow=true});var s=.9+Math.random()*.8;g.scale.setScalar(s);return g}
@@ -66,8 +75,11 @@
     if(mp.on()){var pl=net.players.slice(0,8);pl.forEach(function(p,i){var me=p.id===net.me.id;K.push(mkKart(i,p.name,COLS[i%8],me?myAv():(p.av||randAv()),me,!me,p.id))})}
     else{for(var i=0;i<6;i++){var hum=i<humans;K.push(mkKart(i,hum?(humans>1?'J'+(i+1):'Toi'):NAMES[i-humans],COLS[i],hum&&i===0?myAv():randAv(),hum,false,null))}}
     K.forEach(function(k){if(k.me)cams.push({k:k,c:new THREE.PerspectiveCamera(68,16/9,.1,600)})});cams.forEach(function(c){placeCam(c,1)});
-    if(!R){R=new THREE.WebGLRenderer({canvas:cv,antialias:true});R.setPixelRatio(Math.min(1.5,window.devicePixelRatio||1));R.shadowMap.enabled=true;R.toneMapping=THREE.ACESFilmicToneMapping;R.outputColorSpace=THREE.SRGBColorSpace}
-    R.setSize(960,540,false);ui();render()}
+    if(!R){R=new THREE.WebGLRenderer({canvas:cv,antialias:true,powerPreference:'high-performance'});R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=1.05;R.outputColorSpace=THREE.SRGBColorSpace}
+    VW=0;fitSize();ui();render()}
+  /* v23 : rendu à la vraie taille affichée (avant : 960×540 étiré → image floue en grand écran) */
+  var VW=960,VH=540;
+  function fitSize(){var w=Math.round(cv.clientWidth||960),h=Math.round(w*9/16);w=Math.max(320,Math.min(2560,w));h=Math.max(180,Math.min(1440,h));if(w===VW&&h===VH)return;VW=w;VH=h;R.setPixelRatio(Math.min(2,window.devicePixelRatio||1)*(w>1700?.85:1));R.setSize(w,h,false)}
   function ctl(k){if(k.remote)return null;var n=K.filter(function(q){return q.me}).indexOf(k),T=TOUCH,c={};
     if(humans>1&&!mp.on()){if(n===0)c={L:KEYS.KeyA,R:KEYS.KeyD,U:KEYS.KeyW,D:KEYS.KeyS,X:KEYS.ShiftLeft||KEYS.Space,I:KEYS.KeyE};else c={L:KEYS.ArrowLeft,R:KEYS.ArrowRight,U:KEYS.ArrowUp,D:KEYS.ArrowDown,X:KEYS.ShiftRight||KEYS.Numpad0,I:KEYS.Enter||KEYS.NumpadEnter||KEYS.ControlRight}}
     else c={L:KEYS.KeyA||KEYS.ArrowLeft||T.L,R:KEYS.KeyD||KEYS.ArrowRight||T.R,U:KEYS.KeyW||KEYS.ArrowUp||T.U,D:KEYS.KeyS||KEYS.ArrowDown||T.D,X:KEYS.ShiftLeft||KEYS.ShiftRight||KEYS.Space||T.X,I:KEYS.KeyE||KEYS.Enter||T.I};return c}
@@ -118,16 +130,33 @@
     if(mp.on()){S.sendT=(S.sendT||0)-dt;if(S.sendT<=0){S.sendT=.066;var m=K.filter(function(q){return q.me})[0];if(m)net.relay({g:'kart',x:+m.x.toFixed(2),z:+m.z.toFixed(2),h:+m.h.toFixed(3),v:+m.v.toFixed(1),lap:m.lap,si:m.si,sp:m.spin>0?1:0,dr:m.drift,b:m.boost>0?1:0})}}
     K.forEach(function(k){if(k.remote&&k.tx!=null){k.x+=(k.tx-k.x)*Math.min(1,dt*12);k.z+=(k.tz-k.z)*Math.min(1,dt*12);var dh=k.th-k.h;dh=Math.atan2(Math.sin(dh),Math.cos(dh));k.h+=dh*Math.min(1,dt*12);k.prog=k.lap*NS+k.si}});
     hud()}
-  function placeCam(c,snap){var k=c.k,dist=8.2+Math.max(0,k.v-25)*.06,b=back(k,dist),tgt=fwd(k,6);var px=b.x,pz=b.z,py=3.7;if(snap){c.c.position.set(px,py,pz)}else{c.c.position.x+=(px-c.c.position.x)*.14;c.c.position.z+=(pz-c.c.position.z)*.14;c.c.position.y+=(py-c.c.position.y)*.1}
-    c.c.lookAt(tgt.x,1.2,tgt.z);var fv=68+(k.boost>0?10:0)+Math.max(0,k.v-25)*.25;c.c.fov+=(fv-c.c.fov)*.1;c.c.updateProjectionMatrix()}
+  /* ---------- caméra : 3 vues (touche C), et la souris (ou le doigt) la fait tourner autour du kart ----------
+     glisser = tourner/monter, molette = zoom, double-clic ou R = recentrer ; lâchée, elle revient doucement derrière */
+  var VIEWS=[{n:'Normale',d:8.2,y:3.7},{n:'Proche',d:5.4,y:2.4},{n:'Haute',d:12,y:7.5}],CAM={view:Math.min(2,PP.store('kt-view')||0),yaw:0,pit:0,zoom:1,drag:null,idle:0};
+  function placeCam(c,snap){var k=c.k,V=VIEWS[CAM.view],free=c===cams[0],yaw=free?CAM.yaw:0,pit=free?CAM.pit:0,zm=free?CAM.zoom:1;
+    var dist=(V.d+Math.max(0,k.v-25)*.06)*zm,ang=k.h+yaw,hy=V.y*zm+pit*dist*.9;
+    var px=k.x+Math.sin(ang)*dist*Math.cos(pit*.6),pz=k.z+Math.cos(ang)*dist*Math.cos(pit*.6),py=Math.max(1.2,hy),tgt=fwd(k,6*Math.cos(yaw));
+    if(snap){c.c.position.set(px,py,pz)}else{var f=CAM.drag&&free?.35:.14;c.c.position.x+=(px-c.c.position.x)*f;c.c.position.z+=(pz-c.c.position.z)*f;c.c.position.y+=(py-c.c.position.y)*(f*.8)}
+    var bl=Math.min(1,Math.abs(Math.atan2(Math.sin(yaw),Math.cos(yaw)))/1.2);c.c.lookAt(tgt.x+(k.x-tgt.x)*bl,1.2,tgt.z+(k.z-tgt.z)*bl);var fv=68+(k.boost>0?10:0)+Math.max(0,k.v-25)*.25;c.c.fov+=(fv-c.c.fov)*.1;c.c.updateProjectionMatrix()}
+  function camTick(dt){if(CAM.drag)return;CAM.idle+=dt;if(CAM.idle>1.2){var r=Math.min(1,dt*2.2);CAM.yaw=Math.atan2(Math.sin(CAM.yaw),Math.cos(CAM.yaw))*(1-r);CAM.pit*=1-r}}
+  function camView(){CAM.view=(CAM.view+1)%VIEWS.length;PP.store('kt-view',CAM.view);CAM.yaw=CAM.pit=0;CAM.zoom=1;pop('VUE '+VIEWS[CAM.view].n.toUpperCase())}
+  cv.addEventListener('pointerdown',function(e){if(PP.cur()!=='kart')return;CAM.drag={x:e.clientX,y:e.clientY,id:e.pointerId};CAM.idle=0;cv.classList.add('drag');try{cv.setPointerCapture(e.pointerId)}catch(_){}});
+  cv.addEventListener('pointermove',function(e){var d=CAM.drag;if(!d||d.id!==e.pointerId)return;var dx=e.clientX-d.x,dy=e.clientY-d.y;d.x=e.clientX;d.y=e.clientY;var s=(PP.settings&&PP.settings.sens?PP.settings.sens/100:1)*.008;CAM.yaw-=dx*s;CAM.pit=Math.max(-.35,Math.min(.9,CAM.pit+dy*s*.8));CAM.idle=0});
+  ['pointerup','pointercancel'].forEach(function(ev){cv.addEventListener(ev,function(e){if(CAM.drag&&CAM.drag.id===e.pointerId){CAM.drag=null;cv.classList.remove('drag')}})});
+  cv.addEventListener('wheel',function(e){if(PP.cur()!=='kart')return;e.preventDefault();CAM.zoom=Math.max(.6,Math.min(1.8,CAM.zoom*(e.deltaY>0?1.08:1/1.08)))},{passive:false});
+  cv.addEventListener('dblclick',function(){CAM.yaw=CAM.pit=0;CAM.zoom=1});
+  window.addEventListener('resize',function(){if(R&&PP.cur()==='kart'){fitSize();if(!running)render()}});
   function syncMeshes(){K.forEach(function(k){var g=k.mesh.g;g.position.set(k.x,k.hop>0?Math.sin(k.hop/.25*Math.PI)*.35:0,k.z);g.rotation.y=k.h+(k.drift?k.drift*.45:0);
       k.mesh.wh.forEach(function(w,i){w.children[0].rotation.x+=k.v*.05;if(i<2)w.rotation.y=k.me||!k.remote?((KEYS.KeyA||KEYS.ArrowLeft)&&k.me?.3:(KEYS.KeyD||KEYS.ArrowRight)&&k.me?-.3:0):0});
       k.mesh.sp.visible=!!k.drift&&k.driftT>.7;if(k.mesh.sp.visible)k.mesh.sp.children.forEach(function(s){s.material.color.setHex(k.driftT>1.5?0xff8a1e:0x6fc8ff);s.scale.setScalar(.7+Math.random()*.6)});
       if(k.mesh.drv){var P=k.mesh.drv.userData.parts;P.torso.rotation.z=(k.drift?k.drift*.15:0);P.head.rotation.y=k.drift?k.drift*.2:0}});}
-  function render(){if(!R)return;syncMeshes();cams.forEach(function(c){placeCam(c)});R.setScissorTest(cams.length>1);
-    if(cams.length>1){cams.forEach(function(c,i){c.c.aspect=960/270;c.c.updateProjectionMatrix();R.setViewport(0,i?0:270,960,270);R.setScissor(0,i?0:270,960,270);R.render(scene,c.c)})}
-    else if(cams[0]){cams[0].c.aspect=16/9;cams[0].c.updateProjectionMatrix();R.setViewport(0,0,960,540);R.render(scene,cams[0].c)}drawMini()}
-  function loop(t){var dt=last?Math.min(.05,(t-last)/1000):0;last=t;if(!running)return;if(PP.cur()!=='kart'){running=false;return}step(dt);render();raf=requestAnimationFrame(loop)}
+  function render(){if(!R)return;fitSize();syncMeshes();cams.forEach(function(c){placeCam(c)});
+    /* l'ombre suit le premier joueur */
+    if(S&&S.sun&&cams[0]){var k0=cams[0].k;S.sun.position.set(k0.x+40,70,k0.z+30);S.sun.target.position.set(k0.x,0,k0.z);S.sun.target.updateMatrixWorld()}
+    R.setScissorTest(cams.length>1);var hh=VH/2;
+    if(cams.length>1){cams.forEach(function(c,i){c.c.aspect=VW/hh;c.c.updateProjectionMatrix();R.setViewport(0,i?0:hh,VW,hh);R.setScissor(0,i?0:hh,VW,hh);R.render(scene,c.c)})}
+    else if(cams[0]){cams[0].c.aspect=VW/VH;cams[0].c.updateProjectionMatrix();R.setViewport(0,0,VW,VH);R.render(scene,cams[0].c)}drawMini()}
+  function loop(t){var dt=last?Math.min(.05,(t-last)/1000):0;last=t;if(!running)return;if(PP.cur()!=='kart'){running=false;return}step(dt);camTick(dt);render();raf=requestAnimationFrame(loop)}
   /* ---------- interface ---------- */
   function ui(){var st=cv.parentNode,u=st.querySelector('.kt-ui');if(!u){u=document.createElement('div');u.className='kt-ui';u.innerHTML='<canvas class="kt-mini" width="170" height="170"></canvas><div class="kt-items"></div>';st.appendChild(u)}
     var mine=K.filter(function(q){return q.me});u.querySelector('.kt-items').innerHTML=mine.map(function(k,i){var ic={turbo:'⚡ TURBO',huile:'● HUILE',boule:'◉ BOULE'}[k.item]||(k.roll>0?'…':'—');return '<span class="kt-it'+(mine.length>1?' p'+(i+1):'')+'">'+(mine.length>1?k.name+' ':'')+'<b>'+ic+'</b></span>'}).join('')}
@@ -141,7 +170,7 @@
     var mm=$('kt-maps');if(!mm){mm=document.createElement('div');mm.id='kt-maps';mm.className='modes kt-maps';mo.parentNode.insertBefore(mm,mo.nextSibling)}
     mm.innerHTML=Object.keys(MAPS).map(function(id){var b=PP.store('kt-best-'+id);return '<button type="button" class="mode'+(id===mapId?' on':'')+'" data-map="'+id+'"><b>'+MAPS[id].n+'</b><span>'+(b?'Record '+PP.fmtTime(b):'3 tours')+'</span></button>'}).join('');mm.hidden=mp.on()&&!net.isHost}
   document.addEventListener('click',function(e){var b=e.target.closest('#kt-modes [data-n],#kt-maps [data-map]');if(!b)return;if(b.dataset.n)humans=+b.dataset.n;if(b.dataset.map){mapId=b.dataset.map;PP.store('kt-map',mapId)}menus();if(running){running=false;cancelAnimationFrame(raf)}setup();intro();sfx.play('ui')});
-  function intro(){$('kt-title').textContent='Pixel Kart · '+MAPS[mapId].n;$('kt-msg').innerHTML=humans===2&&!mp.on()?'J1 : <b>Z Q S D</b>, Maj gauche pour déraper, E pour l\'objet.<br>J2 : <b>flèches</b>, Maj droite pour déraper, Entrée pour l\'objet.':'Flèches ou ZQSD. Maintiens <b>Maj</b> (ou Espace) en tournant pour déraper : plus tu tiens, plus le turbo est fort (bleu puis orange). Passe dans les caisses <b>?</b> et lance ton objet avec <b>E</b>. 3 tours.';$('kt-start').hidden=false;$('kt-start').textContent='Démarrer';$('kt-ov').hidden=false;mp.lobby('kt','Pixel Kart')}
+  function intro(){$('kt-title').textContent='Pixel Kart · '+MAPS[mapId].n;$('kt-msg').innerHTML=humans===2&&!mp.on()?'J1 : <b>Z Q S D</b>, Maj gauche pour déraper, E pour l\'objet.<br>J2 : <b>flèches</b>, Maj droite pour déraper, Entrée pour l\'objet.':'Flèches ou ZQSD. Maintiens <b>Maj</b> (ou Espace) en tournant pour déraper : plus tu tiens, plus le turbo est fort (bleu puis orange). Passe dans les caisses <b>?</b> et lance ton objet avec <b>E</b>. 3 tours.<br>Caméra : <b>glisse la souris</b> sur l\'écran pour la tourner, molette pour zoomer, <b>C</b> change de vue, <b>R</b> recentre.';$('kt-start').hidden=false;$('kt-start').textContent='Démarrer';$('kt-ov').hidden=false;mp.lobby('kt','Pixel Kart')}
   function start(fromNet){if(mp.on()&&net.isHost&&!fromNet)net.broadcast({t:'kart-go',map:mapId});setup();$('kt-ov').hidden=true;running=true;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop)}
   $('kt-start').addEventListener('click',function(){start(false)});
   net.on(function(m,from){if(PP.cur()!=='kart'||!mp.on())return;
@@ -151,7 +180,8 @@
       if(d.ev==='done'&&k){k.done=d.t;return}
       if(k){k.tx=d.x;k.tz=d.z;k.th=d.h;k.v=d.v;k.lap=d.lap;k.si=d.si;k.drift=d.dr||0;k.spin=d.sp?.2:0;k.boost=d.b?.1:0;if(k.x===0&&k.z===0){k.x=d.x;k.z=d.z}}}});
   /* touches (e.code : marche en AZERTY comme en QWERTY) */
-  document.addEventListener('keydown',function(e){if(PP.cur()!=='kart'||/INPUT|TEXTAREA/.test(e.target.tagName))return;KEYS[e.code]=true;if(running&&/^(Arrow|Space|ShiftRight|Enter)/.test(e.code))e.preventDefault()});
+  document.addEventListener('keydown',function(e){if(PP.cur()!=='kart'||/INPUT|TEXTAREA/.test(e.target.tagName))return;KEYS[e.code]=true;if(running&&/^(Arrow|Space|ShiftRight|Enter)/.test(e.code))e.preventDefault();
+    if(!e.repeat&&e.code==='KeyC')camView();if(!e.repeat&&e.code==='KeyR'){CAM.yaw=CAM.pit=0;CAM.zoom=1}});
   document.addEventListener('keyup',function(e){KEYS[e.code]=false});window.addEventListener('blur',function(){KEYS={}});
   (function pad(){var p=$('kt-pad');if(!p)return;p.innerHTML='<button type="button" data-k="L">←</button><button type="button" data-k="X">DÉRAPE</button><button type="button" data-k="I">OBJET</button><button type="button" data-k="D">FREIN</button><button type="button" data-k="U">GAZ</button><button type="button" data-k="R">→</button>';
     function set(e,v){var b=e.target.closest('[data-k]');if(!b)return;e.preventDefault();TOUCH[b.dataset.k]=v;b.classList.toggle('on',v)}

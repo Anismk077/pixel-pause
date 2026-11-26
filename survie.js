@@ -14,7 +14,7 @@
   function fbm(x,z,s){var t=0,a=1,f=1,n=0;for(var i=0;i<5;i++){t+=vnoise(x*f,z*f,s+i*13)*a;n+=a;a*=.5;f*=2.03}return t/n}
   var SEED=1;
   function mainH(x,z){
-    var d=Math.hypot(x,z)/HALF,fall=Math.max(0,1-Math.pow(d,2.4));
+    var d=Math.hypot(x,z)/HALF;if(d>=1)return -12;/* en pleine mer le relief vaut toujours -12 : inutile de calculer le bruit */var fall=1-Math.pow(d,2.4);
     var h=(fbm(x/95,z/95,SEED)-.42)*36+(fbm(x/24,z/24,SEED+5)-.5)*5;
     var m=fbm(x/170,z/170,SEED+9);if(m>.58)h+=(m-.58)*140;
     return h*fall-(1-fall)*14+2;
@@ -28,7 +28,7 @@
     WORLDH=1450;
   }
   function islandH(I,x,z){
-    var dx=x-I.x,dz=z-I.z,d=Math.sqrt(dx*dx+dz*dz)/I.r,fall=Math.max(0,1-Math.pow(d,2.2));
+    var dx=x-I.x,dz=z-I.z,d=Math.sqrt(dx*dx+dz*dz)/I.r;if(d>=1)return -12;var fall=1-Math.pow(d,2.2);
     var h=(fbm(x/70,z/70,SEED+I.s)-.38)*24+(fbm(x/18,z/18,SEED+I.s+3)-.5)*4;
     if(I.b==='neige'){var m=fbm(x/90,z/90,SEED+I.s+9);if(m>.5)h+=(m-.5)*90}
     if(I.b==='desert')h=h*.55+2+Math.sin(x*.05+fbm(x/40,z/40,SEED+I.s)*6)*1.2;
@@ -42,10 +42,17 @@
   }
   function islandAt(x,z){for(var i=0;i<ISL.length;i++){var I=ISL[i];if(Math.hypot(x-I.x,z-I.z)<I.r*1.12)return I}return null}
   function biomeAt(x,z){var I=islandAt(x,z);return I?I.b:'main'}
+  function gridH(pos){var a=new Float32Array(pos.count);for(var i=0;i<pos.count;i++)a[i]=height(pos.getX(i),pos.getZ(i));return a}
+  function gridSlope(H,i,rw,stp){var r=(i/rw)|0,c=i-r*rw,n=H.length/rw;
+    var xl=c>0?H[i-1]:H[i],xr=c<rw-1?H[i+1]:H[i],zu=r>0?H[i-rw]:H[i],zd=r<n-1?H[i+rw]:H[i];
+    return Math.hypot((xr-xl)/((c>0&&c<rw-1?2:1)*stp),(zd-zu)/((r>0&&r<n-1?2:1)*stp))}
   function islandTerrain(I,dt){
     var S2=I.r*2.3,seg=Math.round(S2/3.2),g=new THREE.PlaneGeometry(S2,S2,seg,seg);g.rotateX(-Math.PI/2);g.translate(I.x,0,I.z);
     var pos=g.attributes.position,col=new Float32Array(pos.count*3),c=new THREE.Color(),P2={jungle:[0x3f8a2a,0x5aa83a,0xe8d8a0,0x6b5a3c],desert:[0xdcc488,0xc9a86a,0xe6d4a0,0xb07a4a],neige:[0xeef2f6,0xd8e0e8,0xb8b0a0,0x8a8a90],foret:[0x4f7d2c,0x6e8f37,0xd8c99a,0x77736b]}[I.b],A=new THREE.Color(P2[0]),B=new THREE.Color(P2[1]),beach=new THREE.Color(P2[2]),rk=new THREE.Color(P2[3]),wetC=new THREE.Color(P2[2]).multiplyScalar(.8),seaC=new THREE.Color(0x8f8a6a);
-    for(var i=0;i<pos.count;i++){var x=pos.getX(i),z=pos.getZ(i),h=height(x,z);pos.setY(i,h);var n=fbm(x/28,z/28,SEED+I.s+40),sl=slope(x,z);
+    var HG=gridH(pos),RW=seg+1,STP=S2/seg;
+    for(var i=0;i<pos.count;i++){var x=pos.getX(i),z=pos.getZ(i),h=HG[i];pos.setY(i,h);
+      if(h<-11.9){c.copy(seaC);col[i*3]=c.r;col[i*3+1]=c.g;col[i*3+2]=c.b;continue}
+      var n=fbm(x/28,z/28,SEED+I.s+40),sl=gridSlope(HG,i,RW,STP);
       if(h<1.6){c.copy(beach);if(h<.15)c.lerp(wetC,Math.min(1,(.15-h)*2.5));if(h<-.6)c.lerp(seaC,Math.min(1,(-.6-h)/3))}else{c.copy(A).lerp(B,n);if(h<2.6)c.lerp(beach,(2.6-h));if(sl>.85)c.lerp(rk,Math.min(1,(sl-.85)*1.6));if(I.b!=='neige'&&h>20)c.lerp(rk,Math.min(1,(h-20)/8));if(I.b==='neige'&&sl>1.2)c.lerp(rk,.6)}
       col[i*3]=c.r;col[i*3+1]=c.g;col[i*3+2]=c.b}
     g.setAttribute('color',new THREE.BufferAttribute(col,3));g.computeVertexNormals();
@@ -372,8 +379,19 @@
     for(var c=0;c<30;c++){var g=new THREE.Group(),cl=new THREE.Mesh(cgs[c%6],cm);var sc=.8+Math.random()*.9;cl.scale.set(sc,sc*(.55+Math.random()*.3),sc);cl.rotation.y=Math.random()*6;g.add(cl);
       g.position.set((Math.random()-.5)*1000,150+Math.random()*90,(Math.random()-.5)*1000);g.userData.v=1.5+Math.random()*2.5;scene.add(g);clouds.push(g)}
   }
+  /* v23 : on libère l'ancienne île avant d'en créer une autre (avant, chaque partie s'empilait dans la carte graphique
+     et les lancements devenaient de plus en plus lents) */
+  function disposeWorld(){if(!scene)return;var seen=new Set();
+    scene.traverse(function(o){if(o.geometry&&!seen.has(o.geometry)){seen.add(o.geometry);o.geometry.dispose()}
+      var ms=o.material?(Array.isArray(o.material)?o.material:[o.material]):[];ms.forEach(function(m){if(seen.has(m))return;seen.add(m);
+        /* les textures partagées (en cache) seront simplement renvoyées à la carte graphique si on les réutilise */
+        var ts=['map','normalMap','emissiveMap','alphaMap'].map(function(k){return m[k]});if(m.uniforms)Object.keys(m.uniforms).forEach(function(k){ts.push(m.uniforms[k].value)});
+        ts.forEach(function(t){if(t&&t.isTexture&&!seen.has(t)){seen.add(t);t.dispose()}});m.dispose()});
+      if(o.isInstancedMesh&&o.dispose)o.dispose()});
+    try{if(R3&&R3.renderLists)R3.renderLists.dispose()}catch(e){}}
   function buildWorld(seed,noAnimals){
-    SEED=seed;makeIslands();terrains=[];vlights=[];houseList=[];cullT=0;boats=[];hdoors=[];tracers=[];scene=new THREE.Scene();cols=[];grid={};structs=[];zombies=[];animals=[];drops=[];bushes=[];chests=[];clouds=[];grassC=null;
+    disposeWorld();
+SEED=seed;makeIslands();terrains=[];vlights=[];houseList=[];cullT=0;boats=[];hdoors=[];tracers=[];scene=new THREE.Scene();cols=[];grid={};structs=[];zombies=[];animals=[];drops=[];bushes=[];chests=[];clouds=[];grassC=null;
     scene.background=new THREE.Color(0xbfdcf0);scene.fog=new THREE.Fog(0xbfdcf0,120,700);
     buildSky();
     amb=new THREE.HemisphereLight(0xdfefff,0x4a5a30,.85);scene.add(amb);
@@ -382,8 +400,10 @@
     // relief : couleurs selon hauteur et pente, texture de détail par-dessus
     var g=new THREE.PlaneGeometry(SIZE,SIZE,SEG,SEG);g.rotateX(-Math.PI/2);
     var pos=g.attributes.position,col=new Float32Array(pos.count*3),c=new THREE.Color(),grassA=new THREE.Color(0x4f7d2c),grassB=new THREE.Color(0x6e8f37),rock=new THREE.Color(0x77736b),sand=new THREE.Color(0xe6d6a8),snow=new THREE.Color(0xf2f4f7),dirt=new THREE.Color(0x6b5a3c),wet=new THREE.Color(0xb8a57a),sea=new THREE.Color(0x8f8a6a);
-    for(var i=0;i<pos.count;i++){var x=pos.getX(i),z=pos.getZ(i),h=height(x,z);pos.setY(i,h);
-      var sl=slope(x,z),n=fbm(x/30,z/30,SEED+40);
+    /* v23 : hauteurs calculées une seule fois, la pente vient des points voisins de la grille (5× moins de calculs) */
+    var HG=gridH(pos),RW=SEG+1,STP=SIZE/SEG;
+    for(var i=0;i<pos.count;i++){var x=pos.getX(i),z=pos.getZ(i),h=HG[i];pos.setY(i,h);
+      var sl=gridSlope(HG,i,RW,STP),n=fbm(x/30,z/30,SEED+40);
       if(h<1.6){c.copy(sand);if(h<.15)c.lerp(wet,Math.min(1,(.15-h)*2.5));if(h<-.6)c.lerp(sea,Math.min(1,(-.6-h)/3))}else{c.copy(grassA).lerp(grassB,n);if(h<2.6)c.lerp(sand,(2.6-h));if(n>.68)c.lerp(dirt,(n-.68)*2.2);if(h>20)c.lerp(rock,Math.min(1,(h-20)/8));if(sl>.85)c.lerp(rock,Math.min(1,(sl-.85)*1.6));if(h>36)c.lerp(snow,Math.min(1,(h-36)/5))}
       col[i*3]=c.r;col[i*3+1]=c.g;col[i*3+2]=c.b}
     g.setAttribute('color',new THREE.BufferAttribute(col,3));g.computeVertexNormals();
@@ -1739,9 +1759,15 @@
   cv.addEventListener('touchmove',function(e){if(!tl||!P)return;var t=e.targetTouches[0]||e.changedTouches[0];P.yaw-=(t.clientX-tl.x)*.006;P.pitch=Math.max(-1.4,Math.min(1.4,P.pitch-(t.clientY-tl.y)*.006));tl={x:t.clientX,y:t.clientY};e.preventDefault()},{passive:false});
   PP.held('sv-pad',{},function(k){if(k==='A'){mouseDown=true;attack()}if(k==='E')interact();if(k==='F2')eat();if(k==='F'||k==='B'||k==='L'||k==='R')keys[k]=true},function(k){if(k==='A')mouseDown=false;if(k==='F'||k==='B'||k==='L'||k==='R')keys[k]=false});
 
+  /* v23 : l'écran « Création de l'île… » s'affiche tout de suite, puis l'île est construite (au lieu d'un écran figé) */
+  var starting=false;
   function start(fresh){
-    if(!init())return;
+    if(!init()||starting)return;starting=true;
+    var ov=$('sv-ov');ov.hidden=false;ov.classList.add('sv-loading');$('sv-title').textContent=fresh?'Création de l\'île…':'Chargement de l\'île…';$('sv-msg').textContent='Quelques secondes, on fait pousser les arbres.';
+    requestAnimationFrame(function(){setTimeout(function(){try{start2(fresh)}finally{starting=false;ov.classList.remove('sv-loading')}},20)})}
+  function start2(fresh){
     if(fresh){curSlot=Date.now().toString(36);newGame()}else load();
+    try{R3.compile(scene,cam)}catch(e){}
     viewModel();hudInv();$('sv-ov').hidden=true;$('sv-build').hidden=true;$('sv-craft').hidden=true;$('sv-invp').hidden=true;buildMode=null;running=true;paused=false;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);lock();sfx.play('go');
     if(online&&auth){remotes={};net.broadcast(worldMsg());msg('Ton île est ouverte : salon '+net.code)}
   }
