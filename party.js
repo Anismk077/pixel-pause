@@ -10,10 +10,11 @@
     race :{n:'La Course',d:'Atteins l\'arche d\'arrivée. Seuls les plus rapides passent.',ty:'race',c:'#3fa9ff',g:'▶'},
     doors:{n:'Les Portes',d:'Fonce dans les portes : certaines cassent, d\'autres sont en béton.',ty:'race',c:'#d4a32a',g:'▦'},
     hex  :{n:'Sol qui fond',d:'Les dalles disparaissent sous tes pieds. Ne tombe pas tout en bas.',ty:'surv',c:'#9be27a',g:'⬢'},
+    spin :{n:'Le Manège',d:'Saute par-dessus la barre rouge, mais reste au sol quand la barre bleue passe au-dessus.',ty:'surv',c:'#3fa9ff',g:'✚'},
     rocks:{n:'Pluie de rochers',d:'Des rochers tombent du ciel et roulent. Reste sur la plateforme.',ty:'surv',c:'#8a7a6a',g:'●'},
     arena:{n:'La Balayeuse',d:'Saute par-dessus la barre. Le dernier debout gagne tout.',ty:'final',c:'#e2361b',g:'—'},
     summit:{n:'Le Sommet',d:'Grimpe la tour en spirale. Le premier qui touche la couronne gagne.',ty:'final',c:'#8a3fb5',g:'▲'}
-  },STAGES=[['race','doors'],['hex','rocks'],['arena','summit']],sched=['race','hex','arena'];
+  },STAGES=[['race','doors'],['hex','rocks','spin'],['arena','summit']],sched=['race','hex','arena'];
   var ROUNDS={length:3};function gid(){return sched[ri]}function TY(){return GAMES[gid()].ty}
   var R3=null,scene,cam,level,players=[],keys={},remote={},humans=1,running=false,raf=0,last=0,ri=0,T=0,phase='idle',phaseT=0,obs=[],floorsL=[],tiles=[],sendT=0,myIdx=0,camT=new THREE.Vector3(),winner=null,camYaw=[0,0,0,0],camPitch=[.35,.35,.35,.35],camDist=7.5,mouseT=0,remoteYaw={},cams=[],yawAcc=0,mouseCam=false,banners={};
 
@@ -80,6 +81,7 @@
     floor(-2,2,-74,-62,0,0xb48cff,null);floor(-7,-4,-74,-62,0,0xb48cff,null);floor(4,7,-74,-62,0,0xb48cff,null);
     addPusher(-68,5,1.1);addPusher(-72,-5,1.4);
     floor(-8,8,-104,-74,0,0x9be27a,0x7cc95a);
+    addBoost(-4.5,-8);addBoost(4.5,-8);addBoost(0,-58);addBoost(-5,-101);addBoost(5,-101);
     [-80,-88,-96].forEach(function(z,k){addBar(0,z,7.5,.6,(k%2?1:-1)*(1.1+k*.25),0x3fa9ff)});
     floor(-9,9,-122,-104,0,0xf1ece2,null);
     // arche d'arrivée
@@ -89,6 +91,16 @@
   }
   function addBar(cx,cz,len,h,w,col){var g=new THREE.Group();g.position.set(cx,h,cz);var b=new THREE.Mesh(new THREE.CylinderGeometry(.28,.28,len*2,12),lam({color:col}));b.rotation.z=Math.PI/2;b.castShadow=true;g.add(b);var hub=new THREE.Mesh(new THREE.CylinderGeometry(.6,.7,h+.4,14),lam({color:0x141210}));hub.position.y=-h/2+.2;g.add(hub);[-1,1].forEach(function(s){var cap=new THREE.Mesh(new THREE.SphereGeometry(.4,12,10),lam({color:0xffffff}));cap.position.x=s*len;g.add(cap)});level.add(g);obs.push({k:'bar',cx:cx,cz:cz,len:len,h:h,w:w,g:g,a:Math.random()*6})}
   function addHammer(cx,cz,amp,w,ph){var m=boxMesh(cx,1,cz,1.6,2,1.6,0x141210);var top=boxMesh(cx,5,cz,.2,6,.2,0x555555);obs.push({k:'ham',cx:cx,cz:cz,amp:amp,w:w,ph:ph,m:m,top:top,x:cx})}
+  /* v54 : tapis jaunes qui font foncer pendant une seconde */
+  function addBoost(x,z){var m=boxMesh(x,.03,z,2.4,.06,2.4,0xf3c623);m.castShadow=false;[-.5,.3].forEach(function(dz){var ar=new THREE.Mesh(new THREE.ConeGeometry(.55,.7,3),lam({color:0x141210}));ar.rotation.x=-Math.PI/2;ar.scale.y=.5;ar.position.set(0,.06,dz);ar.scale.set(1,1,.12);m.add(ar)});obs.push({k:'boost',x:x,z:z,m:m})}
+  /* v54 : Le Manège, une barre basse à sauter et une barre haute sous laquelle il ne faut pas sauter */
+  function buildSpin(){
+    clearLevel();
+    var disk=new THREE.Mesh(new THREE.CylinderGeometry(11,11,1,48),lam({color:0xe8f2fb}));disk.position.y=-.5;disk.receiveShadow=true;level.add(disk);
+    for(var i=0;i<6;i++){var ring=new THREE.Mesh(new THREE.TorusGeometry(2+i*1.6,.05,6,64),lam({color:i%2?0x3fa9ff:0xe2361b}));ring.rotation.x=Math.PI/2;ring.position.y=.01;level.add(ring)}
+    floorsL.push({disk:true,r:11,top:0,m:disk});
+    addBar(0,0,11,.6,1.05,0xe2361b);addBar(0,0,11,2.1,-.8,0x3fa9ff);obs[obs.length-1].hi=true;obs[obs.length-1].a=obs[obs.length-2].a+1.6;
+  }
   function addPusher(cz,dir,w){var m=boxMesh(0,1,cz,3,2,2,0xe2361b);obs.push({k:'push',cz:cz,amp:6,w:w,ph:dir,m:m,x:0})}
   function buildHex(){
     clearLevel();var R=1.25,H=Math.sqrt(3)*R;
@@ -119,6 +131,7 @@
   function buildDoors(){
     clearLevel();
     floor(-8,8,-96,6,0,0xf1ece2,0xffe3a3);
+    addBoost(-4.5,-6);addBoost(4.5,-6);addBoost(0,-35);addBoost(-3,-63);addBoost(3,-78);
     var R=Math.random;
     [-14,-28,-42,-56,-70].forEach(function(z,row){
       var xs=[-6,-3,0,3,6],reals=[];while(reals.length<(row<2?3:2)){var k=R()*5|0;if(reals.indexOf(k)<0)reals.push(k)}
@@ -174,6 +187,7 @@
     obs.forEach(function(o){
       if(o.k==='door'&&o.alive&&Math.abs(p.x-o.x)<1.5&&Math.abs(p.z-o.z)<.75&&p.y<3){
         if(o.real){o.alive=false;sfx.play('crash');}else{p.z=o.z+.8;p.vz=6;p.vy=3;p.stun=.45;o.known=true;if(!p.bot)sfx.play('hit');if(p.bot)p.ai.door=null}}
+      if(o.k==='boost'&&p.g&&Math.abs(p.x-o.x)<1.3&&Math.abs(p.z-o.z)<1.3){if(!(p.boost>0)&&!p.bot)sfx.play('go');p.boost=1}
       if(o.k==='rock'){var dx=p.x-o.x,dz=p.z-o.z,d=Math.hypot(dx,dz);if(d<1.55&&Math.abs(p.y+.7-o.y)<1.6){dx/=d||1;dz/=d||1;p.vx=dx*10+o.vx*.5;p.vz=dz*10+o.vz*.5;p.vy=6;p.stun=.6;if(!p.bot)sfx.play('hit')}}
     });
   }
@@ -188,7 +202,7 @@
     setTimeout(function(){var g=GAMES[id];$('pa-rod').innerHTML='<b>'+esc(g.n)+'</b> · '+esc(g.d);sfx.play('win');st.children[target].classList.add('on')},2700);
     clearTimeout(roulette.t);roulette.t=setTimeout(function(){el.hidden=true},4300);
   }
-  function buildFor(id){({race:buildRace,doors:buildDoors,hex:buildHex,rocks:buildRocks,arena:buildArena,summit:buildSummit})[id]()}
+  function buildFor(id){({race:buildRace,doors:buildDoors,hex:buildHex,rocks:buildRocks,spin:buildSpin,arena:buildArena,summit:buildSummit})[id]()}
   /* ---------- Physique ---------- */
   function groundAt(p){
     var best=-1e9;
@@ -198,13 +212,13 @@
   }
   function segHit(p,o){
     var ang=o.a,dx=Math.cos(ang),dz=-Math.sin(ang),rx=p.x-o.cx,rz=p.z-o.cz,proj=rx*dx+rz*dz;if(Math.abs(proj)>o.len)return null;
-    var px=rx-proj*dx,pz=rz-proj*dz,d=Math.hypot(px,pz);if(d>.75||p.y>o.h+.35)return null;
+    var px=rx-proj*dx,pz=rz-proj*dz,d=Math.hypot(px,pz);if(d>.75||p.y>o.h+.35)return null;if(o.hi&&p.y+1.5<o.h-.25)return null;
     return {nx:px/(d||1),nz:pz/(d||1),r:proj};
   }
   function stepObs(dt){
     stepNewObs(dt,!mp.on()||net.isHost);
     obs.forEach(function(o){
-      if(o.k==='bar'){var sp=o.w*(gid()==='arena'?1+T*.025:1);o.a+=sp*dt;o.g.rotation.y=o.a;o.sp=sp}
+      if(o.k==='bar'){var sp=o.w*(gid()==='arena'?1+T*.025:gid()==='spin'?1+T*.022:1);o.a+=sp*dt;o.g.rotation.y=o.a;o.sp=sp}
       if(o.k==='ham'){o.x=o.cx+Math.sin(T*o.w+o.ph)*o.amp;o.m.position.x=o.x;o.top.position.x=o.x;o.vx=Math.cos(T*o.w+o.ph)*o.amp*o.w}
       if(o.k==='push'){o.x=Math.sin(T*o.w+o.ph)*o.amp;o.m.position.x=o.x;o.vx=Math.cos(T*o.w+o.ph)*o.amp*o.w}
     });
@@ -219,14 +233,18 @@
   function startYaw(p){return TY()!=='race'?Math.atan2(p.x,p.z):0}
   function physics(p,dt){
     var inp=input(p),fw=(inp.U?1:0)-(inp.D?1:0),sr=(inp.R?1:0)-(inp.L?1:0),y=yawOf(p),mx=p.bot?sr:-Math.sin(y)*fw+Math.cos(y)*sr,mz=p.bot?-fw:-Math.cos(y)*fw-Math.sin(y)*sr,ml=Math.hypot(mx,mz);if(ml){mx/=ml;mz/=ml}
-    p.stun=Math.max(0,(p.stun||0)-dt);var ctl=p.stun>0?.15:(p.g?1:.45),spd=7.2*(p.bot?p.ai.skill:1);
+    p.stun=Math.max(0,(p.stun||0)-dt);p.boost=Math.max(0,(p.boost||0)-dt);p.dive=Math.max(0,(p.dive||0)-dt);
+    var ctl=p.stun>0?.15:p.dive>0?.08:(p.g?1:.45),spd=7.2*(p.bot?p.ai.skill:1)*(p.boost>0?1.7:1);
     p.vx+=(mx*spd-p.vx)*Math.min(1,dt*8*ctl);p.vz+=(mz*spd-p.vz)*Math.min(1,dt*8*ctl);
     if(ml)p.face=Math.atan2(-mx,-mz)+Math.PI;
-    if(inp.X&&p.g&&!p.jl){p.vy=7.6;p.g=false;if(!p.bot)sfx.play('ui')}p.jl=!!inp.X;
+    /* v54 : plongeon. Un deuxième appui sur saut, en l'air, te jette en avant (une fois par saut). */
+    if(inp.X&&!p.jl){if(p.g){p.vy=7.6;p.g=false;p.dv=0;if(!p.bot)sfx.play('ui')}
+      else if(!p.dv&&p.stun<=0){p.dv=1;p.dive=.55;var fa=ml?Math.atan2(mx,mz):p.face;if(ml)p.face=Math.atan2(-mx,-mz)+Math.PI;var ddx=ml?mx:Math.sin(p.face),ddz=ml?mz:Math.cos(p.face);p.vx=ddx*11.5;p.vz=ddz*11.5;p.vy=Math.max(p.vy,3.4);if(!p.bot)sfx.play('shoot')}}
+    p.jl=!!inp.X;
     p.vy-=20*dt;
     var nx=p.x+p.vx*dt,nz=p.z+p.vz*dt,ny=p.y+p.vy*dt;p.x=nx;p.z=nz;
     var gr=groundAt({x:p.x,y:p.y,z:p.z});
-    if(ny<=gr.y&&p.vy<=0){p.y=gr.y;p.vy=0;p.g=true;if(gr.tile&&gr.tile.st===0){gr.tile.st=1;gr.tile.t=.85}}else{p.y=ny;p.g=false}
+    if(ny<=gr.y&&p.vy<=0){p.y=gr.y;p.vy=0;p.g=true;if(p.dv){p.dv=0;p.dive=Math.min(p.dive,.12)}if(gr.tile&&gr.tile.st===0){gr.tile.st=1;gr.tile.t=.85}}else{p.y=ny;p.g=false}
     hitObs(p);hitNewObs(p);
     // collisions entre joueurs
     players.forEach(function(q){if(q===p||q.st!=='in'||q.i<p.i)return;var dx=q.x-p.x,dz=q.z-p.z,d=Math.hypot(dx,dz);if(d<.9&&d>0&&Math.abs(q.y-p.y)<1.2){var push=(.9-d)/2;dx/=d;dz/=d;p.x-=dx*push;p.z-=dz*push;q.x+=dx*push;q.z+=dz*push}});
@@ -262,7 +280,7 @@
     }else{
       var d=Math.hypot(p.x,p.z);if(a.t<=0){a.t=1+Math.random()*2;var an=Math.random()*6.28;a.gx=Math.cos(an)*4;a.gz=Math.sin(an)*4}
       var gx=d>7?0:a.gx,gz=d>7?0:a.gz;if(gx<p.x-.4)inp.L=true;if(gx>p.x+.4)inp.R=true;if(gz<p.z-.4)inp.U=true;if(gz>p.z+.4)inp.D=true;
-      obs.forEach(function(o){if(o.k==='bar'){var h=segHit({x:p.x,y:0,z:p.z},{a:o.a+o.sp*.22,cx:0,cz:0,len:o.len,h:o.h});if(h&&Math.random()<a.skill*.92)inp.X=true}});
+      var noJ=false;obs.forEach(function(o){if(o.k==='bar'){var h=segHit({x:p.x,y:0,z:p.z},{a:o.a+o.sp*(o.hi?.4:.22),cx:0,cz:0,len:o.len,h:o.hi?.6:o.h});if(h){if(o.hi){if(Math.random()<a.skill*.9)noJ=true}else if(Math.random()<a.skill*.92)inp.X=true}}});if(noJ)inp.X=false;
     }
     a.inp=inp;
   }
@@ -294,6 +312,7 @@
     });
     tiles.forEach(function(t){if(t.st===1){t.t-=dt;t.m.position.y=t.y-.3+Math.sin(T*60)*.04;t.m.material.color.setHex(0xff6a5a);if(t.t<=0){t.st=2;t.m.visible=false}}});
     if(id==='rocks'){step.rk=(step.rk||0)-dt;if(step.rk<=0){step.rk=Math.max(.22,.75-T*.008);spawnRock()}}
+    if(id==='spin'&&T>40){var rs9=Math.max(6,11-(T-40)*.08);floorsL[0].r=rs9;floorsL[0].m.scale.set(rs9/11,1,rs9/11)}
     if(id==='arena'&&T>25){var rr=Math.max(4,11-(T-25)*.12);floorsL[0].r=rr;floorsL[0].m.scale.set(rr/11,1,rr/11)}
     // fin de manche
     var target=qualifTarget(),left=aliveList();
@@ -342,7 +361,7 @@
   function angDiff(a,b){var d=(a-b)%(Math.PI*2);if(d>Math.PI)d-=Math.PI*2;if(d<-Math.PI)d+=Math.PI*2;return d}
   function render(dt){
     if(!R3)return;dt=dt||0;
-    players.forEach(function(p){var mv=Math.hypot(p.vx,p.vz)>.5&&p.g;p.anim+=(mv?.28:.06);var u=p.m.userData;p.sq=(p.sq||0)*.85;if(p.g&&!p.wasG)p.sq=.25;p.wasG=p.g;var sq=p.sq;p.m.position.set(p.x,p.y+(mv?Math.abs(Math.sin(p.anim))*.08:Math.sin(p.anim*.5)*.02),p.z);p.m.rotation.y=p.face;p.m.rotation.z=mv?Math.sin(p.anim)*.06:0;p.m.scale.set(1+sq*.4,p.g?1-sq:1.1,1+sq*.4);u.feet[0].position.z=mv?Math.sin(p.anim)*.22-.04:-.04;u.feet[1].position.z=mv?-Math.sin(p.anim)*.22-.04:-.04;u.arms[0].rotation.x=p.g?Math.sin(p.anim)*.7:-2.6;u.arms[1].rotation.x=p.g?-Math.sin(p.anim)*.7:-2.6;u.arms[0].rotation.z=p.g?0:.4;u.arms[1].rotation.z=p.g?0:-.4;if(u.prop)u.prop.rotation.y+=p.g?.1:.6});
+    players.forEach(function(p){var mv=Math.hypot(p.vx,p.vz)>.5&&p.g;p.anim+=(mv?.28:.06);var u=p.m.userData;p.sq=(p.sq||0)*.85;if(p.g&&!p.wasG)p.sq=.25;p.wasG=p.g;var sq=p.sq;p.m.position.set(p.x,p.y+(mv?Math.abs(Math.sin(p.anim))*.08:Math.sin(p.anim*.5)*.02)+(p.dive>0?.35:0),p.z);p.m.rotation.order='YXZ';p.m.rotation.x+=((p.dive>0?-1.25:0)-p.m.rotation.x)*.35;p.m.rotation.y=p.face;p.m.rotation.z=mv?Math.sin(p.anim)*.06:0;p.m.scale.set(1+sq*.4,p.g?1-sq:1.1,1+sq*.4);u.feet[0].position.z=mv?Math.sin(p.anim)*.22-.04:-.04;u.feet[1].position.z=mv?-Math.sin(p.anim)*.22-.04:-.04;u.arms[0].rotation.x=p.g?Math.sin(p.anim)*.7:-2.6;u.arms[1].rotation.x=p.g?-Math.sin(p.anim)*.7:-2.6;u.arms[0].rotation.z=p.g?0:.4;u.arms[1].rotation.z=p.g?0:-.4;if(u.prop)u.prop.rotation.y+=p.g?.1:.6});
     var vs=views(),W=cv.width,H=cv.height,rs=rects(vs.length,W,H),now=performance.now(),lab='';
     R3.setScissorTest(true);
     vs.forEach(function(p,k){
@@ -365,12 +384,12 @@
   /* ---------- Salon ---------- */
   function sendState(dt){
     if(!mp.on()||!net.isHost)return;sendT-=dt;if(sendT>0)return;sendT=.05;
-    net.broadcast({t:'pa-s',r:ri,id:gid(),dr:obs.filter(function(o){return o.k==='door'}).map(function(o){return o.alive?1:0}).join(''),rk:obs.filter(function(o){return o.k==='rock'}).map(function(o){return [+o.x.toFixed(1),+o.y.toFixed(1),+o.z.toFixed(1)]}),T:+T.toFixed(2),ph:phase,p:players.map(function(p){return [+p.x.toFixed(2),+p.y.toFixed(2),+p.z.toFixed(2),+p.face.toFixed(2),p.st==='in'?1:p.st==='q'?2:0,+p.vx.toFixed(1),+p.vz.toFixed(1),p.g?1:0]}),ti:tiles.length?tiles.map(function(t){return t.st}).join(''):'',a:obs.map(function(o){return o.a!==undefined?+o.a.toFixed(3):0}),fr:floorsL[0]&&floorsL[0].disk?+floorsL[0].r.toFixed(2):0});
+    net.broadcast({t:'pa-s',r:ri,id:gid(),dr:obs.filter(function(o){return o.k==='door'}).map(function(o){return o.alive?1:0}).join(''),rk:obs.filter(function(o){return o.k==='rock'}).map(function(o){return [+o.x.toFixed(1),+o.y.toFixed(1),+o.z.toFixed(1)]}),T:+T.toFixed(2),ph:phase,p:players.map(function(p){return [+p.x.toFixed(2),+p.y.toFixed(2),+p.z.toFixed(2),+p.face.toFixed(2),p.st==='in'?1:p.st==='q'?2:0,+p.vx.toFixed(1),+p.vz.toFixed(1),p.g?1:0,p.dive>0?1:0]}),ti:tiles.length?tiles.map(function(t){return t.st}).join(''):'',a:obs.map(function(o){return o.a!==undefined?+o.a.toFixed(3):0}),fr:floorsL[0]&&floorsL[0].disk?+floorsL[0].r.toFixed(2):0});
   }
   var gs=null;
   function guestStep(dt){
     if(!gs)return;T=gs.T;
-    players.forEach(function(p,i){var s=gs.p[i];if(!s)return;p.x+=(s[0]-p.x)*Math.min(1,dt*15);p.y+=(s[1]-p.y)*Math.min(1,dt*15);p.z+=(s[2]-p.z)*Math.min(1,dt*15);p.face=s[3];p.st=s[4]===1?'in':s[4]===2?'q':'out';p.m.visible=s[4]===1;p.vx=s[5];p.vz=s[6];p.g=!!s[7]});
+    players.forEach(function(p,i){var s=gs.p[i];if(!s)return;p.x+=(s[0]-p.x)*Math.min(1,dt*15);p.y+=(s[1]-p.y)*Math.min(1,dt*15);p.z+=(s[2]-p.z)*Math.min(1,dt*15);p.face=s[3];p.st=s[4]===1?'in':s[4]===2?'q':'out';p.m.visible=s[4]===1;p.vx=s[5];p.vz=s[6];p.g=!!s[7];p.dive=s[8]?.2:0});
     obs.forEach(function(o,k){if(o.k==='bar'){o.a=gs.a[k];o.g.rotation.y=o.a}});stepObsGuest();
     if(gs.ti)tiles.forEach(function(t,k){var v=+gs.ti[k];if(v!==t.st){t.st=v;if(v===1)t.m.material.color.setHex(0xff6a5a);if(v===2)t.m.visible=false}});
     if(gs.dr){var ds=obs.filter(function(o){return o.k==='door'});ds.forEach(function(o,k){if(gs.dr[k]==='0'&&o.alive){o.alive=false}})}
@@ -410,8 +429,8 @@
   $('pa-start').addEventListener('click',function(){if(mp.on()){if(!net.isHost)return;humans=Math.min(8,net.players.length);net.broadcast({t:'pa-go',n:humans})}begin()});
   PP._pa=function(){return {obs:function(){return obs},T:function(){return T},players:players,ri:function(){return ri},phase:function(){return phase},tiles:tiles,setRound:function(r){ri=r;startRound()},force:function(r,id){var s0=STAGES[r];STAGES[r]=[id];ri=r;startRound();STAGES[r]=s0}}};
   PP.games.party={
-    open:function(){if(!init())return;if(!players.length){humans=1;ri=0;sched=['race','hex','arena'];makePlayers();buildRace();startPositions()}render();$('pa-start').hidden=false;$('pa-title').textContent='Dernier Debout';$('pa-start').textContent='Jouer';$('pa-msg').textContent='12 blobs, 3 épreuves tirées au sort parmi 6 : une course, une survie, puis une finale. Les bots complètent. Le dernier debout gagne.';$('pa-ov').hidden=false;
-      if(mp.lobby('pa','Dernier Debout'))$('pa-msg').textContent=net.isHost?net.players.length+' joueurs dans le salon, sans bots. ZQSD ou flèches pour bouger, Espace pour sauter.':'L\'hôte va lancer. ZQSD ou flèches pour bouger, Espace pour sauter.'},
+    open:function(){if(!init())return;if(!players.length){humans=1;ri=0;sched=['race','hex','arena'];makePlayers();buildRace();startPositions()}render();$('pa-start').hidden=false;$('pa-title').textContent='Dernier Debout';$('pa-start').textContent='Jouer';$('pa-msg').textContent='12 blobs, 3 épreuves tirées au sort parmi 7 : une course, une survie, puis une finale. Les bots complètent. Le dernier debout gagne. Nouveau : appuie encore sur saut en l\'air pour plonger en avant, et roule sur les tapis jaunes pour foncer.';$('pa-ov').hidden=false;
+      if(mp.lobby('pa','Dernier Debout'))$('pa-msg').textContent=net.isHost?net.players.length+' joueurs dans le salon, sans bots. ZQSD ou flèches pour bouger, Espace pour sauter, encore Espace en l\'air pour plonger.':'L\'hôte va lancer. ZQSD ou flèches pour bouger, Espace pour sauter, encore Espace en l\'air pour plonger.'},
     close:function(){if(running){running=false;cancelAnimationFrame(raf)}}
   };
 })();
