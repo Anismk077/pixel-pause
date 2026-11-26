@@ -48,8 +48,19 @@ PP.net=(function(){
     p.on('connection',function(conn){setupGuest(conn)});
     p.on('disconnected',function(){status('Connexion au service perdue, tentative de reconnexion');try{p.reconnect()}catch(e){}});
     p.on('error',function(e){status('Erreur réseau : '+e.type)});
-    relayHost(c);
+    relayHost(c);remember();
   }
+  /* v31 : le salon survit à une actualisation de la page. On note le salon dans l'onglet (sessionStorage) :
+     au rechargement, le chef rouvre le même code et les invités se reconnectent tout seuls. */
+  var RK='pp-room';
+  function remember(){try{sessionStorage.setItem(RK,JSON.stringify({c:code,h:isHost?1:0,n:me.name,t:Date.now()}))}catch(e){}}
+  function forget(){try{sessionStorage.removeItem(RK)}catch(e){}}
+  function rejoinLost(cc,nm){var n=0;status('Reconnexion au salon '+cc+'…');
+    (function tryIt(){if(code)return;join(cc,nm,function(err){if(!err){emit({t:'players',players:players},'host');if(PP.toast)PP.toast('Reconnecté au salon '+cc,'ok');return}if(++n<5)setTimeout(tryIt,2500);else{forget();emit({t:'closed'},'host')}})})()}
+  function resume(){var s;try{s=JSON.parse(sessionStorage.getItem(RK))}catch(e){}if(!s||!s.c||Date.now()-s.t>30*60000||code||!ready())return;
+    if(s.h)host(s.n,function(err,c){if(err){forget();return}emit({t:'players',players:players},'host');if(PP.toast)PP.toast('Salon '+c+' rouvert : tes potes reviennent tout seuls','ok')},s.c);
+    else rejoinLost(s.c,s.n)}
+  setTimeout(resume,1200);
   function setupGuest(conn){
     conn.on('open',function(){
       conns[conn.peer]=conn;
@@ -107,17 +118,18 @@ PP.net=(function(){
     conn.on('data',function(d){
       if(!d||typeof d!=='object')return;
       if(d.t==='hello'&&!S.done){
-        S.done=true;clearTimeout(S.timer);if(pendingP===p)pendingP=null;peer=p;hostConn=conn;isHost=false;code=d.code;me={id:d.id,name:name};players=d.players;
+        S.done=true;clearTimeout(S.timer);if(pendingP===p)pendingP=null;peer=p;hostConn=conn;isHost=false;code=d.code;me={id:d.id,name:name};players=d.players;remember();
         cb(null,code);return;
       }
       if(d.t==='players')players=d.players;
-      if(d.t==='kicked'){if(!S.done){S.done=true;clearTimeout(S.timer);try{p.destroy()}catch(e){}cb(d.why==='friends'?'Ce salon est réservé aux amis du chef.':d.why==='acc'?'Ce salon est réservé aux joueurs avec un compte. Connecte-toi pour entrer.':'Le chef t\'a exclu de ce salon.');return}S.gone=true;emit({t:'kicked',ban:d.ban},'host');leave();return}
+      if(d.t==='kicked'){forget();if(!S.done){S.done=true;clearTimeout(S.timer);try{p.destroy()}catch(e){}cb(d.why==='friends'?'Ce salon est réservé aux amis du chef.':d.why==='acc'?'Ce salon est réservé aux joueurs avec un compte. Connecte-toi pour entrer.':'Le chef t\'a exclu de ce salon.');return}S.gone=true;emit({t:'kicked',ban:d.ban},'host');leave();return}
       if(d.t==='mkhost'){host(me.name,function(err,nc,np){if(err){try{hostConn.send({t:'newhost',err:1})}catch(e){}return}preP=np;try{hostConn.send({t:'newhost',code:nc})}catch(e){}},'pre');return}
       if(d.t==='migrate'){migrating=true;var nm=me.name,mine=d.to===me.id;emit({t:'migrating',chef:d.name,mine:mine},'host');
         setTimeout(function(){if(mine&&preP){var np=preP;preP=null;leave(true);adopt(np,d.code,nm);migrating=false;emit({t:'migrated',chef:true},'host')}else{leave(true);rejoin(d.code,nm,0)}},mine?200:1200);return}
       emit(d,'host');
     });
-    var bye=function(){if(migrating||S.gone||peer!==p)return;if(S.done){status('Le salon a été fermé par l\'hôte.');emit({t:'closed'},'host');leave()}};
+    /* l'hôte a disparu (il a peut-être juste actualisé sa page) : on essaie de revenir avant d'annoncer la fermeture */
+    var bye=function(){if(migrating||S.gone||peer!==p)return;if(S.done){var cc=code,nm=me.name;leave(true);rejoinLost(cc,nm)}};
     conn.on('close',bye);
     conn.on('error',function(){if(!S.done){S.done=true;clearTimeout(S.timer);cb('Connexion impossible au salon '+c+'.','net')}else bye()});
   }
@@ -190,9 +202,9 @@ PP.net=(function(){
     setTimeout(function(){if(hand&&hand.id===id){hand=null;emit({t:'handfail'},'host')}},12000);return true}
   on(function(m,from){if(m.t!=='newhost'||!isHost||!hand||from!==hand.id)return;var h=hand;hand=null;if(m.err){emit({t:'handfail'},'host');return}
     migrating=true;broadcast({t:'migrate',to:h.id,name:h.name,code:m.code});emit({t:'migrating',chef:h.name,mine:false,me:true},'host');var nm=me.name;
-    setTimeout(function(){leave(true);if(h.leave){migrating=false;emit({t:'players',players:[]},'host')}else rejoin(m.code,nm,0)},400)});
+    setTimeout(function(){leave(true);if(h.leave){forget();migrating=false;emit({t:'players',players:[]},'host')}else rejoin(m.code,nm,0)},400)});
 
-  return {relay:relay,slot:slot,host:host,join:join,leave:leave,send:send,all:all,to:to,broadcast:broadcast,on:on,
+  return {relay:relay,slot:slot,host:host,join:join,leave:function(q){forget();leave(q)},send:send,all:all,to:to,broadcast:broadcast,on:on,
     get code(){return code},get isHost(){return isHost},get me(){return me},get players(){return players},
     inRoom:inRoom,ready:ready,setGate:function(f){gate=f},alive:function(){return !!(peer&&!peer.disconnected&&!peer.destroyed)},handover:handover,kick:kick,setAvatar:function(a){myAv=a;players.forEach(function(p){if(p.id===me.id)p.av=a})},get migrating(){return migrating},onStatus:function(f){statusCb=f},
     inviteLink:function(){return location.origin+location.pathname+'?salon='+code}};
