@@ -21,7 +21,7 @@ window.ARCADE_LIST=[
   {id:'hoops',n:'Basket 3D',sub:'3D · paniers à 2 et 3 points',pl:'1–2',cat:'pc solo 3d',modes:[['solo','Solo','60 secondes chrono'],['duel','2 joueurs','60 s chacun']]},
   {id:'draw',n:'Dessine et devine',sub:'Party · un dessine, les autres devinent',pl:'2–12',cat:'tel',modes:[['online','En ligne','Tout le salon']]},
   {id:'pool',n:'Billard',sub:'Adresse · pleines contre rayées',pl:'1–2',cat:'pc solo',modes:[['solo','Solo','Nettoie la table'],['duel','2 joueurs','Chacun son tour']]},
-  {id:'volt',n:'Voltige',sub:'3D · cours sur les murs, grappin, cibles et zombies',pl:'1',cat:'pc solo 3d',modes:[['cibles','Cibles','24 cibles, chrono'],['zombies','Zombies','Des vagues pendant 3 min']]},
+  {id:'volt',n:'Voltige',sub:'3D · balance-toi à la corde entre les immeubles, murs, tremplins',pl:'1',cat:'pc solo 3d',modes:[['course','Course','18 anneaux dans les airs, chrono'],['cibles','Cibles','24 cibles, chrono'],['zombies','Zombies','Des vagues pendant 3 min']]},
   {id:'flap',n:'Envol',sub:'Arcade · ton perso vole entre les cheminées',pl:'1',cat:'pc tel solo',modes:[['solo','Normal','Passages larges'],['hard','Difficile','Plus serré et plus rapide']]},
   {id:'potion',n:'Potions',sub:'Réflexion · range les couleurs dans les fioles',pl:'1',cat:'pc tel solo',modes:[['easy','Facile','4 couleurs'],['mid','Moyen','7 couleurs'],['hard','Difficile','10 couleurs'],['exp','Expert','12 couleurs'],['bot','Duel ordi','Course contre l\'ordinateur'],['online','Duel salon','Le premier qui finit gagne']]},
   {id:'snakeio',n:'Serpents',sub:'Arène · grandis et avale les plus petits',pl:'1',cat:'pc tel solo',modes:[['solo','Arène','13 serpents'],['big','Grosse arène','20 serpents']]},
