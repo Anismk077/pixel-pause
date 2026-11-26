@@ -14,6 +14,7 @@
     plane:[['ag-plane-pts','Score',0,' pts']],maze:[['ag-maze-t','Temps',1,' s']],hoops:[['ag-hoops-pts','Points',0,' pts']],pool:[['ag-pool-coups','Coups',1,' coups']],
     marz:[['ag-marz-kg','Poids',0,' kg']],flap:[['ag-flap-pts','Cheminées',0,'']],snakeio:[['ag-snakeio-m','Taille',0,'']],
     potion:[['ag-potion-lvl-easy','Facile',0,'niv'],['ag-potion-lvl-mid','Moyen',0,'niv'],['ag-potion-lvl-hard','Difficile',0,'niv'],['ag-potion-lvl-exp','Expert',0,'niv']],
+    wire:[['ag-wire-pts','Panneaux',0,'']],
     volt:[['ag-volt-temps','Cibles',1,'dec'],['ag-volt-pts','Zombies',0,' pts']]};
   /* v23 : chaque jeu a aussi un classement « Victoires » (nombre de parties gagnées) */
   Object.keys(B).forEach(function(g){B[g].push(['st-'+g+'-win','Victoires',0,'win'])});
