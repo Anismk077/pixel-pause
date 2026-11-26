@@ -60,89 +60,110 @@
       if(s.wait&&C.running)mono(g,'TAPE POUR DÉCOLLER',W/2,H-110,16,INK)}
   });
 
-  /* =================== POTIONS =================== */
-  var COLS=['#e2361b','#3a6ad8','#f3c623','#3fbf6a','#7c46c8','#f08bb0','#ff8a1e','#4ad0d8','#8a5a32','#a8e05a','#17120e','#e8e2d4'];
-  var LVL={easy:[4,2],mid:[7,2],hard:[10,2],exp:[12,2]},P;
+  /* =================== POTIONS (v24 : rapide, net, sans attente) ===================
+     - un versement dure 0,3 s, et on peut enchaîner sans attendre (un clic pendant un versement le termine aussitôt)
+     - touches 1 à 9 / 0 pour choisir les fioles, Z annule, H donne un indice, R recommence
+     - fioles en verre avec reflets, bouchon et petite étincelle quand une couleur est finie, étoiles selon les coups */
+  var COLS=['#e2361b','#3a6ad8','#f3c623','#3fbf6a','#7c46c8','#f08bb0','#ff8a1e','#4ad0d8','#8a5a32','#a8e05a','#2b2622','#e8e2d4'];
+  var LVL={easy:[4,2],mid:[7,2],hard:[10,2],exp:[12,2]},P,SEG=34,POUR=.3;
   function pGen(C){var d=LVL[C.mode]||LVL.easy,nc=d[0],ne=d[1],segs=[];for(var c=0;c<nc;c++)for(var k=0;k<4;k++)segs.push(c);
     var tubes;for(var tries=0;tries<200;tries++){for(var i=segs.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=segs[i];segs[i]=segs[j];segs[j]=t}
       tubes=[];for(var c2=0;c2<nc;c2++)tubes.push(segs.slice(c2*4,c2*4+4));if(!tubes.some(function(t){return t.every(function(x){return x===t[0]})}))break}
     for(var e=0;e<ne;e++)tubes.push([]);return tubes}
-  function pReset(C,keepLevel){var lv=keepLevel?P.level:1;P={tubes:pGen(C),sel:-1,anim:null,undo:[],moves:0,level:lv,extra:false,t:0,won:false,lift:[],shake:{},spark:[]};pLay()}
-  function pLay(){var n=P.tubes.length,rows=n>8?2:1,per=Math.ceil(n/rows),tw=56,gap=Math.min(46,(W-80-per*tw)/(per-1||1)),th=4*38+22;P.pos=[];
-    for(var i=0;i<n;i++){var r=Math.floor(i/per),cI=i%per,inRow=r===rows-1?n-per*(rows-1):per,rowW=inRow*tw+(inRow-1)*gap,x0=W/2-rowW/2;P.pos.push({x:x0+cI*(tw+gap),y:rows===2?(r?282:66):150,w:tw,h:th})}
+  function pReset(C,keepLevel){var lv=keepLevel?P.level:1;P={tubes:pGen(C),sel:-1,anim:null,undo:[],moves:0,level:lv,extra:false,t:0,won:false,lift:[],shake:{},spark:[],hint:null,done:{},flash:{},nc:(LVL[C.mode]||LVL.easy)[0]};P.start=JSON.stringify(P.tubes);pLay()}
+  function pLay(){var n=P.tubes.length,rows=n>8?2:1,per=Math.ceil(n/rows),tw=54,gap=Math.min(48,(W-90-per*tw)/(per-1||1)),th=4*SEG+20;P.pos=[];
+    for(var i=0;i<n;i++){var r=Math.floor(i/per),cI=i%per,inRow=r===rows-1?n-per*(rows-1):per,rowW=inRow*tw+(inRow-1)*gap,x0=W/2-rowW/2;P.pos.push({x:x0+cI*(tw+gap),y:rows===2?(r?268:72):150,w:tw,h:th})}
     P.lift=P.tubes.map(function(){return 0})}
+  function full(t){return t.length===4&&t.every(function(z){return z===t[0]})}
   function topRun(t){if(!t.length)return 0;var c=t[t.length-1],n=0;for(var i=t.length-1;i>=0&&t[i]===c;i--)n++;return n}
   function canPour(a,b){var A=P.tubes[a],B=P.tubes[b];if(a===b||!A.length||B.length>=4)return 0;if(B.length&&B[B.length-1]!==A[A.length-1])return 0;return Math.min(topRun(A),4-B.length)}
-  function solved(){return P.tubes.every(function(t){return !t.length||(t.length===4&&t.every(function(x){return x===t[0]}))})}
-  function pClick(C,x,y){if(P.anim||P.won)return;
-    /* boutons du bas */
-    var bs=pBtns();for(var b=0;b<bs.length;b++){var B=bs[b];if(x>B.x&&x<B.x+B.w&&y>B.y&&y<B.y+B.h){B.fn(C);sfx.play('ui');return}}
-    var hit=pHit(x,y);
+  function solved(){return P.tubes.every(function(t){return !t.length||full(t)})}
+  /* un coup « utile » : pas de fiole déjà finie, pas de couleur unie versée dans une fiole vide */
+  function useful(a,b){var A=P.tubes[a],B=P.tubes[b];if(!canPour(a,b)||full(A))return false;if(!B.length&&topRun(A)===A.length)return false;return true}
+  function findHint(){var best=null,bs=-1;for(var a=0;a<P.tubes.length;a++)for(var b=0;b<P.tubes.length;b++){if(!useful(a,b))continue;var A=P.tubes[a],B=P.tubes[b],k=canPour(a,b),s=(B.length?10:0)+(B.length+k===4?20:0)+(k===topRun(A)?5:0)+(A.length===k?8:0);if(s>bs){bs=s;best=[a,b]}}return best}
+  /* fin du versement : on applique le coup (appelé à la fin de l'animation, ou tout de suite si on clique entre-temps) */
+  function pFinish(C){var a=P.anim;if(!a)return;P.anim=null;var A=P.tubes[a.a],B=P.tubes[a.b];for(var k=0;k<a.k;k++)B.push(A.pop());
+    if(full(B)&&!P.done[a.b]){P.done[a.b]=1;P.flash[a.b]=.5;sfx.play('pickup');var p=P.pos[a.b];for(var s=0;s<14;s++)P.spark.push({x:p.x+p.w/2+(Math.random()-.5)*p.w,y:p.y-4,vx:(Math.random()-.5)*260,vy:-60-Math.random()*220,t:.55,c:COLS[B[0]]})}
+    if(solved())pWin(C)}
+  function stars(){var par=P.nc*2+2;return P.moves<=par?3:P.moves<=par*1.5?2:1}
+  function pWin(C){P.won=true;P.sel=-1;C.stop();sfx.play('win');var key=C.mode,nb=C.best('lvl-'+key,P.level),st=stars();C.pop('BRAVO !',RED,'70px');if(P.level>=5)C.win();
+    setTimeout(function(){C.over('Niveau '+P.level+' réussi','<span style="font-size:30px;letter-spacing:6px;color:#f3c623">'+'★★★'.slice(0,st)+'<span style="opacity:.3">'+'★★★'.slice(st)+'</span></span><br>En '+P.moves+' coups.'+(nb?'<br><b>Record de niveaux !</b>':''),'Niveau suivant',function(){var lv=P.level+1;pReset(C,true);P.level=lv;C.go()})},450)}
+  function pSelect(C,hit){if(P.won)return;if(P.anim)pFinish(C);if(P.won)return;P.hint=null;
     if(hit<0){P.sel=-1;return}
-    if(P.sel<0){if(P.tubes[hit].length&&!(P.tubes[hit].length===4&&P.tubes[hit].every(function(z){return z===P.tubes[hit][0]}))){P.sel=hit;sfx.play('tick')}return}
+    if(P.sel<0){if(P.tubes[hit].length&&!full(P.tubes[hit])){P.sel=hit;sfx.play('tick')}else if(P.tubes[hit].length)P.shake[hit]=.2;return}
     if(hit===P.sel){P.sel=-1;return}
-    var k=canPour(P.sel,hit);if(!k){P.shake[hit]=.35;sfx.play('lose');P.sel=-1;return}
-    P.undo.push(JSON.stringify(P.tubes));P.anim={a:P.sel,b:hit,k:k,col:P.tubes[P.sel][P.tubes[P.sel].length-1],t:0};P.sel=-1;P.moves++;sfx.play('eat')}
-  function pHit(x,y){var hit=-1;P.pos.forEach(function(p,i){if(x>p.x-8&&x<p.x+p.w+8&&y>p.y-30&&y<p.y+p.h+10)hit=i});return hit}
+    var k=canPour(P.sel,hit);if(!k){P.shake[hit]=.25;sfx.play('lose');/* on garde la sélection si on clique une autre fiole pleine : elle devient la sélection */if(P.tubes[hit].length&&!full(P.tubes[hit]))P.sel=hit;else P.sel=-1;return}
+    P.undo.push(JSON.stringify({t:P.tubes,d:P.done}));P.anim={a:P.sel,b:hit,k:k,col:P.tubes[P.sel][P.tubes[P.sel].length-1],t:0};P.sel=-1;P.moves++;sfx.play('eat')}
+  function pClick(C,x,y){if(P.won)return;var b=pBtnAt(x,y);if(b>=0){if(P.anim)pFinish(C);if(!P.won){pBtns()[b].fn(C);sfx.play('ui')}return}pSelect(C,pHit(x,y))}
+  function pUndo(){if(P.anim){P.anim=null}if(!P.undo.length)return;var u=JSON.parse(P.undo.pop());P.tubes=u.t;P.done=u.d;P.sel=-1;P.hint=null}
+  function pRestart(){P.anim=null;P.tubes=JSON.parse(P.start);P.undo=[];P.moves=0;P.done={};P.sel=-1;P.hint=null;if(P.extra)P.tubes.push([]);pLay()}
+  function pHintGo(){if(P.anim)return;var h=findHint();if(h){P.hint={a:h[0],b:h[1],t:2.2};P.sel=-1}else{PP.toast&&PP.toast('Plus de coup utile : annule ou ajoute un tube','warn')}}
+  function pHit(x,y){var hit=-1;P.pos.forEach(function(p,i){if(x>p.x-10&&x<p.x+p.w+10&&y>p.y-34&&y<p.y+p.h+12)hit=i});return hit}
   function pBtnAt(x,y){var bs=pBtns();for(var b=0;b<bs.length;b++){var B=bs[b];if(x>B.x&&x<B.x+B.w&&y>B.y&&y<B.y+B.h)return b}return -1}
-  /* survol : la fiole sous la souris se soulève un peu, et la main apparaît sur ce qui est cliquable */
   function pHover(C,x,y){if(!P)return;P.hov=pHit(x,y);P.hb=pBtnAt(x,y);var can=C.running&&!P.won&&(P.hb>=0||(P.hov>=0&&(P.sel>=0||P.tubes[P.hov].length)));C.cv.style.cursor=can?'pointer':'default'}
-  function pBtns(){return [{x:W/2-250,y:H-58,w:150,h:40,l:'↶ ANNULER',fn:function(){if(P.undo.length){P.tubes=JSON.parse(P.undo.pop());P.moves++}}},
-    {x:W/2-75,y:H-58,w:150,h:40,l:'⟳ RECOMMENCER',fn:function(C){if(P.undo.length){P.tubes=JSON.parse(P.undo[0]);P.undo=[];P.moves=0;if(P.extra){P.tubes.push([]);pLay()}}}},
-    {x:W/2+100,y:H-58,w:150,h:40,l:P&&P.extra?'TUBE AJOUTÉ':'+ 1 TUBE',fn:function(){if(!P.extra){P.extra=true;P.tubes.push([]);pLay()}}}]}
-  function drawTube(g,p,tube,i,ox,oy,ang,hide,add,addCol,done){var x=p.x+ox,y=p.y+oy,w=p.w,h=p.h,seg=38;
+  function pBtns(){var w=132,g=12,x0=W/2-(w*4+g*3)/2,y=H-54;return [
+    {x:x0,y:y,w:w,h:38,l:'↶ ANNULER',k:'Z',off:!P.undo.length,fn:pUndo},
+    {x:x0+(w+g),y:y,w:w,h:38,l:'⟳ REFAIRE',k:'R',off:!P.undo.length,fn:pRestart},
+    {x:x0+(w+g)*2,y:y,w:w,h:38,l:P.extra?'TUBE AJOUTÉ':'+ 1 TUBE',k:'T',off:P.extra,fn:function(){if(!P.extra){P.extra=true;P.tubes.push([]);pLay()}}},
+    {x:x0+(w+g)*3,y:y,w:w,h:38,l:'? INDICE',k:'H',off:false,fn:pHintGo}]}
+  function drawTube(g,p,tube,ox,oy,ang,hide,add,addCol,isDone,cork){var x=p.x+ox,y=p.y+oy,w=p.w,h=p.h;
     g.save();g.translate(x+w/2,y);g.rotate(ang);g.translate(-w/2,0);
-    /* forme du tube : col en haut, fond arrondi */
-    function shape(){g.beginPath();g.moveTo(4,0);g.lineTo(4,h-w/2);g.arc(w/2,h-w/2,w/2-4,Math.PI,0,true);g.lineTo(w-4,0);g.closePath()}
-    g.save();shape();g.clip();g.fillStyle='rgba(255,255,255,.55)';g.fillRect(0,0,w,h);
-    var units=[];tube.forEach(function(c){units.push(c)});var full=units.length-hide;
-    for(var u=0;u<units.length;u++){var amt=u<full?1:u<units.length?Math.max(0,1-(hide-(units.length-1-u))):0;if(u>=full){amt=Math.max(0,Math.min(1,(units.length-u)-hide))}
-      if(amt<=0)continue;var yy=h-6-(u+amt)*seg;g.fillStyle=COLS[units[u]];g.fillRect(0,yy,w,seg*amt+1)}
-    if(add>0){var base=units.length;g.fillStyle=COLS[addCol];g.fillRect(0,h-6-(base+add)*seg,w,seg*add+1)}
-    var lvl=Math.max(0,units.length-hide)+add;if(lvl>0){var sy=h-6-lvl*seg;g.fillStyle='rgba(255,255,255,.35)';g.beginPath();g.moveTo(0,sy);for(var xx=0;xx<=w;xx+=6)g.lineTo(xx,sy+Math.sin(xx*.25+P.t*6)*1.6);g.lineTo(w,sy+5);g.lineTo(0,sy+5);g.fill()}
-    g.fillStyle='rgba(255,255,255,.35)';g.fillRect(10,8,7,h-30);g.restore();
-    shape();g.strokeStyle=INK;g.lineWidth=3.5;g.stroke();g.fillStyle=INK;g.fillRect(0,-6,w,9);
-    if(done){g.fillStyle='#b8834a';rr(g,8,-20,w-16,18,4);g.fill();g.strokeStyle=INK;g.lineWidth=2.5;g.stroke()}
+    function shape(){g.beginPath();g.moveTo(3,0);g.lineTo(3,h-w/2);g.arc(w/2,h-w/2,w/2-3,Math.PI,0,true);g.lineTo(w-3,0);g.closePath()}
+    g.save();shape();g.clip();
+    var gl=g.createLinearGradient(0,0,w,0);gl.addColorStop(0,'rgba(255,255,255,.75)');gl.addColorStop(.5,'rgba(255,255,255,.45)');gl.addColorStop(1,'rgba(220,214,200,.7)');g.fillStyle=gl;g.fillRect(0,0,w,h);
+    var n=tube.length,fullN=n-hide;
+    for(var u=0;u<n;u++){var amt=u<fullN?1:Math.max(0,Math.min(1,n-u-hide));if(amt<=0)continue;var yy=h-4-(u+amt)*SEG;g.fillStyle=COLS[tube[u]];g.fillRect(0,yy,w,SEG*amt+1);
+      /* léger dégradé dans chaque couche pour un effet liquide */
+      g.fillStyle='rgba(0,0,0,.10)';g.fillRect(w*.68,yy,w*.32,SEG*amt+1);g.fillStyle='rgba(255,255,255,.12)';g.fillRect(0,yy,w,3)}
+    if(add>0){g.fillStyle=COLS[addCol];g.fillRect(0,h-4-(n+add)*SEG,w,SEG*add+1)}
+    var lvl=Math.max(0,n-hide)+add;if(lvl>0){var sy=h-4-lvl*SEG;g.fillStyle='rgba(255,255,255,.4)';g.fillRect(0,sy,w,3)}
+    g.fillStyle='rgba(255,255,255,.55)';g.fillRect(9,10,5,h-34);g.fillStyle='rgba(255,255,255,.25)';g.fillRect(17,10,3,h-60);g.restore();
+    shape();g.strokeStyle=INK;g.lineWidth=3;g.stroke();g.fillStyle=INK;rr(g,-2,-5,w+4,8,3);g.fill();
+    if(isDone&&cork>0){var cy=-20+(1-cork)*-14;g.globalAlpha=Math.min(1,cork*2);g.fillStyle='#c08a52';rr(g,9,cy,w-18,17,4);g.fill();g.fillStyle='#d9a66a';g.fillRect(12,cy+3,w-24,3);g.strokeStyle=INK;g.lineWidth=2.5;rr(g,9,cy,w-18,17,4);g.stroke();g.globalAlpha=1}
     g.restore()}
   PP.arcade({id:'potion',
-    setup:function(C){pReset(C);C.keysText('Clique (ou tape) une fiole puis une autre pour verser · une couleur ne va que sur la même couleur ou dans une fiole vide · <kbd>Z</kbd> annule');
-      C.over('Potions','Range les couleurs : chaque fiole doit finir remplie d\'une seule couleur.<br>On ne verse que sur la même couleur ou dans une fiole vide. Tu peux annuler, recommencer, ou ajouter une fiole vide une fois par niveau.','Jouer')},
+    setup:function(C){pReset(C);C.keysText('Clique une fiole puis une autre pour verser (tu peux enchaîner vite) · <kbd>1</kbd>…<kbd>9</kbd> <kbd>0</kbd> choisissent les fioles · <kbd>Z</kbd> annule · <kbd>R</kbd> recommence · <kbd>H</kbd> indice');
+      C.over('Potions','Range les couleurs : chaque fiole doit finir remplie d\'une seule couleur.<br>On ne verse que sur la même couleur ou dans une fiole vide. Moins tu fais de coups, plus tu gagnes d\'étoiles.','Jouer')},
     start:function(C){pReset(C,false)},
     mouse:function(C,t,x,y){if(t==='down'&&C.running)pClick(C,x,y);pHover(C,x,y)},
-    key:function(C,code,down){if(down&&C.running&&code==='KeyZ'&&!P.anim&&P.undo.length){P.tubes=JSON.parse(P.undo.pop())}},
-    step:function(C,dt){P.t+=dt;Object.keys(P.shake).forEach(function(k){P.shake[k]=Math.max(0,P.shake[k]-dt)});
-      P.lift=P.lift.map(function(l,i){var tg=i===P.sel?1:(i===P.hov&&!P.anim&&P.sel<0&&P.tubes[i].length)?.25:0;return l+(tg-l)*Math.min(1,dt*14)});
-      P.spark.forEach(function(s){s.t-=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;s.vy+=300*dt});P.spark=P.spark.filter(function(s){return s.t>0});
-      if(P.anim){var a=P.anim;a.t+=dt/.85;if(a.t>=1){var A=P.tubes[a.a],B=P.tubes[a.b];for(var k=0;k<a.k;k++)B.push(A.pop());P.anim=null;
-          if(B.length===4&&B.every(function(z){return z===B[0]})){sfx.play('win');var p=P.pos[a.b];for(var s=0;s<18;s++)P.spark.push({x:p.x+p.w/2,y:p.y,vx:(Math.random()-.5)*240,vy:-Math.random()*240,t:.8,c:COLS[B[0]]})}
-          if(solved()){P.won=true;C.stop();sfx.play('win');var key=C.mode,nb=C.best('lvl-'+key,P.level);C.pop('BRAVO !',RED,'70px');if(P.level>=5)C.win();
-            setTimeout(function(){C.over('Niveau '+P.level+' réussi','En '+P.moves+' coups.'+(nb?'<br><b>Record de niveaux !</b>':''),'Niveau suivant',function(){var lv=P.level+1;pReset(C,true);P.level=lv;C.go()})},900)}}}
+    key:function(C,code,down){if(!down||!C.running||!P||P.won)return;
+      var m=/^(Digit|Numpad)(\d)$/.exec(code);if(m){var i=m[2]==='0'?9:+m[2]-1;if(i<P.tubes.length)pSelect(C,i);return}
+      if(code==='KeyZ'||code==='KeyW'||code==='Backspace')pUndo();else if(code==='KeyR')pRestart();else if(code==='KeyH')pHintGo();else if(code==='Escape')P.sel=-1},
+    step:function(C,dt){P.t+=dt;Object.keys(P.shake).forEach(function(k){P.shake[k]=Math.max(0,P.shake[k]-dt)});Object.keys(P.flash).forEach(function(k){P.flash[k]=Math.max(0,P.flash[k]-dt)});
+      P.lift=P.lift.map(function(l,i){var tg=i===P.sel?1:(i===P.hov&&!P.anim&&P.sel<0&&P.tubes[i].length&&!full(P.tubes[i]))?.22:0;return l+(tg-l)*Math.min(1,dt*30)});
+      P.spark.forEach(function(s){s.t-=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;s.vy+=520*dt});P.spark=P.spark.filter(function(s){return s.t>0});
+      if(P.hint){P.hint.t-=dt;if(P.hint.t<=0)P.hint=null}
+      if(P.anim){P.anim.t+=dt/POUR;if(P.anim.t>=1)pFinish(C)}
       C.hud('<span>Niveau <b>'+P.level+'</b></span><span>Coups <b>'+P.moves+'</b></span><span>'+({easy:'Facile',mid:'Moyen',hard:'Difficile',exp:'Expert'}[C.mode]||'')+'</span>')},
     draw:function(C){var g=C.g;if(!P)pReset(C);
-      /* fond : mur clair dégradé avec une lueur douce derrière les fioles, et des étagères en bois */
-      var bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#f6efe2');bg.addColorStop(1,'#e4d6bb');g.fillStyle=bg;g.fillRect(0,0,W,H);
-      var gl=g.createRadialGradient(W/2,H*.45,40,W/2,H*.45,W*.6);gl.addColorStop(0,'rgba(255,255,255,.55)');gl.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gl;g.fillRect(0,0,W,H);
-      function shelf(y){g.fillStyle='rgba(20,18,16,.10)';g.fillRect(40,y+14,W-80,8);g.fillStyle='#b8834a';g.fillRect(40,y,W-80,14);g.fillStyle='#d19a5e';g.fillRect(40,y,W-80,4);g.strokeStyle=INK;g.lineWidth=2.5;g.strokeRect(40,y,W-80,14)}
+      var bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#f7f1e6');bg.addColorStop(1,'#e6d9c0');g.fillStyle=bg;g.fillRect(0,0,W,H);
+      function shelf(y){g.fillStyle='rgba(20,18,16,.12)';g.fillRect(48,y+14,W-96,7);g.fillStyle='#b8834a';g.fillRect(48,y,W-96,14);g.fillStyle='#d19a5e';g.fillRect(48,y,W-96,4);g.strokeStyle=INK;g.lineWidth=2.5;g.strokeRect(48,y,W-96,14)}
       shelf(P.pos[0].y+P.pos[0].h+4);if(P.pos.length>8)shelf(P.pos[P.pos.length-1].y+P.pos[0].h+4);
-      var a=P.anim;
-      /* fioles où l'on peut verser : petite flèche au-dessus */
-      if(P.sel>=0&&!a)P.pos.forEach(function(p,i){if(i===P.sel||!canPour(P.sel,i))return;var bob=Math.sin(P.t*6)*3,cx=p.x+p.w/2,cy=p.y-26+bob;g.fillStyle=COLS[P.tubes[P.sel][P.tubes[P.sel].length-1]];g.strokeStyle=INK;g.lineWidth=2.5;g.beginPath();g.moveTo(cx-9,cy-8);g.lineTo(cx+9,cy-8);g.lineTo(cx,cy+4);g.closePath();g.fill();g.stroke()});
-      P.tubes.forEach(function(t,i){if(a&&i===a.a)return;var p=P.pos[i],sh=P.shake[i]?Math.sin(P.t*60)*6*P.shake[i]/.35:0,lf=-P.lift[i]*22;
-        var add=0;if(a&&i===a.b){var pp=Math.max(0,Math.min(1,(a.t-.3)/.42));add=a.k*pp}
-        var done=t.length===4&&t.every(function(z){return z===t[0]})&&!(a&&i===a.b);
-        if(i===P.sel){var hg=g.createRadialGradient(p.x+p.w/2,p.y+p.h/2+lf,10,p.x+p.w/2,p.y+p.h/2+lf,p.h*.75);hg.addColorStop(0,'rgba(243,198,35,.45)');hg.addColorStop(1,'rgba(243,198,35,0)');g.fillStyle=hg;g.fillRect(p.x-p.h,p.y-p.h*.4+lf,p.w+p.h*2,p.h*1.8)}
-        if(done){g.fillStyle='rgba(63,191,106,.18)';g.beginPath();g.ellipse(p.x+p.w/2,p.y+p.h+2,p.w*.8,8,0,0,7);g.fill()}
-        drawTube(g,p,t,i,sh,lf,0,0,add,a?a.col:0,done)});
-      if(a){var A=P.pos[a.a],B=P.pos[a.b],e=function(u){return u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2};
-        var mv=a.t<.3?e(a.t/.3):a.t>.75?1-e((a.t-.75)/.25):1,dir=B.x>A.x?1:-1,tx=B.x-A.x-dir*(A.w*.85),ty=B.y-A.y-A.h*.55;
-        var ang=dir*mv*1.25,pp2=Math.max(0,Math.min(1,(a.t-.3)/.42)),ox=tx*mv,oy=ty*mv-22*(1-mv);
-        if(pp2>0&&pp2<1){var lipx=A.x+ox+A.w/2+dir*Math.cos(ang)*A.w*.45,lipy=A.y+oy+Math.sin(Math.abs(ang))*A.w*.3+4;g.strokeStyle=COLS[a.col];g.lineWidth=7;g.lineCap='round';g.beginPath();g.moveTo(lipx,lipy);g.quadraticCurveTo(B.x+B.w/2,lipy-6,B.x+B.w/2,B.y+B.h-6-(P.tubes[a.b].length+a.k*pp2)*38);g.stroke()}
-        drawTube(g,A,P.tubes[a.a],a.a,ox,oy,ang,a.k*pp2,0,0,false)}
-      P.spark.forEach(function(s){g.fillStyle=s.c;g.globalAlpha=Math.min(1,s.t*2);g.fillRect(s.x,s.y,6,6);g.globalAlpha=1});
-      pBtns().forEach(function(b,i){var off=(i===0&&!P.undo.length)||(i===1&&!P.undo.length)||(i===2&&P.extra),hv=P.hb===i&&!off&&C.running,yy=b.y-(hv?2:0);
+      var a=P.anim,hint=P.hint,many=P.tubes.length>9;
+      /* cibles possibles : petite flèche de la couleur sélectionnée */
+      if(P.sel>=0)P.pos.forEach(function(p,i){if(i===P.sel||!canPour(P.sel,i))return;var cx=p.x+p.w/2,cy=p.y-24;g.fillStyle=COLS[P.tubes[P.sel][P.tubes[P.sel].length-1]];g.strokeStyle=INK;g.lineWidth=2.5;g.beginPath();g.moveTo(cx-9,cy-8);g.lineTo(cx+9,cy-8);g.lineTo(cx,cy+4);g.closePath();g.fill();g.stroke()});
+      P.tubes.forEach(function(t,i){if(a&&i===a.a)return;var p=P.pos[i],sh=P.shake[i]?Math.sin(P.t*70)*5*P.shake[i]/.25:0,lf=-P.lift[i]*20;
+        var add=0;if(a&&i===a.b){add=a.k*Math.max(0,Math.min(1,(a.t-.25)/.55))}
+        var dn=full(t)&&!(a&&i===a.b);
+        if(i===P.sel||(hint&&(i===hint.a||i===hint.b))){var col=i===P.sel?'243,198,35':'74,208,216',pulse=hint&&i!==P.sel?.35+Math.sin(P.t*8)*.2:.5;g.fillStyle='rgba('+col+','+pulse+')';rr(g,p.x-7,p.y-10+lf,p.w+14,p.h+16,14);g.fill()}
+        if(P.flash[i]){g.fillStyle='rgba(255,255,255,'+(P.flash[i]*1.4)+')';rr(g,p.x-6,p.y-8,p.w+12,p.h+14,14);g.fill()}
+        drawTube(g,p,t,sh,lf,0,0,add,a?a.col:0,dn,dn?Math.min(1,1-(P.flash[i]||0)*1.2+.4):0);
+        /* numéro de touche sous la fiole */
+        if(i<10)mono(g,String((i+1)%10),p.x+p.w/2,p.y+p.h+29,11,'rgba(20,18,16,.45)')});
+      if(hint){var HA=P.pos[hint.a],HB=P.pos[hint.b],y0=Math.min(HA.y,HB.y)-44;g.strokeStyle='rgba(30,130,140,.9)';g.lineWidth=4;g.setLineDash([8,6]);g.beginPath();g.moveTo(HA.x+HA.w/2,HA.y-14);g.quadraticCurveTo((HA.x+HB.x+HB.w)/2,y0-30,HB.x+HB.w/2,HB.y-14);g.stroke();g.setLineDash([])}
+      if(a){var A=P.pos[a.a],B=P.pos[a.b],e=function(u){return 1-Math.pow(1-u,3)};
+        /* la fiole file au-dessus de la cible, s'incline, verse, puis revient (tout en 0,3 s) */
+        var mv=a.t<.25?e(a.t/.25):a.t>.8?1-e((a.t-.8)/.2):1,dir=B.x>=A.x?1:-1,tx=B.x-A.x-dir*(A.w*.18),ty=B.y-A.y-26;
+        var ang=dir*mv*1.15,pp=Math.max(0,Math.min(1,(a.t-.25)/.55)),ox=tx*mv,oy=ty*mv;
+        if(pp>0&&pp<1){var lipx=A.x+ox+A.w/2+dir*A.w*.3,lipy=A.y+oy+4;g.strokeStyle=COLS[a.col];g.lineWidth=6;g.lineCap='round';g.beginPath();g.moveTo(lipx,lipy);g.lineTo(B.x+B.w/2,B.y+B.h-4-(P.tubes[a.b].length+a.k*pp)*SEG);g.stroke()}
+        drawTube(g,A,P.tubes[a.a],ox,oy,ang,a.k*pp,0,0,false,0)}
+      P.spark.forEach(function(s){g.fillStyle=s.c;g.globalAlpha=Math.min(1,s.t*2.5);g.beginPath();g.arc(s.x,s.y,3.5,0,7);g.fill();g.globalAlpha=1});
+      pBtns().forEach(function(b,i){var hv=P.hb===i&&!b.off&&C.running,yy=b.y-(hv?2:0);
         g.fillStyle='rgba(20,18,16,.18)';rr(g,b.x+3,b.y+4,b.w,b.h,8);g.fill();
-        g.fillStyle=off?'#8d867c':hv?RED:INK;rr(g,b.x,yy,b.w,b.h,8);g.fill();mono(g,b.l,b.x+b.w/2,yy+b.h/2,12,CR)});
-      txt(g,'NIVEAU '+P.level,W/2,P.pos.length>8?26:80,26,INK)}
+        g.fillStyle=b.off?'#a39b8f':hv?RED:INK;rr(g,b.x,yy,b.w,b.h,8);g.fill();mono(g,b.l,b.x+b.w/2-8,yy+b.h/2,12,CR);mono(g,b.k,b.x+b.w-14,yy+b.h/2,10,'rgba(241,236,226,.5)')});
+      /* barre de progression : couleurs terminées */
+      var nd=P.tubes.filter(full).length,bw=220,bx=W/2-bw/2,by=P.pos.length>8?20:84;
+      txt(g,'NIVEAU '+P.level,W/2,by-2,24,INK);g.fillStyle='rgba(20,18,16,.12)';rr(g,bx,by+16,bw,8,4);g.fill();g.fillStyle='#3fbf6a';rr(g,bx,by+16,Math.max(8,bw*nd/P.nc),8,4);g.fill()}
   });
 
   /* =================== SERPENTS =================== */
