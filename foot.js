@@ -2,7 +2,7 @@
 (function(){
   'use strict';
   var $=PP.$,sfx=PP.sfx,net=PP.net,mp=PP.mp,cv=$('foot-cv'),remote={},guestRaf=0,state=null,sendT=0;
-  var FW=30,FH=18,GW=6,DUR=120;
+  var FW=30,FH=18,GW=8,DUR=120;
   var renderer,scene,camera,ball,players=[],keys={},humans=1,running=false,raf=0,last=0,ready=false,time,score,pause=0,msgT=0,msgTxt='',msgEl=null;
   var KEYMAP={z:'1U',w:'1U',s:'1D',q:'1L',a:'1L',d:'1R',' ':'1X',ArrowUp:'2U',ArrowDown:'2D',ArrowLeft:'2L',ArrowRight:'2R',Enter:'2X',i:'3U',k:'3D',j:'3L',l:'3R',o:'3X','8':'4U','5':'4D','4':'4L','6':'4R','0':'4X'};
   var TEAM=[0,1,0,1],NAMES=['J1','J2','J3','J4'],TCOL=[0x3fa9ff,0xff4d6d];
@@ -89,7 +89,7 @@
         var closest=mates.slice().sort(function(a,c){return Math.hypot(b.x-a.x,b.z-a.z)-Math.hypot(b.x-c.x,b.z-c.z)})[0]===p;
         var tx,tz;
         if(closest){var dirx=goalX-b.x,dirz=0-b.z,dl=Math.hypot(dirx,dirz);dirx/=dl;dirz/=dl;tx=b.x-dirx*.9;tz=b.z-dirz*.9;if(db<1.6&&((goalX>0&&p.x<b.x)||(goalX<0&&p.x>b.x)))kick=true}
-        else{tx=(ownX+b.x)/2;tz=b.z*.5}
+        else{tx=ownX*.3+b.x*.7;tz=b.z*.35}
         ix=tx-p.x;iz=tz-p.z;
       }else{var k=String(p.i+1),inp=mp.on()?(p.i===0?mp.localInput(keys):(remote[p.i]||{})):{U:keys[k+'U'],D:keys[k+'D'],L:keys[k+'L'],R:keys[k+'R'],X:keys[k+'X']};if(inp.U)iz-=1;if(inp.D)iz+=1;if(inp.L)ix-=1;if(inp.R)ix+=1;if(inp.X)kick=true}
       var len=Math.hypot(ix,iz);if(len>0){ix/=len;iz/=len;p.face=Math.atan2(ix,iz)}
@@ -98,8 +98,12 @@
       p.x=Math.max(-FW/2-1,Math.min(FW/2+1,p.x+p.vx*dt));p.z=Math.max(-FH/2-1,Math.min(FH/2+1,p.z+p.vz*dt));
       // contact balle
       var dx=b.x-p.x,dz=b.z-p.z,d=Math.hypot(dx,dz),cr=p.bst===3?1.45:1.05;
+      /* v61 : on peut frapper un peu plus loin que le contact, et la frappe est aidée vers le but adverse */
+      if(kick&&p.kick<=0&&d<1.85&&d>=cr&&pause<=0){d=cr-.01}
       if(d<cr&&pause<=0){var nx=dx/d,nz=dz/d;b.x=p.x+nx*cr;b.z=p.z+nz*cr;
-        if(kick&&p.kick<=0){p.kick=.5;var fx=Math.sin(p.face),fz=Math.cos(p.face);var pw=p.bst===2?40:24;b.vx=fx*pw+p.vx;b.vz=fz*pw+p.vz;b.vy=p.bst===2?7:5;if(p.bst===2){p.bst=0;sfx.play('kill');say('SUPER FRAPPE !',1)}else sfx.play('shoot')}
+        if(kick&&p.kick<=0){p.kick=.45;var fx=Math.sin(p.face),fz=Math.cos(p.face),gx=(p.team===0?FW/2+1:-FW/2-1)-b.x,gz=Math.max(-GW/2+1,Math.min(GW/2-1,b.z*.3))-b.z,gl=Math.hypot(gx,gz)||1;gx/=gl;gz/=gl;
+          if(fx*gx+fz*gz>.1){var as=p.bot?.45:.6;fx=fx*(1-as)+gx*as;fz=fz*(1-as)+gz*as;var fl=Math.hypot(fx,fz);fx/=fl;fz/=fl}
+          var pw=p.bst===2?42:p.bot?24:29;b.vx=fx*pw+p.vx*.5;b.vz=fz*pw+p.vz*.5;b.vy=p.bst===2?6:3.5;if(p.bst===2){p.bst=0;sfx.play('kill');say('SUPER FRAPPE !',1)}else sfx.play('shoot')}
         else{var push=Math.max(5,sp+3);b.vx=nx*push+p.vx*.3;b.vz=nz*push+p.vz*.3;if(Math.random()<.3)sfx.play('tick')}
       }
       p.mesh.position.set(p.x,0,p.z);p.mesh.rotation.y=p.face;
@@ -108,7 +112,7 @@
     // collisions joueurs
     for(var i=0;i<players.length;i++)for(var j=i+1;j<players.length;j++){var a=players[i],c=players[j],dx2=c.x-a.x,dz2=c.z-a.z,d2=Math.hypot(dx2,dz2);var rr=(a.bst===3||c.bst===3)?1.4:1;if(d2<rr&&d2>0){var ov=(rr-d2)/2;a.x-=dx2/d2*ov;a.z-=dz2/d2*ov;c.x+=dx2/d2*ov;c.z+=dz2/d2*ov}}
     // balle
-    var bf=Math.pow(.35,dt);b.vx*=bf;b.vz*=bf;b.vy-=22*dt;b.y+=b.vy*dt;if(b.y<.5){b.y=.5;b.vy=Math.abs(b.vy)*.4}
+    var bf=Math.pow(b.y>.6?.6:.45,dt);b.vx*=bf;b.vz*=bf;b.vy-=22*dt;b.y+=b.vy*dt;if(b.y<.5){b.y=.5;b.vy=Math.abs(b.vy)*.4}
     b.x+=b.vx*dt;b.z+=b.vz*dt;
     if(Math.abs(b.z)>FH/2-.5){b.z=Math.sign(b.z)*(FH/2-.5);b.vz*=-.7}
     var inGoal=Math.abs(b.z)<GW/2-.3&&b.y<2.1;
@@ -158,5 +162,6 @@
   keys=PP.held('foot-pad',KEYMAP,function(k,e){if(PP.cur()==='foot'&&(running||mp.on())&&e.preventDefault)e.preventDefault()});
   mp.guestSender('foot',keys);
   $('foot-start').addEventListener('click',start);
+  PP._foot=function(){return {players:players,ball:ball,score:score}};
   PP.games.foot={open:function(){if(init()){if(!players.length)setup();renderer.render(scene,camera)}$('foot-start').hidden=false;$('foot-title').textContent='Foot 2v2';$('foot-start').textContent='Coup d\'envoi';$('foot-ov').hidden=false;mp.lobby('foot','Foot 2v2')},close:function(){if(running){running=false;cancelAnimationFrame(raf)}cancelAnimationFrame(guestRaf)}};
 })();

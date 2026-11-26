@@ -1345,7 +1345,7 @@
     h+='</div></div><div class="sh2-right">';
     if(S0){var cg=GUNS[P.gun],g=S0.gun;
       h+='<div class="sh2-hero r'+(S0.tier+1)+'"><span class="sh2-rar">'+(S0.gun?S0.sub:shopTab==='e'?T('Équipement'):T('Amélioration'))+'</span><svg viewBox="'+S0.vb+'"><path d="'+S0.ico+'"/></svg></div><h4>'+S0.n+'</h4>';
-      if(g){var dm=g.dmg*g.pel,cdm=cg?cg.dmg*cg.pel:null;h+='<div class="sh2-stats">'+statRow(T('Dégâts'),dm/130,cdm==null?null:cdm/130,Math.round(dm))+statRow(T('Cadence'),.1/g.rate,cg?.1/cg.rate:null,(1/g.rate).toFixed(1)+'/s')+statRow(T('Chargeur'),g.mag/80,cg?cg.mag/80:null,g.mag)+'</div><p class="sh2-cmp">'+T('Le trait clair = ton arme en main')+' ('+T(cg?cg.n:'')+')</p>'}
+      if(g){var dm=g.dmg*g.pel,cdm=cg?cg.dmg*cg.pel:null;h+='<div class="sh2-stats">'+statRow(T('Dégâts'),dm/130,cdm==null?null:cdm/130,Math.round(dm))+statRow(T('Cadence'),.1/g.rate,cg?.1/cg.rate:null,(1/g.rate).toFixed(1)+'/s')+statRow(T('Chargeur'),g.mag/80,cg?cg.mag/80:null,g.mag)+'</div><p class="sh2-cmp">'+T('Le trait rouge = ton arme en main')+' ('+T(cg?cg.n:'')+')</p>'}
       else h+='<p class="sh2-desc">'+S0.sub+'</p>';
       if(S0.note)h+='<p class="sh2-note">'+S0.note+'</p>';
       h+='<button type="button" class="sh2-buy'+(S0.ok?'':' no')+'" data-buy="'+S0.id+'"><span>'+S0.act+'</span>'+(S0.own&&!S0.gun?'':'<b><i></i>'+S0.p.toLocaleString('fr-FR')+'</b>')+'</button>'+(!S0.ok&&!S0.own&&P.pts<S0.p?'<p class="sh2-miss">'+T('Il te manque')+' '+(S0.p-P.pts).toLocaleString('fr-FR')+'</p>':'');}

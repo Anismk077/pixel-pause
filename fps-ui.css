@@ -307,3 +307,50 @@
 #v-fps .fx-emo small{grid-column:1/-1;font:600 11px "IBM Plex Mono",monospace;color:#8a8278}
 @keyframes emoIn{from{opacity:0;transform:translate(-50%,-46%) scale(.96)}}
 @keyframes emoS{from{opacity:0;transform:translateY(6px)}}
+
+/* v61 : armurerie au style du site — papier crème, encre noire, bords nets, pas de dégradé ni de lueur */
+#v-fps .fx-shop{background:#f1ece2!important;color:#141210!important;box-shadow:none!important;border:3px solid #141210!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+#v-fps .sh2{--t:#e2361b}#v-fps .sh2.t2{--t:#7c46c8}#v-fps .sh2.t3{--t:#c8901a}
+#v-fps .sh2-head{background:none;border-bottom:3px solid #141210}
+#v-fps .sh2-head small{color:var(--t)}
+#v-fps .sh2-head b{color:#141210}
+#v-fps .sh2-pts{background:#141210!important;color:#f1ece2!important;border-radius:0!important}
+#v-fps .sh2-x{color:#141210;border-color:#141210}
+#v-fps .sh2-x:hover{background:#141210;color:#f1ece2}
+#v-fps .sh2-left{border-right:3px solid #141210}
+#v-fps .sh2-tabs{border-bottom:2px solid #141210}
+#v-fps .sh2-tabs button{color:#8a8278}
+#v-fps .sh2-tabs button:hover{color:#141210}
+#v-fps .sh2-tabs button.on{color:#141210;border-bottom-color:var(--t)}
+#v-fps .sh2-row{background:#fbf8f2;border:2px solid #141210;border-left:7px solid var(--r);color:#141210;animation:none}
+#v-fps .sh2-row.r1{--r:#a8a094}#v-fps .sh2-row.r2{--r:#3a6ad8}#v-fps .sh2-row.r3{--r:#7c46c8}#v-fps .sh2-row.r4{--r:#e2361b}#v-fps .sh2-row.r5{--r:#c8901a}#v-fps .sh2-row.r0{--r:#3f7a3a}
+#v-fps .sh2-row:hover{background:#fff;transform:translateX(3px)}
+#v-fps .sh2-row.on{background:#141210;color:#f1ece2;border-color:#141210;border-left-color:var(--r)}
+#v-fps .sh2-row em{color:#141210}
+#v-fps .sh2-row.on em{color:#f1ece2}
+#v-fps .sh2-row.no{opacity:.45}
+#v-fps .sh2-hero{background:#e8e0d0!important;border:2px solid #141210;animation:none}
+#v-fps .sh2-hero svg{fill:#141210;filter:none}
+#v-fps .sh2-rar{background:#141210;color:#f1ece2;border-left:6px solid var(--r)}
+#v-fps .sh2-hero.r1,#v-fps .sh2-hero.r2,#v-fps .sh2-hero.r3,#v-fps .sh2-hero.r4,#v-fps .sh2-hero.r5,#v-fps .sh2-hero.r0{background:#e8e0d0!important}
+#v-fps .sh2-hero.r1{--r:#a8a094}#v-fps .sh2-hero.r2{--r:#3a6ad8}#v-fps .sh2-hero.r3{--r:#7c46c8}#v-fps .sh2-hero.r4{--r:#e2361b}#v-fps .sh2-hero.r5{--r:#c8901a}#v-fps .sh2-hero.r0{--r:#3f7a3a}
+#v-fps .sh2-right h4{color:#141210}
+#v-fps .sh2-stat i{background:#e3dccd;border:1.5px solid #141210}
+#v-fps .sh2-stat b{background:#141210}
+#v-fps .sh2-stat u{background:transparent;border-right:3px solid #e2361b}
+#v-fps .sh2-stat em.up{color:#3f7a3a}#v-fps .sh2-stat em.dn{color:#e2361b}
+#v-fps .sh2-cmp,#v-fps .sh2-keys{color:#6b645a}
+#v-fps .sh2-desc{color:#141210}
+#v-fps .sh2-note{color:#a06a10}
+#v-fps .sh2-buy{background:#e2361b;color:#f1ece2;border:2px solid #141210;box-shadow:5px 5px 0 #141210}
+#v-fps .sh2-buy:hover{box-shadow:7px 7px 0 #141210}
+#v-fps .sh2-buy:active{box-shadow:2px 2px 0 #141210}
+#v-fps .sh2-buy b i{background:#f3c623;border:2px solid #141210}
+#v-fps .sh2-buy.no{background:#d6cfc1;color:#8a8278;box-shadow:5px 5px 0 #a8a094;border-color:#a8a094}
+#v-fps .sh2-buy.bought{background:#3f7a3a}
+#v-fps .sh2-buy .sh-stamp{background:#141210;color:#f1ece2}
+#v-fps .sh2 kbd{border-color:#141210}
+#v-fps .fx-emo{background:#f1ece2;color:#141210;border:3px solid #141210;box-shadow:6px 6px 0 #141210}
+#v-fps .fx-emo span{background:#fbf8f2;border:2px solid #141210}
+#v-fps .fx-emo kbd{background:#141210;color:#f1ece2}
+#v-fps .fx-emo small{color:#6b645a}
