@@ -1,7 +1,7 @@
 /* Pixel Pause — liste des jeux « arcade » : crée leurs pages et leurs lignes dans l'accueil
    (chargé avant core.js pour que la pause et le plein écran s'y branchent aussi). */
 window.ARCADE_LIST=[
-  {id:'c4',n:'Quatre en ligne',sub:'Stratégie · aligne 4 jetons',pl:'1–2',cat:'pc tel solo',modes:[['solo','Solo','Contre l\'ordinateur'],['duel','2 joueurs','Chacun son tour, même écran'],['online','En ligne','Contre un pote du salon']]},
+  {id:'c4',n:'Quatre en ligne',sub:'Stratégie · aligne 4 jetons, jusqu\'à 4 joueurs',pl:'1–4',cat:'pc tel solo',modes:[['solo','Solo','Contre l\'ordinateur'],['duel','2 joueurs','Chacun son tour, même écran'],['p3','3 joueurs','Grande grille, même écran'],['p4','4 joueurs','Grande grille, même écran'],['online','En ligne','2 à 4 potes du salon']]},
   {id:'hockey',n:'Air Hockey',sub:'Duel · palets et rebonds',pl:'1–2',cat:'pc solo',modes:[['solo','Solo','Contre l\'ordinateur'],['duel','2 joueurs','ZQSD contre flèches']]},
   {id:'stack',n:'Tour Infinie',sub:'3D · empile au bon moment',pl:'1',cat:'solo 3d',modes:[['solo','Solo','Monte le plus haut possible']]},
   {id:'reflex',n:'Réflexes',sub:'Party · le plus rapide gagne',pl:'1–8',cat:'pc tel solo',modes:[['solo','Solo','Bats ton temps de réaction'],['duel','2 joueurs','A contre L, même clavier'],['online','En ligne','Tout le salon en même temps']]},
@@ -25,6 +25,7 @@ window.ARCADE_LIST=[
   {id:'flap',n:'Envol',sub:'Arcade · ton perso vole entre les cheminées',pl:'1',cat:'pc tel solo',modes:[['solo','Normal','Passages larges'],['hard','Difficile','Plus serré et plus rapide']]},
   {id:'potion',n:'Potions',sub:'Réflexion · range les couleurs dans les fioles',pl:'1',cat:'pc tel solo',modes:[['easy','Facile','4 couleurs'],['mid','Moyen','7 couleurs'],['hard','Difficile','10 couleurs'],['exp','Expert','12 couleurs']]},
   {id:'snakeio',n:'Serpents',sub:'Arène · grandis et avale les plus petits',pl:'1',cat:'pc tel solo',modes:[['solo','Arène','13 serpents'],['big','Grosse arène','20 serpents']]},
+  {id:'chess',img:'thumb-chess.svg?v=1',n:'Échecs',sub:'Stratégie · échec et mat',pl:'1–2',cat:'pc tel solo',modes:[['solo','Solo','Contre l\'ordinateur'],['duel','2 joueurs','Chacun son tour, même écran'],['online','En ligne','Contre un pote du salon']]},
   {id:'marz',img:'thumb-marz.svg?v=2',n:'Marzoukeur',sub:'Fun · attrape les burgers, enchaîne les combos',pl:'1',cat:'pc tel solo',modes:[['solo','Solo','Le plus de kilos avant la ruine']]}
 ];
 (function(){

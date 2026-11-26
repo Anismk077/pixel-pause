@@ -1593,7 +1593,7 @@
   document.addEventListener('pointerlockerror',function(){lastHold=null});
   document.addEventListener('pp-resume',function(){if(PP.cur()!=='fps'||!running)return;lock();paused=false;lastHold=null});
   /* image nette : le rendu suit la vraie taille de l'écran (plein écran compris) au lieu d'être étiré depuis 960 × 540 */
-  function fitRes(force){if(!R3)return;var w=cv.clientWidth||960,q=PP.settings.q,dpr=window.devicePixelRatio||1,pr=q==='haute'?Math.min(2,dpr):q==='basse'?.75:Math.min(1.5,dpr),W2=Math.min(2560,Math.max(480,Math.round(w*pr))),H2=Math.round(W2*9/16);if(!force&&Math.abs(cv.width-W2)<8)return;cv.width=W2;cv.height=H2;R3.setPixelRatio(1);R3.setSize(W2,H2,false)}
+  function fitRes(force){if(!R3)return;var w=cv.clientWidth||960,q=PP.settings.q,dpr=window.devicePixelRatio||1,pr=q==='haute'?Math.min(2,dpr):q==='basse'?.75:Math.min(1.5,dpr),W2=Math.min(2560,Math.max(480,Math.round(w*pr))),H2=Math.round(W2*9/16);if(!force&&Math.abs(R3.getSize(new THREE.Vector2()).x-W2)<8)return;cv.width=W2;cv.height=H2;R3.setPixelRatio(1);R3.setSize(W2,H2,false)}
   document.addEventListener('pp-settings',function(){fitRes(true)});window.addEventListener('resize',function(){setTimeout(fitRes,60)});document.addEventListener('pp-fs',function(){setTimeout(fitRes,120)});
   var resN=0,DESK=matchMedia('(hover:hover) and (pointer:fine)').matches,lastHold=null;
   function lock(){if(!cv.requestPointerLock||!DESK||document.pointerLockElement===cv)return;

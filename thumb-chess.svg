@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360">
+  <rect width="640" height="360" fill="#141210"/>
+  <g transform="translate(160 20)">
+    <rect width="320" height="320" fill="#7d5a3a"/>
+    <g fill="#efe2c8">
+      <rect x="0" y="0" width="40" height="40"/><rect x="80" y="0" width="40" height="40"/><rect x="160" y="0" width="40" height="40"/><rect x="240" y="0" width="40" height="40"/>
+      <rect x="40" y="40" width="40" height="40"/><rect x="120" y="40" width="40" height="40"/><rect x="200" y="40" width="40" height="40"/><rect x="280" y="40" width="40" height="40"/>
+      <rect x="0" y="80" width="40" height="40"/><rect x="80" y="80" width="40" height="40"/><rect x="160" y="80" width="40" height="40"/><rect x="240" y="80" width="40" height="40"/>
+      <rect x="40" y="120" width="40" height="40"/><rect x="120" y="120" width="40" height="40"/><rect x="200" y="120" width="40" height="40"/><rect x="280" y="120" width="40" height="40"/>
+      <rect x="0" y="160" width="40" height="40"/><rect x="80" y="160" width="40" height="40"/><rect x="160" y="160" width="40" height="40"/><rect x="240" y="160" width="40" height="40"/>
+      <rect x="40" y="200" width="40" height="40"/><rect x="120" y="200" width="40" height="40"/><rect x="200" y="200" width="40" height="40"/><rect x="280" y="200" width="40" height="40"/>
+      <rect x="0" y="240" width="40" height="40"/><rect x="80" y="240" width="40" height="40"/><rect x="160" y="240" width="40" height="40"/><rect x="240" y="240" width="40" height="40"/>
+      <rect x="40" y="280" width="40" height="40"/><rect x="120" y="280" width="40" height="40"/><rect x="200" y="280" width="40" height="40"/><rect x="280" y="280" width="40" height="40"/>
+    </g>
+    <!-- roi noir -->
+    <g transform="translate(140 60)" fill="#1a1612" stroke="#efe2c8" stroke-width="3">
+      <rect x="-4" y="-34" width="8" height="22"/><rect x="-12" y="-27" width="24" height="8"/>
+      <path d="M-26 40 L-20 -6 Q0 -18 20 -6 L26 40 Z"/><rect x="-32" y="40" width="64" height="12" rx="3"/>
+    </g>
+    <!-- dame blanche -->
+    <g transform="translate(220 210)" fill="#fbf8f1" stroke="#141210" stroke-width="3">
+      <circle cx="0" cy="-36" r="7"/><path d="M-28 -24 L-16 32 L16 32 L28 -24 L12 -6 L0 -28 L-12 -6 Z"/><rect x="-30" y="32" width="60" height="12" rx="3"/>
+    </g>
+  </g>
+  <rect y="322" width="640" height="38" fill="#141210"/><rect y="322" width="640" height="5" fill="#e2361b"/>
+  <text x="320" y="350" font-family="Anton, Impact, sans-serif" font-size="24" fill="#f1ece2" text-anchor="middle">ÉCHECS</text>
+</svg>

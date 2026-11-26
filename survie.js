@@ -261,7 +261,7 @@
     if(R3)return true;
     if(!window.THREE){PP.toast('La 3D (three.js) n\'a pas pu se charger','warn');return false}
     ray=new THREE.Raycaster();
-    R3=new THREE.WebGLRenderer({canvas:cv,antialias:true});R3.setPixelRatio(Math.min(1,window.devicePixelRatio||1));R3.setSize(cv.width,cv.height,false);R3.autoClear=false;applyQ();
+    R3=new THREE.WebGLRenderer({canvas:cv,antialias:true});R3.__ppSkip=true;R3.setPixelRatio(Math.min(1,window.devicePixelRatio||1));R3.setSize(cv.width,cv.height,false);R3.autoClear=false;applyQ();
     R3.shadowMap.enabled=true;R3.shadowMap.type=THREE.PCFShadowMap;R3.toneMapping=THREE.ACESFilmicToneMapping;R3.toneMappingExposure=1.05;
     cam=new THREE.PerspectiveCamera(PP.settings.fov-3,cv.width/cv.height,.1,1700);cam.rotation.order='YXZ';
     vscene=new THREE.Scene();vcam=new THREE.PerspectiveCamera(60,cv.width/cv.height,.01,10);

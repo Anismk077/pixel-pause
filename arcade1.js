@@ -3,55 +3,65 @@
   'use strict';
   var sfx=PP.sfx,ag=PP.ag,INK='#141210',CR='#f1ece2',RED='#e2361b',YEL='#f3c623',BLU='#3fa9ff';
 
-  /* ================= QUATRE EN LIGNE ================= */
+  /* ================= QUATRE EN LIGNE (v30 : jusqu'à 4 joueurs, grande grille) ================= */
   (function(){
-    var COLS=7,ROWS=6,S;
-    function fresh(){return {b:[],turn:1,over:false,win:null,anim:null,hover:3,me:0,score:S?S.score:[0,0],first:S?3-S.first:1}}
-    function newBoard(){S.b=[];for(var c=0;c<COLS;c++){S.b.push([0,0,0,0,0,0])}S.turn=S.first;S.over=false;S.win=null;S.anim=null}
+    var COLS=7,ROWS=6,NP=2,S,CS=72,GX=480-7*36,GY=70;
+    var PC=['#e2361b','#f3c623','#3fbf6a','#3a8cff'],PL=['#ff7a5c','#ffe680','#8ff0a8','#9cc8ff'],PN=['Rouge','Jaune','Vert','Bleu'];
+    function layout(np){NP=np;if(np>2){COLS=9;ROWS=7}else{COLS=7;ROWS=6}CS=Math.min(72,Math.floor(640/COLS),Math.floor(450/ROWS));GX=Math.round(480-COLS*CS/2);GY=Math.round(290-ROWS*CS/2)+10}
+    function fresh(){return {b:[],turn:1,over:false,win:null,anim:null,hover:3,me:0,score:[0,0,0,0],first:1,names:null}}
+    function newBoard(){S.b=[];for(var c=0;c<COLS;c++){var col=[];for(var r=0;r<ROWS;r++)col.push(0);S.b.push(col)}S.turn=S.first;S.over=false;S.win=null;S.anim=null;S.hover=Math.floor(COLS/2)}
     function top(b,c){for(var r=0;r<ROWS;r++)if(!b[c][r])return r;return -1}
     function lines(b,p){var out=null;var D=[[1,0],[0,1],[1,1],[1,-1]];for(var c=0;c<COLS;c++)for(var r=0;r<ROWS;r++){if(b[c][r]!==p)continue;D.forEach(function(d){var k,ok=true;for(k=1;k<4;k++){var x=c+d[0]*k,y=r+d[1]*k;if(x<0||x>=COLS||y<0||y>=ROWS||b[x][y]!==p){ok=false;break}}if(ok&&!out){out=[];for(k=0;k<4;k++)out.push([c+d[0]*k,r+d[1]*k])}})}return out}
     function full(b){for(var c=0;c<COLS;c++)if(top(b,c)>=0)return false;return true}
+    /* ordinateur (solo, grille 7×6) */
     function evalWin(w,p){var me=0,op=0,em=0;w.forEach(function(v){if(v===p)me++;else if(v)op++;else em++});if(me===4)return 1000;if(me===3&&em===1)return 6;if(me===2&&em===2)return 2;if(op===3&&em===1)return -5;return 0}
     function heur(b,p){var s=0,c,r;for(r=0;r<ROWS;r++)if(b[3][r]===p)s+=3;
       for(c=0;c<COLS;c++)for(r=0;r<ROWS;r++){if(c<=3)s+=evalWin([b[c][r],b[c+1][r],b[c+2][r],b[c+3][r]],p);if(r<=2)s+=evalWin([b[c][r],b[c][r+1],b[c][r+2],b[c][r+3]],p);if(c<=3&&r<=2)s+=evalWin([b[c][r],b[c+1][r+1],b[c+2][r+2],b[c+3][r+3]],p);if(c<=3&&r>=3)s+=evalWin([b[c][r],b[c+1][r-1],b[c+2][r-2],b[c+3][r-3]],p)}return s}
     function mm(b,depth,a,be,maxi,p){var o=3-p,wp=lines(b,p),wo=lines(b,o);if(wp)return 100000+depth;if(wo)return -100000-depth;if(!depth||full(b))return heur(b,p);
       var order=[3,2,4,1,5,0,6],best=maxi?-1e9:1e9;for(var i=0;i<7;i++){var c=order[i],r=top(b,c);if(r<0)continue;b[c][r]=maxi?p:o;var v=mm(b,depth-1,a,be,!maxi,p);b[c][r]=0;if(maxi){best=Math.max(best,v);a=Math.max(a,v)}else{best=Math.min(best,v);be=Math.min(be,v)}if(a>=be)break}return best}
     function aiMove(){var b=S.b,best=-1e9,bc=3,order=[3,2,4,1,5,0,6];order.forEach(function(c){var r=top(b,c);if(r<0)return;b[c][r]=2;var v=mm(b,5,-1e9,1e9,false,2)+(Math.random()*2);b[c][r]=0;if(v>best){best=v;bc=c}});return bc}
-    var GX=480-7*36,GY=70,CS=72;
+    function pname(C,p){if(C.mode==='solo')return p===1?'Toi':'L\'ordi';if(S.names&&S.names[p-1])return S.names[p-1];return PN[p-1]}
+    function nextTurn(){S.turn=S.turn%NP+1}
     function drop(C,c,remote){if(S.over||S.anim)return;var r=top(S.b,c);if(r<0)return;S.anim={c:c,r:r,y:-1,v:0,p:S.turn};sfx.play('ui');
       if(C.mode==='online'&&!remote)C.net.relay({t:'c4',c:c})}
+    function again(C){S.first=S.first%NP+1;newBoard();C.go();if(C.mode==='online'&&C.net.isHost)C.net.relay({t:'c4new',f:S.first});aiTurn(C)}
     function land(C){var a=S.anim;S.b[a.c][a.r]=a.p;S.anim=null;sfx.play('hit');C.shake(3);var w=lines(S.b,a.p);
-      if(w){S.over=true;S.win=w;S.score[a.p-1]++;C.pop('4 ALIGNÉS !',a.p===1?'#e2361b':'#f3c623');C.shake(8);var name=a.p===1?'Rouge':'Jaune';if(C.mode==='solo'&&a.p===1)C.win();if(C.mode==='online'&&a.p-1===S.me)C.win();sfx.play(a.p===1||C.mode!=='solo'?'win':'lose');
-        setTimeout(function(){C.over((C.mode==='solo'?(a.p===1?'Gagné !':'L\'ordi gagne'):name+' gagne !'),'Score : <b>'+S.score[0]+'</b> rouge – <b>'+S.score[1]+'</b> jaune','Rejouer',function(){S.first=3-S.first;newBoard();C.go();if(C.mode==='online'&&C.net.isHost)C.net.relay({t:'c4new',f:S.first});aiTurn(C)})},900);return}
-      if(full(S.b)){S.over=true;setTimeout(function(){C.over('Égalité','Plus de place sur la grille.','Rejouer',function(){S.first=3-S.first;newBoard();C.go();aiTurn(C)})},600);return}
-      S.turn=3-S.turn;aiTurn(C)}
+      if(w){S.over=true;S.win=w;S.score[a.p-1]++;C.pop('4 ALIGNÉS !',PC[a.p-1]);C.shake(8);if(C.mode==='solo'&&a.p===1)C.win();if(C.mode==='online'&&a.p-1===S.me)C.win();sfx.play(a.p===1||C.mode!=='solo'?'win':'lose');
+        var sc=[];for(var i=0;i<NP;i++)sc.push('<b style="color:'+PC[i]+'">'+S.score[i]+'</b> '+PP.esc(pname(C,i+1)));
+        setTimeout(function(){C.over((C.mode==='solo'?(a.p===1?'Gagné !':'L\'ordi gagne'):pname(C,a.p)+' gagne !'),'Score : '+sc.join(' · '),'Rejouer',function(){again(C)})},900);return}
+      if(full(S.b)){S.over=true;setTimeout(function(){C.over('Égalité','Plus de place sur la grille.','Rejouer',function(){again(C)})},600);return}
+      nextTurn();aiTurn(C)}
     function aiTurn(C){if(C.mode==='solo'&&S.turn===2&&!S.over)setTimeout(function(){if(S.turn===2&&!S.over&&!S.anim)drop(C,aiMove())},450)}
-    function myTurn(C){return C.mode==='duel'||(C.mode==='solo'&&S.turn===1)||(C.mode==='online'&&S.turn-1===S.me)}
+    function myTurn(C){return C.mode==='duel'||C.mode==='p3'||C.mode==='p4'||(C.mode==='solo'&&S.turn===1)||(C.mode==='online'&&S.turn-1===S.me)}
     PP.arcade({id:'c4',
-      setup:function(C){S=fresh();S.score=[0,0];S.first=1;newBoard();
-        if(C.mode==='online'){var ids=C.net.players.map(function(p){return p.id});S.me=C.net.me.id==='host'?0:(ids.indexOf(C.net.me.id)===1?1:2);
+      setup:function(C){S=fresh();var np=C.mode==='p3'?3:C.mode==='p4'?4:2;
+        if(C.mode==='online'){var pl=C.net.players.slice(0,4);np=Math.max(2,pl.length);var ids=pl.map(function(p){return p.id}),i=ids.indexOf(C.net.me.id);S.me=i<0?9:i;S.names=pl.map(function(p){return p.name});
           C.listen(function(m){if(m.t!=='rel')return;var d=m.d;if(d.t==='c4')drop(C,d.c,true);if(d.t==='c4new'){S.first=d.f;newBoard();C.go()}})}
+        layout(np);newBoard();
         C.keysText('Souris : clique une colonne · Clavier : <kbd>←</kbd><kbd>→</kbd> puis <kbd>Espace</kbd>');
-        C.over('Quatre en ligne',C.mode==='solo'?'Tu joues les rouges contre l\'ordinateur. Aligne 4 jetons (ligne, colonne ou diagonale).':C.mode==='duel'?'Rouge contre jaune, chacun son tour sur le même écran.':(S.me===2?'Tu regardes la partie entre les deux premiers joueurs du salon.':'Tu joues les '+(S.me===0?'rouges (l\'hôte commence)':'jaunes')+'.'),'Jouer')},
+        var msg=C.mode==='solo'?'Tu joues les rouges contre l\'ordinateur. Aligne 4 jetons (ligne, colonne ou diagonale).':C.mode==='duel'?'Rouge contre jaune, chacun son tour sur le même écran.':
+          C.mode!=='online'?np+' joueurs sur le même écran, chacun sa couleur, sur une grande grille. Le premier qui aligne 4 jetons gagne.':
+          (S.me>3?'Le salon est complet (4 joueurs max) : tu regardes la partie.':np+' joueurs du salon sur '+(np>2?'une grande grille':'la grille')+'. Tu es <b style="color:'+PC[S.me]+'">'+PN[S.me]+'</b>.'+(np>2?' Plus on est, plus c\'est le chaos !':''));
+        C.over('Quatre en ligne',msg,'Jouer')},
       start:function(C){aiTurn(C)},
-      key:function(C,k,down){if(!down||!C.running)return;if(k==='ArrowLeft')S.hover=Math.max(0,S.hover-1);if(k==='ArrowRight')S.hover=Math.min(6,S.hover+1);if((k==='Space'||k==='Enter')&&myTurn(C))drop(C,S.hover)},
-      mouse:function(C,t,x,y){var c=Math.floor((x-GX)/CS);if(c<0||c>6)return;S.hover=c;if(t==='down'&&C.running&&myTurn(C))drop(C,c)},
+      key:function(C,k,down){if(!down||!C.running)return;if(k==='ArrowLeft')S.hover=Math.max(0,S.hover-1);if(k==='ArrowRight')S.hover=Math.min(COLS-1,S.hover+1);if((k==='Space'||k==='Enter')&&myTurn(C))drop(C,S.hover)},
+      mouse:function(C,t,x,y){var c=Math.floor((x-GX)/CS);if(c<0||c>=COLS)return;S.hover=c;if(t==='down'&&C.running&&myTurn(C))drop(C,c)},
       step:function(C,dt){if(S.anim){var a=S.anim;a.v+=dt*38;a.y+=a.v*dt;if(a.y>=ROWS-1-a.r){if(a.v>6){a.y=ROWS-1-a.r;a.v*=-.28}else{a.y=ROWS-1-a.r;land(C)}}}},
-      draw:function(C){var g=C.g;g.fillStyle=INK;g.fillRect(0,0,960,540);
-        // ombres + plateau
+      draw:function(C){var g=C.g,R=CS*.4;g.fillStyle=INK;g.fillRect(0,0,960,540);
         g.fillStyle='#000';ag.rr(g,GX+8,GY+8,COLS*CS,ROWS*CS,16);g.fill();
-        function tok(x,y,p,al){g.globalAlpha=al||1;var gr=g.createRadialGradient(x-10,y-12,4,x,y,30);gr.addColorStop(0,p===1?'#ff7a5c':'#ffe680');gr.addColorStop(1,p===1?RED:'#d9a400');g.fillStyle=gr;g.beginPath();g.arc(x,y,28,0,7);g.fill();g.strokeStyle='rgba(0,0,0,.25)';g.lineWidth=3;g.beginPath();g.arc(x,y,20,0,7);g.stroke();g.globalAlpha=1}
+        function tok(x,y,p,al){g.globalAlpha=al||1;var gr=g.createRadialGradient(x-R*.35,y-R*.4,3,x,y,R);gr.addColorStop(0,PL[p-1]);gr.addColorStop(1,PC[p-1]);g.fillStyle=gr;g.beginPath();g.arc(x,y,R,0,7);g.fill();g.strokeStyle='rgba(0,0,0,.25)';g.lineWidth=3;g.beginPath();g.arc(x,y,R*.7,0,7);g.stroke();g.globalAlpha=1}
         for(var c=0;c<COLS;c++)for(var r=0;r<ROWS;r++){var v=S.b[c][r];if(v)tok(GX+c*CS+CS/2,GY+(ROWS-1-r)*CS+CS/2,v)}
         if(S.anim)tok(GX+S.anim.c*CS+CS/2,GY+S.anim.y*CS+CS/2,S.anim.p);
-        // plaque percée par-dessus
-        g.save();g.beginPath();ag.rr(g,GX,GY,COLS*CS,ROWS*CS,16);for(c=0;c<COLS;c++)for(r=0;r<ROWS;r++){g.moveTo(GX+c*CS+CS/2+30,GY+r*CS+CS/2);g.arc(GX+c*CS+CS/2,GY+r*CS+CS/2,30,0,7,true)}
+        var H=R+2;g.save();g.beginPath();ag.rr(g,GX,GY,COLS*CS,ROWS*CS,16);for(c=0;c<COLS;c++)for(r=0;r<ROWS;r++){g.moveTo(GX+c*CS+CS/2+H,GY+r*CS+CS/2);g.arc(GX+c*CS+CS/2,GY+r*CS+CS/2,H,0,7,true)}
         var bg=g.createLinearGradient(0,GY,0,GY+ROWS*CS);bg.addColorStop(0,'#2b5fb0');bg.addColorStop(1,'#1c3f80');g.fillStyle=bg;g.fill('evenodd');g.restore();
-        for(c=0;c<COLS;c++)for(r=0;r<ROWS;r++){g.strokeStyle='rgba(0,0,0,.35)';g.lineWidth=3;g.beginPath();g.arc(GX+c*CS+CS/2,GY+r*CS+CS/2,30,0,7);g.stroke()}
+        for(c=0;c<COLS;c++)for(r=0;r<ROWS;r++){g.strokeStyle='rgba(0,0,0,.35)';g.lineWidth=3;g.beginPath();g.arc(GX+c*CS+CS/2,GY+r*CS+CS/2,H,0,7);g.stroke()}
         if(S.win){g.strokeStyle=CR;g.lineWidth=8;g.lineCap='round';g.beginPath();S.win.forEach(function(p,i){var x=GX+p[0]*CS+CS/2,y=GY+(ROWS-1-p[1])*CS+CS/2;i?g.lineTo(x,y):g.moveTo(x,y)});g.stroke()}
-        if(C.running&&!S.over&&!S.anim&&myTurn(C))tok(GX+S.hover*CS+CS/2,GY-34,S.turn,.55);
-        // panneaux latéraux
-        ag.txt(g,S.score[0]+'',90,240,80,RED);ag.mono(g,C.mode==='solo'?'TOI':'ROUGE',90,300,16,CR);ag.txt(g,S.score[1]+'',870,240,80,YEL);ag.mono(g,C.mode==='solo'?'ORDI':'JAUNE',870,300,16,CR);
-        if(C.running&&!S.over)ag.mono(g,(myTurn(C)?'À toi':C.mode==='solo'?'L\'ordi réfléchit…':'Au tour de l\'autre'),480,520,15,S.turn===1?RED:YEL);
+        if(C.running&&!S.over&&!S.anim&&myTurn(C))tok(GX+S.hover*CS+CS/2,GY-R-6,S.turn,.55);
+        /* scores : 2 joueurs de chaque côté */
+        for(var i=0;i<NP;i++){var left=i%2===0,x=left?(GX/2):(GX+COLS*CS+(960-GX-COLS*CS)/2),y=NP>2?(i<2?170:350):240,on=C.running&&!S.over&&S.turn===i+1;
+          if(on){g.fillStyle='rgba(241,236,226,.08)';ag.rr(g,x-70,y-62,140,118,12);g.fill()}
+          ag.txt(g,String(S.score[i]),x,y-12,NP>2?58:80,PC[i]);ag.mono(g,String(pname(C,i+1)).slice(0,12).toUpperCase(),x,y+36,14,on?PC[i]:CR)}
+        if(C.running&&!S.over)ag.mono(g,(myTurn(C)?(C.mode==='online'||C.mode==='solo'?'À toi':'Au tour de '+pname(C,S.turn)):C.mode==='solo'?'L\'ordi réfléchit…':'Au tour de '+pname(C,S.turn)),480,528,15,PC[S.turn-1]);
       }});
   })();
 

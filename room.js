@@ -23,7 +23,8 @@
     {id:'quiz',name:'Quiz',desc:'Culture générale, le plus rapide marque',min:2},
     {id:'typing',name:'Course de frappe',desc:'Tape la phrase le plus vite',min:2},
     {id:'reflex',name:'Réflexes',desc:'Appuie dès que ça devient rouge',min:2},
-    {id:'c4',name:'Quatre en ligne',desc:'Aligne 4 jetons',min:2,max:2},
+    {id:'c4',name:'Quatre en ligne',desc:'Aligne 4 jetons, de 2 à 4 joueurs',min:2,max:4},
+    {id:'chess',name:'Échecs',desc:'Un contre un, les autres regardent',min:2,max:8},
     {id:'navale',name:'Bataille navale',desc:'Coule la flotte d\'en face',min:2,max:2}
   ];
   var GN={};ONLINE.forEach(function(g){GN[g.id]=g.name});
