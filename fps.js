@@ -26,6 +26,8 @@
   },ORDER=['pistol','magnum','smg','rifle','shotgun','sniper','lmg','launcher','minigun','ray','dmr','pdw','rocket','revolver','carbine','hunter','autoshot','bullpup','tesla'],MAXSLOT=4,DEPS=[];
   /* v32 : lance-roquettes (roquette droite et rapide, grosse explosion) */
   GUNS.rocket={n:'Lance-roquettes',dmg:420,rate:1.4,mag:1,res:8,spread:.002,auto:false,rel:2.4,pel:1,zoom:48,kick:.2,sight:.125,grip:[0,-.1,.06],hg:[0,-.06,-.36],tier:4,boom:true,price:4500,model:'launcher',col:0x4a5a3a,rad:7,rk:1};
+  /* v101 : pistolet laser du coffre secret : tir continu, dégâts du sniper amélioré niveau 3, gardé 3 vagues */
+  GUNS.laser={n:'Pistolet laser',dmg:286,rate:.09,mag:999,res:Infinity,spread:.002,auto:true,rel:.8,pel:1,zoom:50,kick:.004,sight:.115,grip:[0,-.1,.04],hg:null,tier:4,beam:true,model:'ray',col:0xe2361b};
   /* v77 : six armes de plus */
   GUNS.revolver={n:'Revolver doré',dmg:95,rate:.55,mag:6,res:42,spread:.007,auto:false,rel:2,pel:1,zoom:50,kick:.12,sight:.1,grip:[0,-.1,.04],hg:null,tier:1,price:800,model:'magnum',col:0xc9a24a};
   GUNS.carbine={n:'Carabine',dmg:34,rate:.12,mag:25,res:100,spread:.016,auto:true,rel:1.6,pel:1,zoom:44,kick:.022,sight:.1,grip:[0,-.09,.04],hg:[0,-.015,-.42],tier:1,price:1100,model:'rifle',col:0x8a6a42};
@@ -341,13 +343,13 @@
     if(!net.isHost)$('fps-start').hidden=true}
   /* l'hôte envoie la partie : au départ, et à chaque joueur qui arrive en cours de route */
   function coopStart(to){if(!coop||!auth||!P)return;
-    var msg={t:'zc-start',map:mapId,seed:gameSeed,diff:diff,w:wave,doors:DOORS.map(function(d,i){return d.open?i:-1}).filter(function(i){return i>=0}),items:items.map(function(it){return [it.id,it.type,+it.x.toFixed(2),+it.z.toFixed(2)]}),cd:cdT>0?+cdT.toFixed(1):0,st:STANDS.map(function(s){return s.tier||0}),dp:defsMsg(),hx:+P.x.toFixed(1),hz:+P.z.toFixed(1)};
+    var msg={t:'zc-start',map:mapId,seed:gameSeed,diff:diff,w:wave,doors:DOORS.map(function(d,i){return d.open?i:-1}).filter(function(i){return i>=0}),items:items.map(function(it){return [it.id,it.type,+it.x.toFixed(2),+it.z.toFixed(2)]}),cd:cdT>0?+cdT.toFixed(1):0,st:STANDS.map(function(s){return s.tier||0}),ch:SECRET&&SECRET.open?1:0,dp:defsMsg(),hx:+P.x.toFixed(1),hz:+P.z.toFixed(1)};
     if(to)net.to(to,msg);else net.broadcast(msg)}
   function coopJoin(m){
     if(!init())return;resetIntro();introBusy=false;mode='zombie';coop=true;online=true;auth=false;overSent=false;mapId=m.map;if(DIFF[m.diff])diff=m.diff;
     Object.keys(remotes).forEach(function(k){if(remotes[k].m&&scene)scene.remove(remotes[k].m);remotes[k].m=null});
     reset(m.seed);items.slice().forEach(function(it){removeItem(it.id)});m.items.forEach(function(a){addItem(a[1],a[2],a[3],a[0])});
-    m.doors.forEach(function(i){openDoor(DOORS[i],true)});/* v64 : niveau des armureries et défenses déjà posées */(m.st||[]).forEach(function(t,i){if(t>0&&STANDS[i])setStandTier(STANDS[i],t)});(m.dp||[]).forEach(function(a){try{netDeploy(a)}catch(e){}});wave=m.w;lastWaveSeen=wave;waveLeft=0;P.pts=D().pts;
+    m.doors.forEach(function(i){openDoor(DOORS[i],true)});/* v64 : niveau des armureries et défenses déjà posées */(m.st||[]).forEach(function(t,i){if(t>0&&STANDS[i])setStandTier(STANDS[i],t)});if(m.ch)openChest(false,'Un pote');(m.dp||[]).forEach(function(a){try{netDeploy(a)}catch(e){}});wave=m.w;lastWaveSeen=wave;waveLeft=0;P.pts=D().pts;
     var a=Math.random()*6.28;if(!solid(m.hx+Math.cos(a)*1.5,m.hz+Math.sin(a)*1.5)){P.x=m.hx+Math.cos(a)*1.5;P.z=m.hz+Math.sin(a)*1.5}
     $('fps-ov').hidden=true;UI.chat.hidden=false;UI.log.innerHTML='';sys('Appuie sur Entrée pour écrire à ton équipe');running=true;paused=false;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);lock();mobFull(true);
     cdT=m.cd||0;cdShown=-1;center(m.cd?'':'TU REJOINS LA PARTIE');setTimeout(function(){if(UI.center.textContent==='TU REJOINS LA PARTIE')center('')},1800);sfx.play('go');hud();
@@ -377,6 +379,7 @@
     if(!coop)return;
     if(m.t==='rel'&&m.d){var d=m.d;
       if(d.g==='zstand'){var ss=STANDS[d.i];if(ss&&(ss.tier||0)<d.t){setStandTier(ss,d.t);addFeed((d.n||'Un pote')+' a amélioré une armurerie');if(shopOpen&&shopStand===ss)shopRefresh()}}
+      if(d.g==='zchest'){openChest(false,d.n);return}
       if(d.g==='zdep'&&running){netDeploy([d.k,d.x,d.z,d.y]);addFeed((d.n||'Un pote')+' a posé : '+(DEFN[d.k]||'une défense'))}
       if(d.g==='zpw'&&PWD[d.k]){pwOn(d.k,d.n||'Un pote');return}
       if(d.g==='zdoor'){var dr=DOORS[d.i];if(dr&&!dr.open){openDoor(dr,true);addFeed((d.n||'Un pote')+' a ouvert une porte')}}
@@ -531,7 +534,7 @@
     if(!OUT){var ct=TX.ceil.clone();ct.needsUpdate=true;ct.repeat.set(W/2,H/2);var ceil=new THREE.Mesh(new THREE.PlaneGeometry(W*S,H*S),lam({map:ct,emissive:0x111111}));ceil.rotation.x=Math.PI/2;ceil.position.set(W*S/2,WH,H*S/2);scene.add(ceil)}
     else{var hill=new THREE.Mesh(new THREE.PlaneGeometry(600,600),lam({color:CITY?0x57534e:0x5d8a3a}));hill.rotation.x=-Math.PI/2;hill.position.set(W*S/2,-.02,H*S/2);scene.add(hill)}
     decorate(style,seed);
-    DOORS.forEach(buildDoor);STANDS.forEach(buildStand);
+    DOORS.forEach(buildDoor);STANDS.forEach(buildStand);if(mode==='zombie'&&ZG)try{buildSecret(M,seed)}catch(e){console.error('secret',e)}
     world={style:style,seed:seed};drawMiniBase();
   }
   /* porte payante : rideau métallique (ou barricade en bois au village) + prix au-dessus */
@@ -565,6 +568,42 @@
     d.lbls=[-1,1].map(function(s){var sp=doorLabel(d.cost,other);sp.position.set(d.alongX?0:s*(S/2+.35),2.45,d.alongX?s*(S/2+.35):0);grp.add(sp);return sp});
     d.m=m;d.g=grp;d.cx=cx;d.cz=cz;d.to=other;scene.add(grp);solidMeshes.push(m);
   }
+  /* v101 : code secret à 4 chiffres sur une feuille collée à un mur (n'importe où, même dans une salle fermée)
+     et coffre dans la salle de départ qui donne le pistolet laser. Tout vient de la graine de la carte : même code et mêmes places pour tout le salon */
+  var SECRET=null,codeOpen=false,codeTyped='';
+  function wallSpots(R,filter){var c=[];ALLOPEN.forEach(function(q){var x=q[0],z=q[1];if(!G[z]||G[z][x]!=='.'||!filter(x,z))return;for(var oy=-1;oy<=1;oy++)for(var ox=-1;ox<=1;ox++){var r=G[z+oy],v=r&&r[x+ox];if(v==='D'||v==='S')return}
+      [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(d){var r=G[z+d[1]];if(r&&r[x+d[0]]==='#')c.push([x,z,d[0],d[1]])})});c.sort(function(a,b){return a[0]-b[0]||a[1]-b[1]||a[2]-b[2]||a[3]-b[3]});
+    for(var i=c.length-1;i>0;i--){var j=Math.floor(R()*(i+1)),t=c[i];c[i]=c[j];c[j]=t}return c}
+  function buildSecret(M,seed){var R=rng(((seed||1)*7919+12345)>>>0),code='';for(var i=0;i<4;i++)code+=Math.floor(R()*10);
+    var st=M.start,ns=wallSpots(R,function(x,z){return true}),cs=wallSpots(R,function(x,z){return ZG[z]&&ZG[z][x]===st});SECRET={code:code,open:false};
+    /* la feuille */
+    var n=ns[0];if(n){var nx=(n[0]+.5)*S+n[2]*(S/2-.02),nz=(n[1]+.5)*S+n[3]*(S/2-.02),pt=tex(128,160,function(g,w,h){g.fillStyle='#f4eedc';g.fillRect(0,0,w,h);g.fillStyle='rgba(120,90,40,.15)';for(var k=0;k<6;k++)g.fillRect(0,20+k*24,w,2);
+        g.fillStyle='#c0392b';g.beginPath();g.arc(w/2,10,6,0,7);g.fill();g.fillStyle='#2a2420';g.font='italic 18px Georgia,serif';g.textAlign='center';g.fillText('coffre :',w/2,52);g.font='bold 40px "Courier New",monospace';g.fillText(code,w/2,104);g.font='14px Georgia,serif';g.fillText('— salle de départ',w/2,140)});
+      var pm=new THREE.Mesh(new THREE.PlaneGeometry(.34,.43),new THREE.MeshLambertMaterial({map:pt,side:THREE.DoubleSide}));pm.position.set(nx-n[2]*.01,1.55,nz-n[3]*.01);pm.lookAt(nx-n[2]*5,1.55,nz-n[3]*5);pm.rotation.z+=(R()-.5)*.25;pm.raycast=function(){};scene.add(pm);SECRET.note={x:nx,z:nz}}
+    /* le coffre */
+    for(var k=0;k<cs.length;k++){var c=cs[k],cx=(c[0]+.5)*S+c[2]*(S/2-.55),cz=(c[1]+.5)*S+c[3]*(S/2-.55),ex=c[2]?.4:.65,ez=c[3]?.4:.65;
+      if(colHit(cx-ex,cz-ez)||colHit(cx+ex,cz-ez)||colHit(cx-ex,cz+ez)||colHit(cx+ex,cz+ez)||colHit(cx,cz))continue;
+      var g=new THREE.Group();g.position.set(cx,0,cz);g.rotation.y=Math.atan2(-c[2],-c[3]);var wood=lam({map:TX.planks||null,color:0x8a5a2e}),iron=new THREE.MeshStandardMaterial({color:0x3a3a40,roughness:.4,metalness:.7}),gold=new THREE.MeshStandardMaterial({color:0xe8b531,roughness:.3,metalness:.8});
+      var base=new THREE.Mesh(new THREE.BoxGeometry(1.2,.6,.7),wood);base.position.y=.3;g.add(base);[-.5,.5].forEach(function(x){var b=new THREE.Mesh(new THREE.BoxGeometry(.07,.62,.72),iron);b.position.set(x,.3,0);g.add(b)});
+      var lid=new THREE.Group();lid.position.set(0,.6,-.35);g.add(lid);var lt=new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,1.2,12,1,false,0,Math.PI),wood);lt.rotation.z=Math.PI/2;lt.rotation.y=Math.PI/2;lt.position.z=.35;lt.scale.set(1,1,.6);lid.add(lt);
+      [-.5,.5].forEach(function(x){var b=new THREE.Mesh(new THREE.TorusGeometry(.35,.035,6,12,Math.PI),iron);b.rotation.y=Math.PI/2;b.position.set(x,0,.35);b.scale.set(1,.6,1);lid.add(b)});
+      var lk=new THREE.Mesh(new THREE.BoxGeometry(.2,.24,.06),gold);lk.position.set(0,.5,.37);g.add(lk);var pad=new THREE.Mesh(new THREE.PlaneGeometry(.14,.1),new THREE.MeshBasicMaterial({color:0x3fe09a}));pad.position.set(0,.53,.405);g.add(pad);SECRET.pad=pad;
+      var glow=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.MeshBasicMaterial({map:pwGlow(),color:0xe2361b,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending}));glow.rotation.x=-Math.PI/2;glow.position.y=.05;g.add(glow);
+      g.traverse(function(o){o.raycast=function(){}});scene.add(g);addCol(cx-ex,cz-ez,cx+ex,cz+ez);SECRET.g=g;SECRET.lid=lid;SECRET.glow=glow;SECRET.x=cx-c[2]*1.1;SECRET.z=cz-c[3]*1.1;break}}
+  function codeUI(show){if(!UI.code&&cv.parentNode){UI.code=document.createElement('div');UI.code.className='fps-code';cv.parentNode.appendChild(UI.code);
+      UI.code.addEventListener('click',function(e){var b=e.target.closest('[data-k]');if(b)codeKey(b.dataset.k)})}
+    if(!UI.code)return;UI.code.hidden=!show;if(!show)return;var d='';for(var i=0;i<4;i++)d+='<b>'+(codeTyped[i]||'')+'</b>';
+    UI.code.innerHTML='<div class="fc-box"><p>Coffre verrouillé · tape le code à 4 chiffres</p><div class="fc-dig">'+d+'</div><div class="fc-pad">'+[1,2,3,4,5,6,7,8,9,'⌫',0,'OK'].map(function(k){return '<button type="button" data-k="'+k+'">'+k+'</button>'}).join('')+'</div><p class="fc-h">Le code est écrit sur une feuille collée à un mur, quelque part sur la carte · Échap pour fermer</p></div>'}
+  function openCode(){if(!SECRET||SECRET.open)return;codeOpen=true;shopOpen=true;codeTyped='';keys={};mouseDown=false;aiming=false;setPrompt('');unlock();codeUI(true)}
+  function closeCode(){codeOpen=false;shopOpen=false;codeUI(false);keys={};lock()}
+  function codeKey(k){if(!codeOpen)return;k=String(k);if(k==='⌫'||k==='Backspace'){codeTyped=codeTyped.slice(0,-1);codeUI(true);return}if(k==='Escape'){closeCode();return}
+    if(/^[0-9]$/.test(k)&&codeTyped.length<4){codeTyped+=k;A.tick&&A.tick(880);codeUI(true)}
+    if((k==='OK'||k==='Enter'||codeTyped.length===4)&&codeTyped.length===4){if(codeTyped===SECRET.code){closeCode();openChest(true)}else{A.deny();codeTyped='';codeUI(true);var bx=UI.code.querySelector('.fc-box');if(bx){bx.classList.remove('shake');void bx.offsetWidth;bx.classList.add('shake')}}}}
+  function openChest(mine,by){if(!SECRET||SECRET.open)return;SECRET.open=true;SECRET.anim=0;if(SECRET.pad)SECRET.pad.material.color.setHex(0xe2361b);
+    if(mine){if(coop)net.relay({g:'zchest',n:net.me.name});A.buy();P.guns.laser={mag:999,res:Infinity};if(P.inv.indexOf('laser')<0)P.inv.push('laser');P.laserW=wave;P.gun=null;switchGun('laser');center('PISTOLET LASER');setTimeout(function(){if(UI.center.textContent==='PISTOLET LASER')center('')},1800);addFeed('Pistolet laser : tir continu, il disparaît dans 3 vagues')}
+    else addFeed((by||'Un pote')+' a ouvert le coffre secret')}
+  function secretStep(dt){if(!SECRET||!SECRET.g)return;if(SECRET.open&&SECRET.anim<1){SECRET.anim=Math.min(1,SECRET.anim+dt*1.5);SECRET.lid.rotation.x=-SECRET.anim*1.9;SECRET.glow.material.opacity=Math.sin(SECRET.anim*Math.PI)*.9}
+    if(P&&P.guns&&P.guns.laser&&wave>=(P.laserW||0)+3){delete P.guns.laser;P.inv=P.inv.filter(function(k){return k!=='laser'});if(P.gun==='laser'){P.gun=null;switchGun(P.inv[0]||'pistol')}addFeed('Le pistolet laser a disparu');hud()}}
   function buildStand(s){
     var x=(s.cx+.5)*S,z=(s.cy+.5)*S,g=new THREE.Group();g.position.set(x,0,z);s.x=x;s.z=z;addCol(x-S*.46,z-S*.46,x+S*.46,z+S*.46,true);
     var counter=new THREE.Mesh(new THREE.BoxGeometry(S*.82,1.05,S*.82),lam({map:TX.shop}));counter.position.y=.525;g.add(counter);s.counter=counter;
@@ -1134,7 +1173,7 @@
     Object.keys(remotes).forEach(function(k){remotes[k].m=null});
     P=newPlayer(spawnFar(0));setViewGun();
     var R=rng((seed||1)+7);
-    waveLeft=0;shopOpen=false;if(UI.shop)UI.shop.hidden=true;nades=[];booms=[];openingDoors=[];if(UI.prompt)setPrompt('');
+    waveLeft=0;shopOpen=false;codeOpen=false;if(UI.code)UI.code.hidden=true;if(UI.shop)UI.shop.hidden=true;nades=[];booms=[];openingDoors=[];if(UI.prompt)setPrompt('');
     if(mode==='zombie'){for(var i=0;i<3;i++){var c=cellC(OPEN[Math.floor(R()*OPEN.length)]);addItem(i<1?'med':i<2?'ammo':'coin',c.x,c.z)}}
     if(mode==='br'){
       var loot=['rifle','shotgun','sniper','rifle','shotgun','ammo','ammo','ammo','ammo','med','med','med','coin','coin','coin','coin','coin','sniper','ammo','med'];
@@ -1207,7 +1246,7 @@
   var ICON={pistol:'M14 6h36v6H32l-1 2h-6l-4 8h-7l4-8h-4z',magnum:'M10 7h12l3-2h8v2h21v4H33l-2 3h-6l-4 8h-7l4-8h-4z',smg:'M8 8h8v3h4V6h30v4h6v3H40v4h-5l-1-4h-6v9h-5v-9h-3l-3 7h-6l3-7h-4z',
     rifle:'M2 9h12l6-2h14V5h6v2h22v3H44v3H34v10h-5V13h-6l-3 7h-6l2-7H2z',shotgun:'M2 10h14l8-3h38v3H26v4h-8l-3 7H9l3-7H2z',sniper:'M2 10h12l8-2h12V5h14v3h16v2H34v4h-7l-3 7h-6l3-7H2z',
     lmg:'M4 9h12l6-3h26v4h14v3H44v3h-6v6h-8v-6h-4l-3 6h-6l3-6h-4l-1-3H4z',minigun:'M6 6h22v3h30v2H28v2h30v2H28v3H20v4h-6v-4H6z',ray:'M10 8a6 6 0 0 1 12 0h4v-2h3v2h3v-2h3v2h3v-2h3v2h4a2 2 0 0 1 0 6H22l-3 9h-7l3-9h-1a6 6 0 0 1-4-6z',launcher:'M4 9h10l4-2h6V4h14v3h22v6H38v3h-4v5h-7v-5h-6l-3 6h-6l3-6H4z'};
-  ICON.dmr=ICON.rifle;ICON.pdw=ICON.smg;ICON.rocket=ICON.launcher;ICON.revolver=ICON.magnum;ICON.carbine=ICON.rifle;ICON.hunter=ICON.sniper;ICON.autoshot=ICON.shotgun;ICON.bullpup=ICON.rifle;ICON.tesla=ICON.ray;
+  ICON.dmr=ICON.rifle;ICON.laser=ICON.ray;ICON.pdw=ICON.smg;ICON.rocket=ICON.launcher;ICON.revolver=ICON.magnum;ICON.carbine=ICON.rifle;ICON.hunter=ICON.sniper;ICON.autoshot=ICON.shotgun;ICON.bullpup=ICON.rifle;ICON.tesla=ICON.ray;
   function popPts(n){if(!UI.pops)return;var s=document.createElement('span');s.textContent=(n>0?'+':'')+n;s.className=n<0?'neg':'';UI.pops.appendChild(s);setTimeout(function(){s.remove()},950)}
   var promptTxt='';function setPrompt(t){if(t===promptTxt)return;promptTxt=t;UI.prompt.innerHTML=t||'';UI.prompt.classList.toggle('on',!!t)}
 
@@ -1375,7 +1414,7 @@
     if(P.inv.length>=MAXSLOT){var out=P.gun;delete P.guns[out];P.inv[P.inv.indexOf(out)]=t;addFeed(GUNS[out].n+' remplacé')}else P.inv.push(t);
     P.guns[t]={mag:g.mag,res:g.mag*(full?4:2)};P.gun=null;switchGun(t)}
   /* v29 : G pose l'arme en main par terre (un pote peut la ramasser) */
-  function dropGun(){if(!P||dead||P.down||mode!=='zombie'||P.inv.length<=1||P.gun==='pistol')return;var t=P.gun,fd=fwd(),x=P.x+fd.x*1.6,z=P.z+fd.z*1.6;if(solid(x,z)){x=P.x;z=P.z}
+  function dropGun(){if(!P||dead||P.down||mode!=='zombie'||P.inv.length<=1||P.gun==='pistol'||P.gun==='laser')return;var t=P.gun,fd=fwd(),x=P.x+fd.x*1.6,z=P.z+fd.z*1.6;if(solid(x,z)){x=P.x;z=P.z}
     delete P.guns[t];P.inv.splice(P.inv.indexOf(t),1);if(P.up)delete P.up[t];P.gun=null;switchGun(P.inv[0]);P.dropT=performance.now();
     if(coop&&!auth)net.send({t:'zc-drop',ty:t,x:+x.toFixed(2),z:+z.toFixed(2)});else addItem(t,x,z);addFeed(GUNS[t].n+' posé par terre');A.pick()}
   /* v29 : emotes avec B (salut, danse, victoire, muscles) : ton perso apparaît en vue extérieure, et tes potes le voient */
@@ -1464,6 +1503,7 @@
     sparks.forEach(function(s){s.t-=dt;s.v.y-=9*dt;s.m.position.addScaledVector(s.v,dt)});sparks=sparks.filter(function(s){if(s.t<=0){scene.remove(s.m);if(s.m.material&&s.m.material.dispose)s.m.material.dispose();if(s.m.geometry&&!s.m.geometry.userData.keep)s.m.geometry.dispose();return false}return true});
     feed.forEach(function(f){f.ttl-=dt});if(feed.length&&feed[feed.length-1].ttl<=0){feed.pop();renderFeed()}
     stepNades(dt);stepBooms(dt);stepDoors(dt);stepDeps(dt);
+    if(mode==='zombie')secretStep(dt);
     if(mode==='zombie'&&P&&P.pkW!==wave){P.pkW=wave;if(wave>0)spawnPerk()}
     if(online)sendState(dt);
   }
@@ -1475,13 +1515,15 @@
     DOORS.forEach(function(d){if(d.open)return;var dd=Math.hypot(d.cx-P.x,d.cz-P.z);if(dd<3.9&&dd<best){best=dd;near={door:d}}});
     STANDS.forEach(function(s){var dd=Math.hypot(s.x-P.x,s.z-P.z);if(dd<3.1&&dd<best){best=dd;near={stand:s}}});
     PERKS.forEach(function(p){if(p.x==null)return;var dd=Math.hypot(p.x-P.x,p.z-P.z);if(dd<2.9&&dd<best){best=dd;near={perk:p}}});
+    if(SECRET&&SECRET.g&&!SECRET.open){var dc=Math.hypot(SECRET.x-P.x,SECRET.z-P.z);if(dc<2.4&&dc<best){best=dc;near={chest:1}}}
     if(!near)setPrompt('');
+    else if(near.chest)setPrompt('<kbd>E</kbd><span>Coffre verrouillé · <b>entrer le code</b></span>');
     else if(near.perk){var pkd=PK[near.perk.id],own=P.perks&&P.perks[near.perk.id];setPrompt(own?'<span><b>'+esc(pkd.n)+'</b> : déjà bue</span>':pkN()>=PK_MAX?'<span>Tu as déjà <b>4 boissons</b> (maximum)</span>':'<kbd>E</kbd><span>Boire <b>'+esc(pkd.n)+'</b> · '+esc(pkd.d)+'</span><em class="'+(P.pts>=pkPrice()?'':'no')+'">'+pkPrice()+'</em>')}
     else if(near.door){var d=near.door,ok=P.pts>=cost(d.cost),to=ZNAME[UNL[d.a]?d.b:d.a];setPrompt('<kbd>E</kbd><span>Ouvrir vers <b>'+esc(to||'')+'</b></span><em class="'+(ok?'':'no')+'">'+cost(d.cost)+'</em>')}
     else setPrompt('<kbd>E</kbd><span>'+STN[near.stand.tier||0]+'</span><em>acheter</em>');
     if(keys.E){keys.E=false;use()}
   }
-  function use(){if(!near||dead||P.down)return;if(near.perk)buyPerk(near.perk);else if(near.door)buyDoor(near.door);else openShop(near.stand)}
+  function use(){if(!near||dead||P.down)return;if(near.chest){openCode();return}if(near.perk)buyPerk(near.perk);else if(near.door)buyDoor(near.door);else openShop(near.stand)}
   function buyPerk(p){var id=p.id,pk=PK[id];P.perks=P.perks||{};if(P.perks[id]||P.drink){A.deny();return}if(pkN()>=PK_MAX){A.deny();PP.toast('4 boissons maximum','warn');return}var pr=pkPrice();if(P.pts<pr){A.deny();PP.toast('Il te manque '+(pr-P.pts)+' pièces','warn');return}
     P.pts-=pr;popPts(-pr);P.perks[id]=1;A.buy();A.gulp();near=null;perkSigns();if(id==='hp')P.hp=200;aiming=false;mouseDown=false;P.rel=0;P.drink=1;P.drinkS=performance.now();P.drinkC=pk.col;P.drinkFx=0;drinkModel(pk.col);var up=pk.n.toUpperCase();setTimeout(function(){center(up);setTimeout(function(){if(UI.center.textContent===up)center('')},1500)},1300);addFeed(pk.n+' : '+pk.d);hud()}
   function buyDoor(d){
@@ -1976,6 +2018,7 @@
     var k=e.key.length===1?e.key.toLowerCase():e.key,c=e.code||'',ac=action(e);lastInput=performance.now();
     if(!running)return;
     /* v73 : la souris se recapture avec n'importe quelle touche de jeu, plus besoin de tirer */if(document.pointerLockElement!==cv&&!paused&&!shopOpen&&!emoteMenu&&k!=='Escape')lock();
+    if(codeOpen){e.preventDefault();codeKey(/^Digit|^Numpad[0-9]/.test(c)?c.slice(-1):k);return}
     if(shopOpen&&UI.shop&&UI.shop.hidden)shopOpen=false;
     if(shopOpen){if(ac==='use'||k==='Escape'){e.preventDefault();closeShop()}else if(k==='ArrowDown'||k==='ArrowUp'){e.preventDefault();shopMove(k==='ArrowDown'?1:-1)}else if(k==='Enter'){e.preventDefault();var bb=UI.shop.querySelector('.sh2-buy');if(bb)bb.click()}else if(k==='Tab'){e.preventDefault();shopTab={w:'e',e:'u',u:'w'}[shopTab];shopSel=null;UI.shop.innerHTML=shopHtml()}return}
     /* v84 : la touche A (clavier AZERTY) tire aussi */if(fireKey(e)){e.preventDefault();if(!e.repeat&&!dead&&!emoteMenu){mouseDown=true;fire()}return}
@@ -2120,7 +2163,7 @@
     zombie:function(t){if(!TX.blob)TX.blob=tex(64,64,function(g,w,h){var gr=g.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2);gr.addColorStop(0,'rgba(0,0,0,.55)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(0,0,w,h)});return zombieModel(t)},
     anim:function(e,dt,mv){zAnim(e,dt,mv)}};
   PP._fps=function(){return {reload:reload,fire:fire,P:P,ents:ents,zone:zone,items:items,remotes:remotes,round:round,online:online,setMode:function(m){mode=m},doors:DOORS,stands:STANDS,perks:function(){return PERKS},buyPerk:function(p){buyPerk(p)},addZ:function(t){addZombie(t,1)},use:use,interact:interact,give:giveGun,keys:keys,explode:explode,addZombie:addZombie,mapId:mapId,unl:UNL,setAim:function(v){aiming=v},paused:function(){return paused},dbg:function(){return {waveT:waveT,wave:wave,waveLeft:waveLeft,mode:mode,cdT:cdT,shopOpen:shopOpen,running:running}}}};
-  PP._fps=function(){return {P:P,ents:ents,explode:explode,addItem:addItem,wave:function(n){wave=n;nextWave()},pw:PW,deps:function(){return DEPS},ghost:function(){return ghost},add:addZombie,cam:cam,shop:openShop,stands:STANDS,spawnPerk:spawnPerk,perks:function(){return PERKS},buyPerk:buyPerk,standTier:setStandTier}};
+  PP._fps=function(){return {P:P,ents:ents,explode:explode,addItem:addItem,wave:function(n){wave=n;nextWave()},pw:PW,deps:function(){return DEPS},ghost:function(){return ghost},add:addZombie,cam:cam,shop:openShop,stands:STANDS,spawnPerk:spawnPerk,perks:function(){return PERKS},buyPerk:buyPerk,standTier:setStandTier,secret:function(){return SECRET}}};
   PP.games.fps={
     restart:function(){return quick()},
     open:function(){if(!init())return;buildTouch();$('fps-lockhint').hidden=true;$('fps-skins').hidden=true;

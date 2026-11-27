@@ -388,3 +388,14 @@
 .fx-boss>i>i{display:block;height:100%;background:linear-gradient(#ff5a3a,#b01a0a);transition:width .2s}
 .fps-drinkfx{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .7s ease-out;background:radial-gradient(ellipse at center,transparent 35%,var(--c,#fff) 120%);z-index:4}
 .fps-drinkfx.on{opacity:.85;transition:opacity .08s}
+.fps-code{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,8,6,.55);z-index:30}
+.fps-code[hidden]{display:none}
+.fps-code .fc-box{background:#1d1a17;border:3px solid #e8b531;padding:18px 20px;width:290px;color:#f1ece2;font:600 13px 'IBM Plex Mono',monospace;text-align:center;box-shadow:0 10px 0 rgba(0,0,0,.4)}
+.fps-code .fc-box.shake{animation:fcShake .35s}
+@keyframes fcShake{25%{transform:translateX(-8px)}50%{transform:translateX(8px)}75%{transform:translateX(-5px)}}
+.fps-code .fc-dig{display:flex;gap:8px;justify-content:center;margin:12px 0}
+.fps-code .fc-dig b{width:46px;height:56px;border:2px solid #e8b531;background:#0e0c0a;font:400 36px Anton,Impact,sans-serif;display:flex;align-items:center;justify-content:center;color:#e8b531}
+.fps-code .fc-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.fps-code .fc-pad button{padding:10px 0;font:700 18px 'IBM Plex Mono',monospace;background:#f1ece2;color:#141210;border:2px solid #141210;cursor:pointer}
+.fps-code .fc-pad button:hover{background:#e8b531}
+.fps-code .fc-h{margin-top:10px;font-weight:400;font-size:11px;opacity:.75}
