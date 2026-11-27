@@ -1100,6 +1100,8 @@
   function addItem(type,x,z,id){var m=pickupMesh(type);m.position.set(x,.7,z);scene.add(m);var it={id:id!=null?id:itemSeq++,type:type,x:x,z:z,m:m};if(PWD[type])it.ttl=30;items.push(it);if(coop&&auth&&id==null&&running)net.broadcast({t:'zc-item',i:it.id,ty:type,x:+x.toFixed(2),z:+z.toFixed(2)});return it}
   function removeItem(id){for(var i=items.length-1;i>=0;i--)if(items[i].id===id){scene.remove(items[i].m);items.splice(i,1)}}
 
+  /* v97 : vie des zombies +5 % par vague (100 % à la vague 1, 105 % à la 2…) ; chaque boss a 5× la vie et 2× la vitesse du précédent (vitesse plafonnée sous le sprint du joueur) */
+  var BOSSW=15;function zHpMul(){return 1+Math.max(0,wave-1)*.05}
   function addZombie(type,mult){
     var t=ZT[type],s=spawnFar(14),m=zombieModel(type);
     m.position.set(s.x,-1.9,s.z);scene.add(m);dust(s.x,s.z);
@@ -1667,16 +1669,16 @@
       var hot=e.hit>0?0x661111:0;if(e.hot!==hot){e.hot=hot;e.m.traverse(function(o){if(o.isMesh&&o.material.emissive)o.material.emissive.setHex(hot)})}
     });
     /* les zombies d'une vague arrivent petit à petit (24 en même temps au maximum) */
-    if(waveLeft>0){spawnT-=dt;if(spawnT<=0&&alive<24){spawnT=.35+Math.random()*.5;waveLeft--;addZombie(pickType(),1+wave*.02);hud()}}
+    if(waveLeft>0){spawnT-=dt;if(spawnT<=0&&alive<24){spawnT=.35+Math.random()*.5;waveLeft--;addZombie(pickType(),zHpMul());hud()}}
     else if(!alive){waveT-=dt;if(waveT>0&&wave){var tt=Math.ceil(waveT);if(tt!==P.wcd){P.wcd=tt;center('VAGUE '+(wave+1)+' DANS '+tt)}}if(waveT<=0)nextWave()}
   }
   function pickType(){var r=Math.random();if(wave>=5&&r<.08)return 'ghoul';if(wave>=4&&r>.9)return 'armored';if(wave>=2&&r<.2)return 'runner';if(wave>=3&&r<.3)return 'crawler';if(wave>=4&&r<.39)return 'spitter';if(wave>=4&&r<.47)return 'exploder';if(wave>=6&&r<.53)return 'tank';return 'walker'}
   var BOSSN=['ALEXANDRE','LUGANIZER','PAPONI','LEAO.J'];
   function nextWave(){
     wave++;center('');P.wcd=0;var n=Math.min(80,Math.round((5+wave*3)*D().cnt));waveLeft=n;spawnT=.5;
-    if(wave%5===0&&wave%15!==0){addZombie('brute',1+wave*.02);PP.toast('Une brute arrive !','warn')}
+    if(wave%5===0&&wave%BOSSW!==0){addZombie('brute',zHpMul());PP.toast('Une brute arrive !','warn')}
     /* v81 : un boss toutes les 15 vagues : 2× plus de vie, lent, barre de vie et nom en haut de l'écran */
-    if(wave%15===0){var bn=BOSSN[wave/15-1]||PP.pick(BOSSN),bz=addZombie('brute',(1+wave*.02)*2);bz.boss='BOSS VAGUE '+wave+' : '+bn;bz.sp*=.6;bz.m.scale.multiplyScalar(1.25);PP.toast('BOSS : '+bn,'warn');center(bn);setTimeout(function(){if(UI.center.textContent===bn)center('')},2500)}
+    if(wave%BOSSW===0){var bi=wave/BOSSW,bn=BOSSN[bi-1]||PP.pick(BOSSN),bz=addZombie('brute',(1+(BOSSW-1)*.05)*2*Math.pow(5,bi-1));bz.boss='BOSS VAGUE '+wave+' : '+bn;bz.sp=Math.min(8,bz.sp*.6*Math.pow(2,bi-1));bz.m.scale.multiplyScalar(1.25);PP.toast('BOSS : '+bn,'warn');center(bn);setTimeout(function(){if(UI.center.textContent===bn)center('')},2500)}
     if(wave>1){var s=spawnFar(6);addItem(Math.random()<.5?'ammo':'med',s.x,s.z)}
     A.wave();PP.toast('Vague '+wave,'warn');hud();waveT=9;
   }
