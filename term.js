@@ -35,7 +35,7 @@
     else if(cmd==='history')S.hist.forEach(function(h,i){out((i+1)+'  '+h)});
     else if(cmd==='help')out('Commandes : '+Object.keys(MAN).join(', ')+'\nTape « man commande » pour une explication.',YEL);
     else if(cmd==='man'){if(need(1))out(MAN[ar[0]]||('pas de manuel pour '+ar[0]),YEL)}
-    else if(cmd==='indice'){if(S.mode==='story'&&MIS[S.mi]){out('Indice : '+MIS[S.mi].h,YEL);S.pen+=10}else out('Pas d\'indice ici.',YEL)}
+    else if(cmd==='indice'){if(S.mode==='story'&&MIS[S.mi])showHint();else out('Pas d\'indice ici.',YEL)}
     else if(cmd==='sudo')out('joueur n\'est pas dans le fichier sudoers. Bien tenté.','#ff8a6b');
     else if(cmd==='ls'){var p=ar[0]?parts(ar[0]):S.cwd,n=node(p);if(!n)err('dossier introuvable : '+ar[0]);else if(!n.d)out(ar[0]);else{var all=fl.indexOf('a')>=0,names=Object.keys(n.d).filter(function(k){return all||k.charAt(0)!=='.'}).sort();X.lsA=all;
         if(fl.indexOf('l')>=0)names.forEach(function(k){var c=n.d[k];out((c.d?'d':'-')+'rw'+(c.d||c.x?'x':'-')+'  joueur  '+(c.d?'    -':('     '+c.f.length).slice(-5))+'  '+k+(c.d?'/':''),c.d?BLU:c.x?GRN:CR)});
@@ -57,23 +57,26 @@
   function prompt(){return 'joueur@pixel:'+show(S.cwd)+'$ '}
   function at(p){return node(parts(p))}
   var MIS=[
-    {t:'Tu viens d\'arriver sur le serveur. Affiche le dossier dans lequel tu te trouves.',h:'la commande s\'appelle pwd',ok:function(X){return X.cmd==='pwd'}},
-    {t:'Regarde ce qu\'il y a dans ce dossier.',h:'ls liste les fichiers',ok:function(X){return X.cmd==='ls'&&!X.err}},
-    {t:'Entre dans le dossier documents.',h:'cd documents',ok:function(){return pstr(S.cwd)==='/home/joueur/documents'}},
-    {t:'Lis le fichier notes.txt.',h:'cat notes.txt',ok:function(X){return X.read==='/home/joueur/documents/notes.txt'}},
-    {t:'Reviens dans ton dossier personnel (un cran au-dessus).',h:'cd .. remonte d\'un dossier',ok:function(){return pstr(S.cwd)==='/home/joueur'}},
-    {t:'Crée un dossier qui s\'appelle projets.',h:'mkdir projets',ok:function(){var n=at('~/projets');return !!(n&&n.d)}},
-    {t:'Crée un fichier vide todo.txt dans le dossier projets.',h:'touch projets/todo.txt',ok:function(){var n=at('~/projets/todo.txt');return !!(n&&!n.d)}},
-    {t:'Écris le mot site dans projets/todo.txt, sans ouvrir d\'éditeur.',h:'echo site > projets/todo.txt',ok:function(){var n=at('~/projets/todo.txt');return !!(n&&!n.d&&/site/i.test(n.f))}},
-    {t:'Fais une copie de projets/todo.txt qui s\'appelle copie.txt (dans ton dossier personnel).',h:'cp projets/todo.txt copie.txt',ok:function(){var n=at('~/copie.txt');return !!(n&&!n.d&&/site/i.test(n.f))}},
-    {t:'Renomme copie.txt en backup.txt.',h:'mv copie.txt backup.txt',ok:function(){return !at('~/copie.txt')&&!!at('~/backup.txt')}},
-    {t:'Il y a un fichier caché ici. Affiche aussi les fichiers cachés.',h:'ls -a',ok:function(X){return X.cmd==='ls'&&X.lsA}},
-    {t:'Lis le fichier caché .secret.',h:'cat .secret',ok:function(X){return X.read==='/home/joueur/.secret'}},
-    {t:'Trouve la ligne qui contient le mot cle dans /var/log/pixel.log.',h:'grep cle /var/log/pixel.log',ok:function(X){return X.grep&&X.grep.p==='/var/log/pixel.log'&&X.grep.n>0&&/cle/i.test(X.grep.w)}},
-    {t:'Un virus traîne : supprime telechargements/virus.sh.',h:'rm telechargements/virus.sh',ok:function(){return !at('~/telechargements/virus.sh')&&!!at('~/telechargements')}},
-    {t:'Supprime le dossier vieux et tout ce qu\'il contient.',h:'rm -r vieux',ok:function(){return !at('~/vieux')}},
-    {t:'Dernière étape : rends lance.sh exécutable, puis lance-le.',h:'chmod +x lance.sh puis ./lance.sh',ok:function(X){return X.exec==='/home/joueur/lance.sh'}}];
+    {s:['pwd'],t:'Tu viens d\'arriver sur le serveur. Affiche le dossier dans lequel tu te trouves.',h:'la commande s\'appelle pwd',ok:function(X){return X.cmd==='pwd'}},
+    {s:['ls'],t:'Regarde ce qu\'il y a dans ce dossier.',h:'ls liste les fichiers',ok:function(X){return X.cmd==='ls'&&!X.err}},
+    {s:['cd documents'],t:'Entre dans le dossier documents.',h:'cd documents',ok:function(){return pstr(S.cwd)==='/home/joueur/documents'}},
+    {s:['cat notes.txt'],t:'Lis le fichier notes.txt.',h:'cat notes.txt',ok:function(X){return X.read==='/home/joueur/documents/notes.txt'}},
+    {s:['cd ..'],t:'Reviens dans ton dossier personnel (un cran au-dessus).',h:'cd .. remonte d\'un dossier',ok:function(){return pstr(S.cwd)==='/home/joueur'}},
+    {s:['mkdir projets'],t:'Crée un dossier qui s\'appelle projets.',h:'mkdir projets',ok:function(){var n=at('~/projets');return !!(n&&n.d)}},
+    {s:['touch projets/todo.txt'],t:'Crée un fichier vide todo.txt dans le dossier projets.',h:'touch projets/todo.txt',ok:function(){var n=at('~/projets/todo.txt');return !!(n&&!n.d)}},
+    {s:['echo site > projets/todo.txt'],t:'Écris le mot site dans projets/todo.txt, sans ouvrir d\'éditeur.',h:'echo site > projets/todo.txt',ok:function(){var n=at('~/projets/todo.txt');return !!(n&&!n.d&&/site/i.test(n.f))}},
+    {s:['cp projets/todo.txt copie.txt'],t:'Fais une copie de projets/todo.txt qui s\'appelle copie.txt (dans ton dossier personnel).',h:'cp projets/todo.txt copie.txt',ok:function(){var n=at('~/copie.txt');return !!(n&&!n.d&&/site/i.test(n.f))}},
+    {s:['mv copie.txt backup.txt'],t:'Renomme copie.txt en backup.txt.',h:'mv copie.txt backup.txt',ok:function(){return !at('~/copie.txt')&&!!at('~/backup.txt')}},
+    {s:['ls -a'],t:'Il y a un fichier caché ici. Affiche aussi les fichiers cachés.',h:'ls -a',ok:function(X){return X.cmd==='ls'&&X.lsA}},
+    {s:['cat .secret'],t:'Lis le fichier caché .secret.',h:'cat .secret',ok:function(X){return X.read==='/home/joueur/.secret'}},
+    {s:['grep cle /var/log/pixel.log'],t:'Trouve la ligne qui contient le mot cle dans /var/log/pixel.log.',h:'grep cle /var/log/pixel.log',ok:function(X){return X.grep&&X.grep.p==='/var/log/pixel.log'&&X.grep.n>0&&/cle/i.test(X.grep.w)}},
+    {s:['rm telechargements/virus.sh'],t:'Un virus traîne : supprime telechargements/virus.sh.',h:'rm telechargements/virus.sh',ok:function(){return !at('~/telechargements/virus.sh')&&!!at('~/telechargements')}},
+    {s:['rm -r vieux'],t:'Supprime le dossier vieux et tout ce qu\'il contient.',h:'rm -r vieux',ok:function(){return !at('~/vieux')}},
+    {s:['chmod +x lance.sh','./lance.sh'],t:'Dernière étape : rends lance.sh exécutable, puis lance-le.',h:'chmod +x lance.sh puis ./lance.sh',ok:function(X){return X.exec==='/home/joueur/lance.sh'}}];
   var QS=[['afficher le dossier courant',['pwd']],['lister les fichiers',['ls']],['lister aussi les fichiers cachés',['ls -a','ls -la','ls -al']],['remonter dans le dossier parent',['cd ..','cd ../']],['revenir dans ton dossier personnel',['cd','cd ~','cd ~/']],['créer le dossier test',['mkdir test']],['créer le fichier vide a.txt',['touch a.txt']],['afficher le contenu de a.txt',['cat a.txt']],['supprimer le fichier a.txt',['rm a.txt']],['supprimer le dossier vieux et son contenu',['rm -r vieux','rm -rf vieux','rm -fr vieux','rm -R vieux','rm -r vieux/','rm -rf vieux/']],['copier a.txt vers b.txt',['cp a.txt b.txt']],['renommer a.txt en b.txt',['mv a.txt b.txt']],['déplacer a.txt dans le dossier docs',['mv a.txt docs','mv a.txt docs/']],['chercher le mot erreur dans log.txt',['grep erreur log.txt']],['savoir quel utilisateur tu es',['whoami']],['effacer l\'écran',['clear']],['rendre run.sh exécutable',['chmod +x run.sh']],['lancer le script run.sh du dossier courant',['./run.sh']],['lire le manuel de ls',['man ls']],['compter les lignes de a.txt',['wc -l a.txt']],['afficher le début de a.txt',['head a.txt']],['afficher la fin de a.txt',['tail a.txt']],['écrire bonjour dans a.txt',['echo bonjour > a.txt']],['ajouter bonjour à la fin de a.txt',['echo bonjour >> a.txt']],['entrer dans le dossier docs',['cd docs','cd docs/']],['lister les fichiers avec les détails',['ls -l']]];
+  /* v83 : bouton Indice — toutes les commandes de la mission, dans l'ordre (+10 s, une fois par mission) */
+  function hintSteps(){var m=MIS[S.mi];if(!m)return [];var l=m.s.slice();if(S.mi>=5&&pstr(S.cwd)!==pstr(HOME))l.unshift('cd ~');return l}
+  function showHint(){if(S.mode!=='story'||S.over||!MIS[S.mi]||(S.hintOpen&&S.hintM===S.mi))return;if(S.hintM!==S.mi){S.hintM=S.mi;S.pen+=10;PP.sfx.play('ui')}S.hintOpen=true;out('Indice (+10 s) : tape '+hintSteps().map(function(c,i){return (i+1)+') '+c}).join('   '),YEL)}
   function norm(s){return String(s).trim().replace(/["']/g,'').replace(/\s+/g,' ')}
   function nextQ(){var i;do{i=Math.floor(Math.random()*QS.length)}while(i===S.qi&&QS.length>1);S.qi=i}
   function fresh(C){S={mode:C.mode==='chrono'?'chrono':'story',fs:mkfs(),cwd:HOME.slice(),buf:[],hist:[],hi:0,inp:'',mi:0,t:0,pen:0,ncmd:0,over:false,tt:0,score:0,time:60,qi:-1,flash:0};
@@ -85,7 +88,7 @@
     if(S.mode==='chrono'){out('$ '+line,CR);var q=QS[S.qi],good=q[1].some(function(a){return norm(a)===norm(line)});
       if(good){S.score++;S.flash=.3;S.fok=1;sfx.play('pickup');out('Correct !',GRN)}else{S.time=Math.max(0,S.time-3);S.flash=.3;S.fok=0;sfx.play('lose');out('Raté. Il fallait : '+q[1][0],'#ff8a6b')}nextQ();return}
     var X=run(line);if(S.over)return;var guard=0;
-    while(MIS[S.mi]&&guard++<3){var okk=false;try{okk=MIS[S.mi].ok(X)}catch(e){}if(!okk)break;S.mi++;sfx.play('pickup');S.flash=.4;S.fok=1;out('Mission '+S.mi+'/'+MIS.length+' réussie.',GRN);X={cmd:'',args:[]};if(S.mi>=MIS.length){done(C);return}}
+    while(MIS[S.mi]&&guard++<3){var okk=false;try{okk=MIS[S.mi].ok(X)}catch(e){}if(!okk)break;S.mi++;S.hintOpen=false;sfx.play('pickup');S.flash=.4;S.fok=1;out('Mission '+S.mi+'/'+MIS.length+' réussie.',GRN);X={cmd:'',args:[]};if(S.mi>=MIS.length){done(C);return}}
     if(X.err)sfx.play('tick')}
   function complete(){var m=/(\S*)$/.exec(S.inp),w=m?m[1]:'';if(S.inp.indexOf(' ')<0){var cs=Object.keys(MAN).filter(function(k){return k.indexOf(w)===0});if(cs.length===1)S.inp=cs[0]+' ';return}
     var sl=w.lastIndexOf('/'),dir=sl>=0?w.slice(0,sl+1):'',pre=sl>=0?w.slice(sl+1):w,n=node(parts(dir||'.'));if(!n||!n.d)return;var c=Object.keys(n.d).filter(function(k){return k.indexOf(pre)===0&&(pre.length||k.charAt(0)!=='.')});
@@ -95,6 +98,7 @@
     setup:function(C){fresh(C);C.keysText('Tape tes commandes au clavier puis <kbd>Entrée</kbd> · <kbd>Tab</kbd> complète un nom · <kbd>↑</kbd> <kbd>↓</kbd> rappellent les commandes · rien ne touche ton vrai ordi');
       C.over('Terminal',S.mode==='chrono'?'60 secondes : on te dit quoi faire, tu tapes la commande Linux. Une bonne réponse vaut 1 point, une erreur coûte 3 secondes.':'Tu es le nouvel admin du serveur pixel. <b>16 missions</b> pour apprendre les vraies commandes Linux : te déplacer, lire, créer, copier, chercher, supprimer.<br>C\'est un faux terminal : tu ne peux rien casser.<br>Record : <b>'+(C.best('t')?C.best('t')+' s':'—')+'</b>','Démarrer')},
     start:function(C){fresh(C)},
+    mouse:function(C,t,x,y){S.mx=x;S.my=y;if(t==='down'&&C.running&&S.hb&&x>=S.hb[0]&&x<=S.hb[0]+S.hb[2]&&y>=S.hb[1]&&y<=S.hb[1]+S.hb[3])showHint()},
     key:function(C,code,down,e){if(!down||!C.running||S.over||!e)return;var k=e.key;
       if((e.ctrlKey&&!e.altKey)||e.metaKey){if(k==='l'||k==='L'){S.buf=[];e.preventDefault()}return}
       if(k==='Enter'){e.preventDefault();enter(C)}
@@ -127,7 +131,11 @@
       else{var mi=Math.min(S.mi,MIS.length-1);ag.txt(g,'MISSION '+(mi+1),px0+20,46,28,INK,'left');ag.mono(g,(mi+1)+' / '+MIS.length,px0+pw-20,46,12,'rgba(20,18,16,.6)','right');
         g.fillStyle='rgba(20,18,16,.14)';ag.rr(g,px0+20,68,pw-40,8,4);g.fill();g.fillStyle='#3fbf6a';ag.rr(g,px0+20,68,Math.max(8,(pw-40)*S.mi/MIS.length),8,4);g.fill();
         var yy=wrap(g,S.over?'Toutes les missions sont finies !':MIS[mi].t,px0+20,108,pw-40,24,INK,16);
+        S.hb=null;if(!S.over&&C.running){var by=Math.min(yy+4,H-226);
+          if(!S.hintOpen){var hov=S.mx>=px0+20&&S.mx<=px0+pw-20&&S.my>=by&&S.my<=by+36;g.fillStyle=hov?'#f05a3e':RED;ag.rr(g,px0+20,by,pw-40,36,8);g.fill();ag.mono(g,'💡 INDICE'+(S.hintM===S.mi?'':'  (+10 s)'),px0+pw/2,by+18,14,CR);S.hb=[px0+20,by,pw-40,36]}
+          else{var st=hintSteps(),bh=30+st.length*24;g.fillStyle='#fff3c4';ag.rr(g,px0+20,by,pw-40,bh,8);g.fill();g.strokeStyle=YEL;g.lineWidth=2;g.stroke();ag.mono(g,'TAPE, DANS L\'ORDRE :',px0+32,by+15,11,'rgba(20,18,16,.65)','left');
+            st.forEach(function(c,i){ag.mono(g,(i+1)+'.  '+c,px0+32,by+38+i*24,13,INK,'left')})}}
         g.fillStyle='rgba(20,18,16,.08)';ag.rr(g,px0+16,H-178,pw-32,150,8);g.fill();ag.mono(g,'AIDE',px0+28,H-160,11,'rgba(20,18,16,.6)','left');
-        ['help    liste des commandes','man ls  explique une commande','indice  un coup de pouce (+10 s)','Tab     complète un nom','↑ ↓     commandes précédentes','clear   efface l\'écran'].forEach(function(l,i){ag.mono(g,l,px0+28,H-138+i*19,11,INK,'left')})}}
+        ['help    liste des commandes','man ls  explique une commande','indice  les commandes (+10 s)','Tab     complète un nom','↑ ↓     commandes précédentes','clear   efface l\'écran'].forEach(function(l,i){ag.mono(g,l,px0+28,H-138+i*19,11,INK,'left')})}}
   });
 })();
