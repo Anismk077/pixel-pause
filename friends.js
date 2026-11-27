@@ -1,4 +1,4 @@
-/* Pixel Pause — amis : ajout par pseudo ou par lien (jesuisgay.fr/ami/pseudo), demandes (qu'on peut couper),
+/* Pixel Pause — amis : ajout par pseudo ou par lien (pixelpause.fr/ami/pseudo), demandes (qu'on peut couper),
    statut (en ligne, occupé, en partie, hors ligne), mini profil au clic, messages privés avec emojis, invitations dans les salons. */
 (function(){
   'use strict';
@@ -74,7 +74,7 @@
     else draw({name:o.name,av:o.av},null);
   };
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&cov)closeCard()});
-  /* lien jesuisgay.fr/ami/pseudo -> ?ami=pseudo */
+  /* lien pixelpause.fr/ami/pseudo -> ?ami=pseudo */
   (function(){var m=/[?&]ami=([^&#]+)/.exec(location.search),n=m?decodeURIComponent(m[1]):null;try{if(!n)n=sessionStorage.getItem('pp-ami')}catch(e){}if(!n)return;
     try{history.replaceState(null,'',location.pathname+'#friends')}catch(e){}
     function go(){try{sessionStorage.removeItem('pp-ami')}catch(e){}PP.card({name:n,fromLink:true})}
