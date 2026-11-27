@@ -20,11 +20,15 @@
     jui:{n:'Juinik',r:0,dmg:7,cd:.9,rng:2.5,slow:.25,s:'gel'},
     ily:{n:'Ilya',r:0,dmg:14,cd:1.3,rng:3.4,s:'arc'},
     tho:{n:'Thomas',r:0,dmg:8,cd:1,rng:2.4,ch:2,s:'ecl'},
+    ana:{n:'Ananas',r:0,dmg:11,cd:1.1,rng:2.4,spl:.7,s:'orb'},
+    bsb:{n:'bsbfqhqsd',r:0,dmg:4,cd:.3,rng:2,s:'vis'},
     har:{n:'Haram',r:1,dmg:30,cd:.75,rng:3,s:'arc'},
     hal:{n:'Halal',r:1,dmg:26,cd:1.1,rng:2.6,spl:.9,s:'orb'},
     kas:{n:'Kasher',r:1,dmg:18,cd:.9,rng:2.6,slow:.4,s:'gel'},
     hlf:{n:'Halouf',r:1,dmg:22,cd:.5,rng:2.2,s:'epee'},
     bou:{n:'Bouzelouf',r:1,dmg:24,cd:1,rng:2.8,ch:3,s:'ecl'},
+    coc:{n:'Cochon',r:1,dmg:45,cd:1.2,rng:1.8,stun:.2,s:'poing'},
+    agn:{n:'Agneau',r:1,dmg:20,cd:.8,rng:2.6,ch:2,slow:.3,s:'gel'},
     cac:{n:'Caca',r:2,dmg:58,cd:1,rng:2.8,spl:1.1,bossx:1.3,s:'orb',p:'Odeur : +30 % de dégâts contre les boss'},
     pip:{n:'Pipi',r:2,dmg:40,cd:.5,rng:2.6,slow:.3,s:'goutte',p:'Flaque : ralentit les slimes de 30 %'},
     cha:{n:'Chameau',r:2,dmg:150,cd:1.3,rng:4.5,crit:.2,s:'vis',p:'Bosse : 20 % de coups critiques (×2)'},
@@ -33,18 +37,22 @@
     moi:{n:'Moise',r:3,dmg:190,cd:.95,rng:3.2,spl:1.3,push:12,s:'bou',p:'Mer ouverte : toutes les 12 s, repousse les slimes à portée'},
     exa:{n:'Exaucer',r:3,dmg:130,cd:.8,rng:3.6,ch:6,gemk:.03,s:'ecl',p:'Vœu : 3 % de chance de gagner une gemme par slime tué'},
     chi:{n:'Chirac',r:3,dmg:230,cd:1,rng:2.4,stun:.5,glob:.1,s:'poing',p:'Discours : +10 % de dégâts à tout ton territoire'},
+    vad:{n:'Vador',r:2,dmg:90,cd:1.1,rng:3,stun:.6,s:'epee',p:'Étreinte : étourdit sa cible 0,6 s'},
+    mtr:{n:'Montreuil',r:3,dmg:170,cd:.85,rng:3.4,spl:1,kb:1,s:'bou',p:'Mairie : +1 pièce par slime tué par ton équipe chez toi'},
     cdc:{n:'Croix-de-Chavaux',sh:'Chavaux',r:3,dmg:160,cd:.7,rng:3.8,vsl:.5,s:'vis',p:'Carrefour : +50 % de dégâts aux slimes ralentis ou étourdis'},
     gog:{n:'GOG',r:4,dmg:1300,cd:1.4,rng:3,spl:.9,stun:1,s:'poing',p:'Colosse : étourdit 1 s à chaque coup'},
     mag:{n:'MAGOG',r:4,dmg:450,cd:.6,rng:4,ch:5,nodec:1,s:'ecl',p:'Écho : ses éclairs rebondissent sans perdre de force'},
     son:{n:'SONGOKU',r:4,dmg:520,cd:.7,rng:4,spl:1.6,blast:8,s:'etoile',p:'Rafale : toutes les 8 s, frappe tous les slimes à portée (×3)'},
     h:{n:'H',r:4,dmg:300,cd:.35,rng:3.2,aura:.2,s:'lettre',p:'Hâte : les voisins attaquent 20 % plus vite'},
-    cap:{n:'CAPORAL',r:4,dmg:800,cd:1,rng:3.4,spl:1.2,glob:.15,s:'galon',p:'Garde-à-vous : +15 % de dégâts à tout ton territoire'}
+    cap:{n:'CAPORAL',r:4,dmg:800,cd:1,rng:3.4,spl:1.2,glob:.15,s:'galon',p:'Garde-à-vous : +15 % de dégâts à tout ton territoire'},
+    ani:{n:'AnisGoat',r:4,dmg:900,cd:.6,rng:4.2,spl:1.3,gs:.25,s:'etoile',p:'GOAT : tout ton territoire attaque 25 % plus vite'},
+    gm:{n:'GOG&MAGOG',r:4,dmg:2600,cd:1.1,rng:4.2,spl:1,ch:5,nodec:1,stun:1,blast:10,bx:5,s:'poing',p:'Colosse + Écho, et Fin du monde : toutes les 10 s, frappe tous les slimes à portée (×5)'}
   };
   /* recettes des mythiques : 1 exemplaire de chaque, pris sur le territoire */
-  var REC={gog:['har','cac','moi'],mag:['hal','pip','exa'],son:['tho','cha','chi'],h:['kas','toi','cdc'],cap:['ban','hlf','bou','vac']},RK=Object.keys(REC);
+  var REC={gog:['har','cac','moi','coc','ana'],mag:['hal','pip','exa','agn','bsb'],son:['tho','cha','chi'],h:['kas','toi','cdc'],cap:['ban','hlf','bou','vac'],ani:['mtr','vad','coc','agn'],gm:['gog','mag']},RK=Object.keys(REC);
   var BYR=[[],[],[],[],[]];Object.keys(U).forEach(function(k){if(U[k].r<4)BYR[U[k].r].push(k)});
   var SELL=[8,20,50,130,350],PARI=[[2,1,.3],[3,2,.1]],GRP=[0,0,1,1,2],WMAX=80,LIM=100,PER=28;
-  var HPT=2.3,BOSSM=20,TC=['#6fbf5a','#4fc0e0','#e0c94f','#e0884f','#c04fe0','#e04f8a','#9aa3ad','#5a6cff'],DIF={normal:{hp:1,n:'Normal'},dur:{hp:1.55,n:'Difficile'},online:{hp:1.25,n:'À 2'}};
+  var HPT=2.3,BOSSM=30,TC=['#6fbf5a','#4fc0e0','#e0c94f','#e0884f','#c04fe0','#e04f8a','#9aa3ad','#5a6cff'],DIF={normal:{hp:1,n:'Normal'},dur:{hp:1.55,n:'Difficile'},online:{hp:1.6,n:'À 2'}};
   var EK=[{h:1,v:1.5,c:'#6fbf5a'},{h:.6,v:2.4,c:'#e8a23a'},{h:1.8,v:1.05,c:'#7d6bd6'},{h:BOSSM,v:.9,c:'#e2361b'}];
   function pick(a){return a[Math.floor(Math.random()*a.length)]}
   function rnd(){return Math.random()}
@@ -88,7 +96,7 @@
     if(fits(T,nb,A.w,A.h)){put(T,A,nb);var k=fits(T,old,B.w,B.h)?old:(spotWH(T,B.w,B.h)[0]);if(k!=null&&k>=0){put(T,B,k);return nb}lift(T,A)}
     put(T,A,old);put(T,B,bo);return -1}
   function mult(T,id){return (1+.15*T.up[GRP[U[id].r]]+(T.gb||0))*(T.bonus||1)}
-  function auraMap(T){var m=new Array(32).fill(0),gc=0,gp=0,us=units(T);us.forEach(function(c){if(U[c.u].glob){if(c.u==='chi')gc+=c.n;else gp+=c.n}});T.gb=Math.min(.3,gc*.1)+Math.min(.45,gp*.15);us.forEach(function(A){if(!U[A.u].aura)return;var ax=A.a%8+A.w/2,ay=(A.a/8|0)+A.h/2;
+  function auraMap(T){var m=new Array(32).fill(0),gc=0,gp=0,us=units(T);us.forEach(function(c){if(U[c.u].glob){if(c.u==='chi')gc+=c.n;else gp+=c.n}});T.gb=Math.min(.3,gc*.1)+Math.min(.45,gp*.15);T.gs=0;T.kb=0;us.forEach(function(c){if(U[c.u].gs)T.gs=Math.min(.5,T.gs+U[c.u].gs);if(U[c.u].kb)T.kb=Math.min(3,T.kb+c.n)});us.forEach(function(A){if(!U[A.u].aura)return;var ax=A.a%8+A.w/2,ay=(A.a/8|0)+A.h/2;
       us.forEach(function(B){if(B===A)return;var d=Math.hypot(B.a%8+B.w/2-ax,(B.a/8|0)+B.h/2-ay);if(d<=(A.w+B.w)/2+.6)m[B.a]=Math.min(.5,m[B.a]+U[A.u].aura*A.n/3)})});return m}
   /* ---------- le monde : territoire du haut (côté 1, retourné) et du bas (côté 0), chemin du milieu partagé ----------
      Coordonnées en cases. Côté 0 : cases y 5..9, son chemin passe en y 4.5 (milieu) et 9.5 (dehors).
@@ -115,7 +123,7 @@
     Ts.forEach(function(T){T.e.forEach(function(e){e.hit=Math.max(0,e.hit-dt);if(e.st>0){e.st-=dt}else{var f=e.sl>0?1-e.slf:1;e.s=(e.s+e.v*f*dt)%PER}if(e.sl>0)e.sl-=dt;pos(e.s,TMP);wp(T.side,TMP.x,TMP.y,e);all.push(e)})});
     if(ghosts)ghosts.forEach(function(e){e.hit=Math.max(0,(e.hit||0)-dt);e.s=(e.s+e.v*dt)%PER;pos(e.s,TMP);wp(1,TMP.x,TMP.y,e);if(e.hp>0)all.push(e)});
     Ts.forEach(function(T){if(!T.aura)T.aura=auraMap(T);
-      for(var i=0;i<32;i++){var c=T.g[i];if(!c||c.a!==i)continue;var u=U[c.u],m=mult(T,c.u),sp=1+T.aura[i];wp(T.side,i%8+c.w/2,(i/8|0)+c.h/2,TMP);var cx=TMP.x,cy=TMP.y;
+      for(var i=0;i<32;i++){var c=T.g[i];if(!c||c.a!==i)continue;var u=U[c.u],m=mult(T,c.u),sp=1+T.aura[i]+(T.gs||0);wp(T.side,i%8+c.w/2,(i/8|0)+c.h/2,TMP);var cx=TMP.x,cy=TMP.y;
         for(var k=0;k<c.n;k++){c.cd[k]-=dt*sp;if(c.cd[k]>0)continue;
           var tg=null,bd=u.rng;for(var j=0;j<all.length;j++){var e=all[j];if(e.hp<=0)continue;var d=Math.hypot(e.x-cx,e.y-cy)-(e.boss?.3:0);if(d<=bd&&(!tg||e.boss&&!tg.boss||d<bd&&!(tg.boss&&!e.boss))){tg=e;bd=e.boss?u.rng:d}}
           if(!tg){c.cd[k]=0;continue}
@@ -124,10 +132,10 @@
         /* passifs à minuterie : Lait, Mer ouverte, Rafale */
         if(u.lait){c.pt=(c.pt==null?u.lait:c.pt)-dt;if(c.pt<=0){c.pt=u.lait;T.gold+=4*c.n;fxp(fx,{k:'txt',x:cx,y:cy-.3,s:'+'+4*c.n,t:.9,c:'#f3c623'})}}
         if(u.push||u.blast){var per=u.push||u.blast;c.pt=(c.pt==null?per:c.pt)-dt;if(c.pt<=0){var near=all.filter(function(e){return e.hp>0&&Math.hypot(e.x-cx,e.y-cy)<=u.rng});if(near.length){c.pt=per;
-          if(u.push)near.forEach(function(e){if(!e.boss&&!e.ghost)e.s=(e.s-2.5+PER)%PER});else near.forEach(function(e){hurt(e,u.dmg*m*3*c.n,u)});
+          if(u.push)near.forEach(function(e){if(!e.boss&&!e.ghost)e.s=(e.s-2.5+PER)%PER});else near.forEach(function(e){hurt(e,u.dmg*m*(u.bx||3)*c.n,u)});
           fxp(fx,{k:'boom',x:cx,y:cy,r:u.rng,t:.45,c:u.push?'#7fd0ff':'#ffb020'})}else c.pt=.5}}
         if(c.at>0)c.at-=dt}});
-    Ts.forEach(function(T){T.e=T.e.filter(function(e){if(e.hp>0)return true;T.kills++;if(e.boss){T.gold+=40+w*3;T.gems+=3+Math.floor(w/10);out.boss=true}else T.gold+=2;
+    Ts.forEach(function(T){T.e=T.e.filter(function(e){if(e.hp>0)return true;T.kills++;if(e.boss){T.gold+=40+w*3;T.gems+=3+Math.floor(w/10);out.boss=true}else T.gold+=2+(T.kb||0);
       if(e.by&&e.by.gemk&&rnd()<e.by.gemk){T.gems++;fxp(fx,{k:'txt',x:e.x,y:e.y,s:'+1 gemme',t:.9,c:'#4fe0d0'})}
       fxp(fx,{k:'die',x:e.x,y:e.y,t:.35,c:e.boss?EK[3].c:TC[Math.floor((w-1)/10)%TC.length],r:e.boss?.7:.3});return false})});
     for(var i=fx.length-1;i>=0;i--){fx[i].t-=dt;if(fx[i].t<=0)fx.splice(i,1)}
@@ -199,6 +207,7 @@
     if(!G||G.ally!=='net')return;
     if(d.t==='gd-s'){var PG={g:new Array(32).fill(null)};d.g.forEach(function(s){var a=String(s).split(':');if(U[a[0]]){var c=mk(a[0],+a[1]||1);if(fits(PG,+a[2],c.w,c.h))put(PG,c,+a[2])}});P={g:PG.g,e:d.e.map(function(a){return {id:a[0],s:a[1],hp:a[2],max:a[3],k:a[4],boss:!!a[5],v:a[6],x:0,y:0,ghost:1,sl:0,st:0,ph:a[0]%6}}),n:d.n,w:d.w};if(d.nm)G.T[1].name=d.nm;return}
     if(d.t==='gd-hit'){var Tm=G.T[0];d.h.forEach(function(h){for(var i=0;i<Tm.e.length;i++){var e=Tm.e[i];if(e.id===h[0]){e.hp-=h[1];e.hit=.1;if(h[2]){e.sl=1.6;e.slf=h[2]}if(h[3])e.st=Math.max(e.st,h[3]);break}}});return}
+    if(d.t==='gd-x2'){G.x2=!!d.on;say(G.T[1].name+(G.x2?' a mis la vitesse ×2':' a remis la vitesse normale'),1);return}
     if(d.t==='gd-give'){Tm=G.T[0];var fr=d.from||G.T[1].name;if(d.u&&U[d.u]){if(place(Tm,d.u)<0){Tm.gold+=SELL[U[d.u].r];say(fr+' t\'a donné '+U[d.u].n+' (plus de place : +'+SELL[U[d.u].r]+' or)',1)}else say(fr+' t\'a donné '+U[d.u].n,1)}else if(d.g){Tm.gold+=d.g;say(fr+' t\'a donné '+d.g+' or',1)}C.pop('CADEAU !','#3fe09a','46px');sfx.play('pickup');return}
     if(d.t==='gd-x'&&!G.over){G.fromNet=true;finish(C,false,'Votre équipe a été débordée.');return}
     if(d.t==='gd-boss30'){G.pdone=true;if(G.done&&!G.over)finish(C,true);return}
@@ -212,9 +221,9 @@
   function tall(){return document.body.classList.contains('pp-touch')&&innerHeight>innerWidth}
   function layout(C){var v=tall();if(LY&&LY.v===v)return;
     if(v)LY={v:v,W:540,H:960,ox:10,oy:50,cs:52,
-      b:{info:[10,632,520,76],don:[420,636,106,30],sum:[10,716,250,100],fus:[270,716,125,100],sel:[405,716,125,100],p0:[10,824,124,68],p1:[142,824,124,68],rec:[274,824,124,68],upg:[406,824,124,68],anim:[280,900,250,48]}};
+      b:{info:[10,632,520,76],don:[420,636,106,30],sum:[10,716,250,100],fus:[270,716,125,100],sel:[405,716,125,100],p0:[10,824,124,68],p1:[142,824,124,68],rec:[274,824,124,68],upg:[406,824,124,68],anim:[280,900,250,48],x2:[10,900,260,48]}};
     else LY={v:v,W:960,H:540,ox:16,oy:50,cs:44,
-      b:{info:[472,50,472,110],don:[848,56,90,30],sum:[472,170,236,124],fus:[716,170,110,124],sel:[834,170,110,124],p0:[472,304,112,100],p1:[592,304,112,100],rec:[712,304,112,100],upg:[832,304,112,100],anim:[744,414,200,44]}};
+      b:{info:[472,50,472,110],don:[848,56,90,30],sum:[472,170,236,124],fus:[716,170,110,124],sel:[834,170,110,124],p0:[472,304,112,100],p1:[592,304,112,100],rec:[712,304,112,100],upg:[832,304,112,100],anim:[744,414,200,44],x2:[472,414,200,44]}};
     C.W=LY.W;C.H=LY.H;C.cv.width=LY.W;C.cv.height=LY.H}
   function PX(wx){return LY.ox+(wx+1)*LY.cs}
   function PY(wy){return LY.oy+(wy+1)*LY.cs}
@@ -224,6 +233,7 @@
   /* ---------- actions du joueur ---------- */
   function say(t,ok){if(!G)return;G.wtxt=t;G.warn=1.8;G.wok=ok}
   function act(C,a){if(!G||G.over||!C.running)return;var T=G.T[0],id;
+    if(a==='x2'){G.x2=!G.x2;if(G.ally==='net')net.relay({t:'gd-x2',on:G.x2});say(G.x2?'Vitesse ×2 : tout va deux fois plus vite':'Vitesse normale',1);sfx.play('ui');return}
     if(a==='anim'){ANIM=!ANIM;PP.text('garde-anim',ANIM?'1':'0');say(ANIM?'Animations d\'attaque affichées':'Animations d\'attaque cachées (les dégâts comptent toujours)',1);sfx.play('ui');return}
     if(a==='sum'){if(!room(T)){say('Plus de place : fusionne ou vends',0);sfx.play('lose');return}if(T.gold<T.cost){say('Pas assez d\'or',0);return}id=summon(T);if(!id&&T.noroom){noRoom(T.noroom);return}got(C,id,'');return}
     if(a==='fus'){var c=T.g[T.sel];if(!c){say('Choisis d\'abord une case',0);return}if(c.n<3){say('Il faut 3 '+U[c.u].n+' sur la case',0);return}if(U[c.u].r>=3){say('Les mythiques se créent avec les RECETTES',0);return}id=fuse(T,T.sel);if(!id){if(T.noroom)noRoom(T.noroom);return}T.sel=T.last;got(C,id,'Fusion : ');return}
@@ -421,9 +431,9 @@
     var PN=['PARI ÉPIQUE','PARI LÉGEND.'];PARI.forEach(function(p,k){button(g,B['p'+k],PN[k],p[1]+' gemme'+(p[1]>1?'s':'')+' · '+Math.round(p[2]*100)+' %',RAR[p[0]].d,T.gems>=p[1],false)});
     var nc=RK.filter(function(mm){return canCraft(T,mm)}).length;button(g,B.rec,'RECETTES',nc?nc+' prêt'+(nc>1?'s':'')+' !':'Mythiques','#7d1606',true,!!nc);
     var cheap=T.luck<10&&T.gold>=LCOST[T.luck-1];button(g,B.upg,'AMÉLIOR.','Chance, dégâts','#17448e',true,cheap);
+    button(g,B.x2,'VITESSE : '+(G.x2?'×2':'×1'),null,G.x2?'#e8a23a':'#3a3530',true,!!G.x2);
     button(g,B.anim,'ANIMATIONS : '+(ANIM?'OUI':'NON'),null,ANIM?'#3a3530':'#55595e',true,false);
     if(!LY.v){txt(g,'Les slimes sortent de vos camps et passent par',472,478,12,dim,'left','600');txt(g,'le chemin du milieu : vous pouvez tous les deux',472,496,12,dim,'left','600');txt(g,'les taper. 100 slimes sur le terrain = perdu.',472,514,12,dim,'left','600')}
-    else txt(g,'Chemin du milieu : vous tapez tous les deux',14,924,11.5,dim,'left','600');
     /* message */
     if(G.warn>0&&G.wtxt){g.globalAlpha=Math.min(1,G.warn*2);var mx=PX(4),my=PY(7);g.font='800 15px Inter, system-ui, sans-serif';var tw=Math.min(LY.cs*10-10,g.measureText(G.wtxt).width+28);
       g.fillStyle='rgba(20,18,16,.88)';rr(g,mx-tw/2,my-18,tw,36,10);g.fill();txt(g,G.wtxt,mx,my,15,G.wok?'#3fe09a':/BOSS/.test(G.wtxt)?'#e2361b':'#f3c623','center','800');g.globalAlpha=1}
@@ -445,24 +455,24 @@
     if(W.done){g.globalAlpha=Math.min(1,(W.t-W.dur)*4);big(g,W.win?'GAGNÉ !':'RATÉ…',cx,cy+R+2,Math.max(26,R*.36),W.win?col:'#f1ece2');g.globalAlpha=1}}
 
   /* ---------- fenêtres : recettes des mythiques, améliorations ---------- */
-  function box(){return LY.v?[10,110,520,760]:[110,50,740,470]}
+  function box(){if(G&&G.rec)return LY.v?[10,56,520,890]:[40,36,880,498];return LY.v?[10,110,520,760]:[110,50,740,470]}
   function closeR(){var b=box();return [b[0]+b[2]-56,b[1]+8,48,44]}
   function frame(g,title,col){var b=box();g.fillStyle='rgba(10,9,8,.7)';g.fillRect(0,0,LY.W,LY.H);g.fillStyle='#24211e';rr(g,b[0],b[1],b[2],b[3],16);g.fill();g.strokeStyle=col;g.lineWidth=3;g.stroke();
     big(g,title,b[0]+20,b[1]+30,LY.v?24:28,col,'left');var cl=closeR();g.fillStyle='#3a3530';rr(g,cl[0],cl[1],cl[2],cl[3],10);g.fill();txt(g,'✕',cl[0]+cl[2]/2,cl[1]+cl[3]/2,20,CR,'center','800');return b}
-  function recRow(i){var b=box();return LY.v?[b[0]+10,b[1]+64+i*134,b[2]-20,124]:[b[0]+12,b[1]+60+i*80,b[2]-24,72]}
-  function recBtn(i){var r=recRow(i);return LY.v?[r[0]+r[2]-150,r[1]+64,140,50]:[r[0]+r[2]-140,r[1]+12,128,48]}
+  function recRow(i){var b=box();return LY.v?[b[0]+10,b[1]+56+i*114,b[2]-20,108]:[b[0]+12,b[1]+54+i*62,b[2]-24,58]}
+  function recBtn(i){var r=recRow(i);return LY.v?[r[0]+r[2]-150,r[1]+54,140,48]:[r[0]+r[2]-130,r[1]+5,120,48]}
   function recClick(C,x,y){if(inR(closeR(),x,y)||!inR(box(),x,y)){G.rec=false;sfx.play('ui');return}
     var T=G.T[0];RK.forEach(function(m,i){if(inR(recBtn(i),x,y)){if(!canCraft(T,m)){say('Il manque des unités',0);sfx.play('lose');return}T.sel=-1;var id=craft(T,m);G.rec=false;got(C,id,'Invoqué : ')}})}
   function drawRec(g){var T=G.T[0],b=frame(g,'RECETTES DES MYTHIQUES',RAR[4].c);
+    txt(g,'en vert : déjà sur ton territoire',b[0]+(LY.v?20:360),b[1]+(LY.v?50:30),11,'rgba(241,236,226,.55)','left','600');
     RK.forEach(function(m,i){var r=recRow(i),u=U[m],ok=canCraft(T,m);g.fillStyle=ok?'#3a2420':'#2d2a26';rr(g,r[0],r[1],r[2],r[3],12);g.fill();
-      var ts=LY.v?56:56;tile(g,r[0]+6,r[1]+(LY.v?6:8),ts,{u:m,n:1},false,G.time);
-      txt(g,u.n,r[0]+ts+20,r[1]+20,LY.v?18:17,RAR[4].c,'left','900');
-      var x=r[0]+ts+20,y=r[1]+(LY.v?46:44);g.font='700 13px Inter, system-ui, sans-serif';g.textAlign='left';g.textBaseline='middle';
+      var ts=50;tile(g,r[0]+4,r[1]+4,ts,{u:m,n:1},false,G.time);
+      txt(g,u.n,r[0]+ts+14,r[1]+17,LY.v?17:16,RAR[4].c,'left','900');
+      var x=r[0]+ts+14+(LY.v?0:130),y=r[1]+(LY.v?42:17);g.font='700 '+(LY.v?13:12.5)+'px Inter, system-ui, sans-serif';g.textAlign='left';g.textBaseline='middle';
       REC[m].forEach(function(id,j){var has=have(T,id)>=0;if(j){g.fillStyle='rgba(241,236,226,.5)';g.fillText(' + ',x,y);x+=g.measureText(' + ').width}
         g.fillStyle=has?'#3fe09a':RAR[U[id].r].c;g.globalAlpha=has?1:.55;g.fillText(U[id].n,x,y);x+=g.measureText(U[id].n).width;g.globalAlpha=1});
-      txt(g,u.p,r[0]+(LY.v?14:ts+20),r[1]+(LY.v?78:62),11,'rgba(243,198,35,.9)','left','600');
-      button(g,recBtn(i),'CRÉER',ok?'prêt !':'il manque…','#e2361b',ok,ok)});
-    txt(g,'En vert : déjà sur ton territoire. Les unités utilisées disparaissent.',b[0]+b[2]/2,b[1]+b[3]-16,12,'rgba(241,236,226,.6)','center','600')}
+      g.save();g.beginPath();g.rect(r[0],r[1],r[2]-(LY.v?160:140),r[3]);g.clip();txt(g,u.p,r[0]+(LY.v?12:ts+14),r[1]+(LY.v?86:41),11,'rgba(243,198,35,.9)','left','600');g.restore();
+      button(g,recBtn(i),'CRÉER',ok?'prêt !':'il manque…','#e2361b',ok,ok)})}
   /* améliorations : Chance (taux d'invocation, 10 niveaux) + dégâts par rareté */
   function upRow(i){var b=box();return LY.v?(i===0?[b[0]+10,b[1]+64,b[2]-20,250]:[b[0]+10,b[1]+324+(i-1)*130,b[2]-20,120]):(i===0?[b[0]+12,b[1]+60,b[2]-24,170]:[b[0]+12,b[1]+240+(i-1)*72,b[2]-24,64])}
   function upBtn(i){var r=upRow(i);return LY.v?(i===0?[r[0]+r[2]-170,r[1]+186,160,56]:[r[0]+r[2]-160,r[1]+56,150,54]):(i===0?[r[0]+r[2]-170,r[1]+108,158,54]:[r[0]+r[2]-150,r[1]+8,138,48])}
@@ -493,7 +503,7 @@
   var INTRO='Invoque des unités au hasard avec ton or et pose-les sur ton territoire. <b>3 unités identiques</b> sur une case se fusionnent en une unité plus rare : <span style="color:#a3a8ad">commune</span>, <span style="color:#3a8cff">rare</span>, <span style="color:#a04ee0">épique</span>, <span style="color:#f3c623">légendaire</span>. Les <span style="color:#e2361b">mythiques</span> se créent avec les recettes.<br>Les slimes sortent de vos camps et passent par le <b>chemin du milieu</b>, où vous pouvez tous les deux les taper. À '+LIM+' slimes sur le terrain, c\'est perdu. Un boss toutes les 10 vagues et un boss final à la vague 80.';
   PP.arcade({id:'garde',
     setup:function(C){CP=C;G=null;P=null;LY=null;layout(C);
-      C.keysText('<kbd>Espace</kbd> invoquer · maintiens une unité et glisse-la pour la déplacer · <kbd>F</kbd> fusion · <kbd>V</kbd> vendre · <kbd>1</kbd> <kbd>2</kbd> paris · <kbd>3</kbd> recettes · <kbd>4</kbd> améliorations · <kbd>D</kbd> donner');
+      C.keysText('<kbd>Espace</kbd> invoquer · maintiens une unité et glisse-la pour la déplacer · <kbd>F</kbd> fusion · <kbd>V</kbd> vendre · <kbd>1</kbd> <kbd>2</kbd> paris · <kbd>3</kbd> recettes · <kbd>4</kbd> améliorations · <kbd>D</kbd> donner · <kbd>X</kbd> vitesse ×2');
       if(C.mode==='online'){
         C.listen(function(m){onNet(C,m)});
         if(net.isHost)C.over('DEFEND MONTREUIL · duo',INTRO+'<br><b>En duo, en équipe</b> : même compteur de slimes, même objectif, vous gagnez ou perdez ensemble. Le bouton <b>DONNER</b> passe une unité (ou 50 or) à ton coéquipier.','Lancer la partie',function(){hostStart(C)});
@@ -503,7 +513,7 @@
       if(s&&s.mode===C.mode)C.over('DEFEND MONTREUIL',INTRO+'<br><br>Partie sauvegardée : <b>vague '+s.w+'</b>.<br><button type="button" class="primary" id="garde-new" style="margin-top:10px">Nouvelle partie</button>','Continuer (vague '+s.w+')',function(){resume(s);C.go()});
       else C.over('DEFEND MONTREUIL',INTRO,'Jouer')},
     start:function(C){startSolo(C)},
-    key:function(C,code,down){if(!down)return;var A={Space:'sum',KeyF:'fus',KeyV:'sel',KeyD:'don',Digit1:'p0',Digit2:'p1',Digit3:'rec',Digit4:'upg',Numpad1:'p0',Numpad2:'p1',Numpad3:'rec',Numpad4:'upg'}[code];
+    key:function(C,code,down){if(!down)return;var A={Space:'sum',KeyF:'fus',KeyV:'sel',KeyD:'don',Digit1:'p0',Digit2:'p1',Digit3:'rec',Digit4:'upg',KeyX:'x2',Numpad1:'p0',Numpad2:'p1',Numpad3:'rec',Numpad4:'upg'}[code];
       if(A)act(C,A);if(code==='Escape'&&G){G.T[0].sel=-1;G.rec=false;G.upg=false}},
     /* toucher = choisir une unité ; maintenir et glisser = la déplacer */
     mouse:function(C,t,x,y){if(!G||G.over||!C.running){DRAG=null;return}var T=G.T[0];
@@ -515,7 +525,7 @@
       for(var k in B)if(k!=='info'&&inR(B[k],x,y)){act(C,k);return}
       var i=cellAt(x,y);if(i<0||!T.g[i]){T.sel=-1;return}
       DRAG={o:T.g[i],sx:x,sy:y,x:x,y:y,moved:false}},
-    step:function(C,dt){step(C,dt)},
+    step:function(C,dt){step(C,dt);if(G&&G.x2&&!G.over)step(C,dt)},
     draw:function(C){draw(C)},
     close:function(){G=null;P=null}
   });
