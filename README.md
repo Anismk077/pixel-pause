@@ -134,10 +134,10 @@ flowchart LR
         CORE --> CLOUD
     end
 
-    GH["GitHub Pages<br/>pixelpause.fr"] -- "fichiers statiques" --> UI
-    NET <-- "WebRTC pair à pair<br/>(PeerJS)" --> P2["Navigateurs des autres joueurs"]
-    NET <-. "relais MQTT si le P2P échoue" .-> P2
-    CLOUD <-- "Auth + Firestore" --> FB[("Firebase<br/>projet pixel-pause")]
+    GH["GitHub Pages<br/>pixelpause.fr"] -->|"fichiers statiques"| UI
+    NET <-->|"WebRTC pair à pair (PeerJS)"| P2["Navigateurs des autres joueurs"]
+    NET -.->|"relais MQTT si le P2P échoue"| P2
+    CLOUD <-->|"Auth + Firestore"| FB[("Firebase<br/>projet pixel-pause")]
 ```
 
 **Choix principaux**
