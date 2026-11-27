@@ -70,19 +70,26 @@
     var tubes;for(var tries=0;tries<200;tries++){for(var i=segs.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=segs[i];segs[i]=segs[j];segs[j]=t}
       tubes=[];for(var c2=0;c2<nc;c2++)tubes.push(segs.slice(c2*4,c2*4+4));if(!tubes.some(function(t){return t.every(function(x){return x===t[0]})}))break}
     for(var e=0;e<ne;e++)tubes.push([]);return tubes}
-  function pReset(C,keepLevel){var lv=keepLevel?P.level:1;P={tubes:pGen(C),sel:-1,anim:null,undo:[],moves:0,level:lv,extra:false,t:0,won:false,lift:[],shake:{},spark:[],hint:null,done:{},flash:{},nc:(LVL[C.mode]||LVL.easy)[0]};P.start=JSON.stringify(P.tubes);pLay()}
+  function pReset(C,keepLevel){var lv=keepLevel?P.level:1;P={tubes:pGen(C),sel:-1,anim:null,undo:[],moves:0,level:lv,extra:false,t:0,won:false,lift:[],shake:{},spark:[],hint:null,done:{},flash:{},nc:(LVL[C.mode]||LVL.easy)[0],hid:null,mask:null,startX:null};P.start=JSON.stringify(P.tubes);pLay()}
   function pLay(){var n=P.tubes.length,rows=n>8?2:1,per=Math.ceil(n/rows),tw=54,gap=Math.min(48,(W-90-per*tw)/(per-1||1)),th=4*SEG+20;P.pos=[];
     for(var i=0;i<n;i++){var r=Math.floor(i/per),cI=i%per,inRow=r===rows-1?n-per*(rows-1):per,rowW=inRow*tw+(inRow-1)*gap,x0=W/2-rowW/2;P.pos.push({x:x0+cI*(tw+gap),y:rows===2?(r?268:72):150,w:tw,h:th})}
     P.lift=P.tubes.map(function(){return 0})}
   function full(t){return t.length===4&&t.every(function(z){return z===t[0]})}
-  function topRun(t){if(!t.length)return 0;var c=t[t.length-1],n=0;for(var i=t.length-1;i>=0&&t[i]===c;i--)n++;return n}
-  function canPour(a,b){var A=P.tubes[a],B=P.tubes[b];if(a===b||!A.length||B.length>=4)return 0;if(B.length&&B[B.length-1]!==A[A.length-1])return 0;return Math.min(topRun(A),4-B.length)}
+  function topRun(t,h){if(!t.length)return 0;var c=t[t.length-1],n=0;for(var i=t.length-1;i>=(h||0)&&t[i]===c;i--)n++;return Math.max(1,n)}
+  /* v68 : couches mystères (P.hid[i] = nombre de couches cachées au fond de la fiole i) et fiole masquée (P.mask) */
+  function hidOf(i){return P&&P.hid?P.hid[i]||0:0}
+  function masked(i){return !!(P&&P.mask&&P.mask.on&&P.mask.i===i)}
+  function canPour(a,b){var A=P.tubes[a],B=P.tubes[b];if(a===b||!A.length||B.length>=4||masked(a)||masked(b))return 0;if(B.length&&B[B.length-1]!==A[A.length-1])return 0;return Math.min(topRun(A,hidOf(a)),4-B.length)}
   function solved(){return P.tubes.every(function(t){return !t.length||full(t)})}
   /* un coup « utile » : pas de fiole déjà finie, pas de couleur unie versée dans une fiole vide */
-  function useful(a,b){var A=P.tubes[a],B=P.tubes[b];if(!canPour(a,b)||full(A))return false;if(!B.length&&topRun(A)===A.length)return false;return true}
-  function findHint(){var best=null,bs=-1;for(var a=0;a<P.tubes.length;a++)for(var b=0;b<P.tubes.length;b++){if(!useful(a,b))continue;var A=P.tubes[a],B=P.tubes[b],k=canPour(a,b),s=(B.length?10:0)+(B.length+k===4?20:0)+(k===topRun(A)?5:0)+(A.length===k?8:0);if(s>bs){bs=s;best=[a,b]}}return best}
+  function useful(a,b){var A=P.tubes[a],B=P.tubes[b];if(!canPour(a,b)||full(A))return false;if(!B.length&&topRun(A,hidOf(a))===A.length&&!hidOf(a))return false;return true}
+  function findHint(){var best=null,bs=-1;for(var a=0;a<P.tubes.length;a++)for(var b=0;b<P.tubes.length;b++){if(!useful(a,b))continue;var A=P.tubes[a],B=P.tubes[b],k=canPour(a,b),s=(B.length?10:0)+(B.length+k===4?20:0)+(k===topRun(A,hidOf(a))?5:0)+(A.length===k?8:0)+(hidOf(a)&&A.length-k<=hidOf(a)?6:0);if(s>bs){bs=s;best=[a,b]}}return best}
   /* fin du versement : on applique le coup (appelé à la fin de l'animation, ou tout de suite si on clique entre-temps) */
   function pFinish(C){var a=P.anim;if(!a)return;P.anim=null;var A=P.tubes[a.a],B=P.tubes[a.b];for(var k=0;k<a.k;k++)B.push(A.pop());
+    /* la couche du dessous devient visible quand celle du dessus est partie */
+    if(P.hid&&P.hid[a.a]>0&&P.hid[a.a]>A.length-1){P.hid[a.a]=Math.max(0,A.length-1);P.flash[a.a]=.35;sfx.play('tick')}
+    if(P.hid&&full(B))P.hid[a.b]=0;
+    if(P.mask&&P.mask.on&&full(B)&&B[0]===P.mask.col){P.mask.on=false;P.flash[P.mask.i]=.8;C.pop('FIOLE RÉVÉLÉE !',COLS[P.mask.col],'52px');sfx.play('win');C.shake(4)}
     if(full(B)&&!P.done[a.b]){P.done[a.b]=1;P.flash[a.b]=.5;sfx.play('pickup');var p=P.pos[a.b];for(var s=0;s<14;s++)P.spark.push({x:p.x+p.w/2+(Math.random()-.5)*p.w,y:p.y-4,vx:(Math.random()-.5)*260,vy:-60-Math.random()*220,t:.55,c:COLS[B[0]]})}
     if(C.mode==='online')C.net.relay({t:'pd-st',tb:P.tubes});
     if(solved()){pWin(C);return}
@@ -102,23 +109,38 @@
   /* v67 : la partie est sauvegardée (niveau en cours et fioles, pour chaque difficulté) et reprend à la prochaine visite */
   function pKey(C){return 'pot-save-'+C.mode}
   function pSaved(C){if(duel(C))return null;try{var o=JSON.parse(PP.text(pKey(C))||'null');return o&&o.lv>=1?o:null}catch(e){return null}}
-  function pSave(C){if(!P||duel(C)||P.anim)return;var o=P.won?{lv:P.level+1,nw:1}:{lv:P.level,tb:P.tubes,st:P.start,mv:P.moves,ex:P.extra?1:0},j=JSON.stringify(o);if(j!==P._sv){P._sv=j;PP.text(pKey(C),j)}}
+  function pSave(C){if(!P||duel(C)||P.anim)return;var o=P.won?{lv:P.level+1,nw:1}:{lv:P.level,tb:P.tubes,st:P.start,mv:P.moves,ex:P.extra?1:0,hd:P.hid,mk:P.mask,x0:P.startX},j=JSON.stringify(o);if(j!==P._sv){P._sv=j;PP.text(pKey(C),j)}}
   function pLoad(C){var o=pSaved(C);if(!o)return false;pReset(C,false);P.level=o.lv;
-    if(!o.nw&&Array.isArray(o.tb)&&o.tb.length>=P.tubes.length-1){P.tubes=o.tb;P.start=o.st||JSON.stringify(o.tb);P.moves=o.mv||0;P.extra=!!o.ex;pLay()}P._sv=JSON.stringify(o);return true}
+    if(!o.nw&&Array.isArray(o.tb)&&o.tb.length>=P.tubes.length-1){P.tubes=o.tb;P.start=o.st||JSON.stringify(o.tb);P.moves=o.mv||0;P.extra=!!o.ex;P.hid=o.hd||null;P.mask=o.mk||null;P.startX=o.x0||null;pLay()}else pMech(C);P._sv=JSON.stringify(o);return true}
   document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-pot-r1]');if(!b||!CP)return;e.preventDefault();e.stopPropagation();PP.text(pKey(CP),'');sfx.play('ui');pReset(CP,false);var st=document.getElementById('potion-start');if(st)st.click()},true);
   function botLv(){var v=PP.store('pot-lv');return v>=1&&v<=3?v:2}
-  function solve(tubes){var t=tubes.map(function(x){return x.slice()}),seen={},path=[],nodes=0;
+  function solve(tubes){return solveG(tubes,null,-1)}
+  function solveG(tubes,goal,lock){var t=tubes.map(function(x){return x.slice()}),seen={},path=[],nodes=0;
     function fullT(x){return x.length===4&&x[0]===x[1]&&x[1]===x[2]&&x[2]===x[3]}
     function key(){return t.map(function(x){return x.map(function(c){return String.fromCharCode(97+c)}).join('')}).sort().join('|')}
-    function rec(d){if(t.every(function(x){return !x.length||fullT(x)}))return true;if(d>120||++nodes>60000)return false;var k=key();if(seen[k])return false;seen[k]=1;
+    function rec(d){if(goal?goal(t):t.every(function(x){return !x.length||fullT(x)}))return true;if(d>120||++nodes>60000)return false;var k=key();if(seen[k])return false;seen[k]=1;
       var cand=[],usedEmpty=false;
-      for(var a=0;a<t.length;a++){var A=t[a];if(!A.length||fullT(A))continue;var c=A[A.length-1],r=0;for(var i=A.length-1;i>=0&&A[i]===c;i--)r++;
-        for(var b=0;b<t.length;b++){if(a===b)continue;var B=t[b];if(B.length>=4)continue;if(B.length){if(B[B.length-1]!==c)continue;cand.push([a,b,Math.min(r,4-B.length),0])}else if(r<A.length)cand.push([a,b,r,1])}}
+      for(var a=0;a<t.length;a++){if(a===lock)continue;var A=t[a];if(!A.length||fullT(A))continue;var c=A[A.length-1],r=0;for(var i=A.length-1;i>=0&&A[i]===c;i--)r++;
+        for(var b=0;b<t.length;b++){if(a===b||b===lock)continue;var B=t[b];if(B.length>=4)continue;if(B.length){if(B[B.length-1]!==c)continue;cand.push([a,b,Math.min(r,4-B.length),0])}else if(r<A.length)cand.push([a,b,r,1])}}
       cand.sort(function(x,y){return x[3]-y[3]});
       for(var j=0;j<cand.length;j++){var m=cand[j],A2=t[m[0]],B2=t[m[1]];if(m[3]){if(usedEmpty)continue;usedEmpty=true}
         for(var q=0;q<m[2];q++)B2.push(A2.pop());path.push([m[0],m[1]]);if(rec(d+1))return true;path.pop();for(q=0;q<m[2];q++)A2.push(B2.pop())}
       return false}
     return rec(0)?path:null}
+  /* v68 : certains niveaux (pas tous) ont des couleurs mystères et/ou une fiole masquée, dans toutes les difficultés */
+  function pMech(C){if(duel(C)||!P)return;var L=P.level,myst=L>=3&&L%3===0,msk=L>=4&&L%4===0;P.hid=null;P.mask=null;
+    if(msk){var mk=null;for(var tr=0;tr<6&&!mk;tr++){if(tr)P.tubes=pGen(C);mk=pickMask(P.tubes)}if(mk){P.mask=mk;P.start=JSON.stringify(P.tubes);pLay()}}
+    if(myst){var deep=C.mode!=='easy';P.hid=P.tubes.map(function(t,i){if(t.length<2||Math.random()<.3)return 0;return Math.min(t.length-1,1+(deep&&Math.random()<.45?1:0))})}
+    P.startX=JSON.stringify({h:P.hid,m:P.mask});
+    if(P.mask||P.hid)setTimeout(function(){if(!P||P.won)return;C.pop(P.mask&&P.hid?'MYSTÈRES !':P.mask?'FIOLE MASQUÉE':'COULEURS MYSTÈRES',P.mask?COLS[P.mask.col]:'#7c46c8','46px')},400)}
+  /* fiole masquée : on choisit une fiole et une couleur absente de cette fiole, puis on vérifie que le niveau reste faisable */
+  function pickMask(tubes){var idx=[];tubes.forEach(function(t,i){if(t.length===4)idx.push(i)});idx.sort(function(){return Math.random()-.5});
+    for(var q=0;q<Math.min(3,idx.length);q++){var mi=idx[q],cols={};tubes.forEach(function(t,i){if(i!==mi)t.forEach(function(c){cols[c]=(cols[c]||0)+1})});
+      var cand=Object.keys(cols).filter(function(c){return cols[c]===4&&tubes[mi].indexOf(+c)<0}).map(Number);if(!cand.length)continue;var col=cand[Math.random()*cand.length|0];
+      var p1=solveG(tubes,function(t){return t.some(function(x,i){return i!==mi&&x.length===4&&x[0]===col&&x[1]===col&&x[2]===col&&x[3]===col})},mi);if(!p1)continue;
+      var st=tubes.map(function(x){return x.slice()});p1.forEach(function(m){var A=st[m[0]],B=st[m[1]],c=A[A.length-1],r=0;for(var i=A.length-1;i>=0&&A[i]===c;i--)r++;var k=Math.min(r,4-B.length);for(var z=0;z<k;z++)B.push(A.pop())});
+      if(solve(st))return {i:mi,col:col,on:true}}
+    return null}
   function genSolvable(C){var t;for(var i=0;i<40;i++){t=pGen(C);if(solve(t))return t}return t}
   function oppName(C,from){if(C.mode==='bot')return 'L\'ordi';var p=C.net.players.filter(function(q){return q.id===from})[0];return p?p.name:'Adversaire'}
   function duelStart(C,tubes){pReset(C,false);P.tubes=JSON.parse(JSON.stringify(tubes));P.start=JSON.stringify(P.tubes);P.done={};pLay();
@@ -148,18 +170,19 @@
     OPP.tubes.forEach(function(t,i){g.save();g.translate(x0+13+i*sp,y0+36);g.scale(k,k);var dn=full(t);drawTube(g,{x:0,y:0,w:54,h:4*SEG+20},t,0,0,0,0,0,0,dn,dn?1:0);g.restore()});
     var mine=P.tubes.filter(full).length,his=OPP.tubes.filter(full).length,bx=x0+44,bw=cw-78;
     function bar(y,lbl,v,col){mono(g,lbl,x0+10,y,9,INK,'left');g.fillStyle='rgba(20,18,16,.14)';rr(g,bx,y-4,bw,8,4);g.fill();if(v>0){g.fillStyle=col;rr(g,bx,y-4,Math.max(8,bw*v/P.nc),8,4);g.fill()}mono(g,v+'/'+P.nc,x0+cw-10,y,9,INK,'right')}
-    bar(y0+95,'LUI',his,RED);bar(y0+109,'TOI',mine,'#3fbf6a')}  PP._pot=function(){return {opp:OPP,p:P,solve:solve,bot:function(){botStep(CP)}}};
+    bar(y0+95,'LUI',his,RED);bar(y0+109,'TOI',mine,'#3fbf6a')}  PP._pot=function(){return {opp:OPP,p:P,solve:solve,bot:function(){botStep(CP)},hint:function(){return findHint()},sel:function(i){pSelect(CP,i)}}};
   function pWin(C){if(duel(C)){duelEnd(C,true);return}P.won=true;pSave(C);P.sel=-1;C.stop();sfx.play('win');var key=C.mode,nb=C.best('lvl-'+key,P.level),st=stars();C.pop('BRAVO !',RED,'70px');if(P.level>=5)C.win();
-    setTimeout(function(){C.over('Niveau '+P.level+' réussi','<span style="font-size:30px;letter-spacing:6px;color:#f3c623">'+'★★★'.slice(0,st)+'<span style="opacity:.3">'+'★★★'.slice(st)+'</span></span><br>En '+P.moves+' coups.'+(nb?'<br><b>Record de niveaux !</b>':''),'Niveau suivant',function(){var lv=P.level+1;pReset(C,true);P.level=lv;C.go()})},450)}
+    setTimeout(function(){C.over('Niveau '+P.level+' réussi','<span style="font-size:30px;letter-spacing:6px;color:#f3c623">'+'★★★'.slice(0,st)+'<span style="opacity:.3">'+'★★★'.slice(st)+'</span></span><br>En '+P.moves+' coups.'+(nb?'<br><b>Record de niveaux !</b>':''),'Niveau suivant',function(){var lv=P.level+1;pReset(C,true);P.level=lv;pMech(C);C.go()})},450)}
   function pSelect(C,hit){if(P.won||P.stuck)return;if(P.anim)pFinish(C);if(P.won||P.stuck)return;P.hint=null;
     if(hit<0){P.sel=-1;return}
+    if(masked(hit)){P.shake[hit]=.25;sfx.play('lose');if(P.sel<0)PP.toast&&PP.toast('Fiole masquée : remplis une fiole de la couleur indiquée pour la révéler','warn');return}
     if(P.sel<0){if(P.tubes[hit].length&&!full(P.tubes[hit])){P.sel=hit;sfx.play('tick')}else if(P.tubes[hit].length)P.shake[hit]=.2;return}
     if(hit===P.sel){P.sel=-1;return}
     var k=canPour(P.sel,hit);if(!k){P.shake[hit]=.25;sfx.play('lose');/* on garde la sélection si on clique une autre fiole pleine : elle devient la sélection */if(P.tubes[hit].length&&!full(P.tubes[hit]))P.sel=hit;else P.sel=-1;return}
-    P.undo.push(JSON.stringify({t:P.tubes,d:P.done}));P.anim={a:P.sel,b:hit,k:k,col:P.tubes[P.sel][P.tubes[P.sel].length-1],t:0};P.sel=-1;P.moves++;sfx.play('eat')}
+    P.undo.push(JSON.stringify({t:P.tubes,d:P.done,h:P.hid,m:P.mask}));P.anim={a:P.sel,b:hit,k:k,col:P.tubes[P.sel][P.tubes[P.sel].length-1],t:0};P.sel=-1;P.moves++;sfx.play('eat')}
   function pClick(C,x,y){if(P.won)return;var b=pBtnAt(x,y);if(b>=0){if(P.anim)pFinish(C);if(!P.won&&!P.stuck){pBtns()[b].fn(C);sfx.play('ui')}return}pSelect(C,pHit(x,y))}
-  function pUndo(){if(P.anim){P.anim=null}if(!P.undo.length)return;var u=JSON.parse(P.undo.pop());P.tubes=u.t;P.done=u.d;P.sel=-1;P.hint=null}
-  function pRestart(){P.seen={};P.stuck=false;P.anim=null;P.tubes=JSON.parse(P.start);P.undo=[];P.moves=0;P.done={};P.sel=-1;P.hint=null;if(P.extra)P.tubes.push([]);pLay()}
+  function pUndo(){if(P.anim){P.anim=null}if(!P.undo.length)return;var u=JSON.parse(P.undo.pop());P.tubes=u.t;P.done=u.d;P.hid=u.h||null;P.mask=u.m||null;P.sel=-1;P.hint=null}
+  function pRestart(){P.seen={};P.stuck=false;P.anim=null;P.tubes=JSON.parse(P.start);if(P.startX){var x0=JSON.parse(P.startX);P.hid=x0.h;P.mask=x0.m}P.undo=[];P.moves=0;P.done={};P.sel=-1;P.hint=null;if(P.extra)P.tubes.push([]);pLay()}
   function pHintGo(){if(P.anim)return;var h=findHint();if(h){P.hint={a:h[0],b:h[1],t:2.2};P.sel=-1}else{PP.toast&&PP.toast('Plus de coup utile : annule ou ajoute un tube','warn')}}
   function pHit(x,y){var hit=-1;P.pos.forEach(function(p,i){if(x>p.x-10&&x<p.x+p.w+10&&y>p.y-34&&y<p.y+p.h+12)hit=i});return hit}
   function pBtnAt(x,y){var bs=pBtns();for(var b=0;b<bs.length;b++){var B=bs[b];if(x>B.x&&x<B.x+B.w&&y>B.y&&y<B.y+B.h)return b}return -1}
@@ -169,13 +192,14 @@
     {x:x0+(w+g),y:y,w:w,h:38,l:'⟳ REFAIRE',k:'R',off:!P.undo.length,fn:pRestart},
     {x:x0+(w+g)*2,y:y,w:w,h:38,l:P.extra?'TUBE AJOUTÉ':'+ 1 TUBE',k:'T',off:P.extra,fn:function(){if(!P.extra){P.extra=true;P.tubes.push([]);pLay()}}},
     {x:x0+(w+g)*3,y:y,w:w,h:38,l:'? INDICE',k:'H',off:false,fn:pHintGo}]}
-  function drawTube(g,p,tube,ox,oy,ang,hide,add,addCol,isDone,cork){var x=p.x+ox,y=p.y+oy,w=p.w,h=p.h;
+  function drawTube(g,p,tube,ox,oy,ang,hide,add,addCol,isDone,cork,hidN,msk){hidN=msk?99:(hidN||0);var x=p.x+ox,y=p.y+oy,w=p.w,h=p.h;
     g.save();g.translate(x+w/2,y);g.rotate(ang);g.translate(-w/2,0);
     function shape(){g.beginPath();g.moveTo(3,0);g.lineTo(3,h-w/2);g.arc(w/2,h-w/2,w/2-3,Math.PI,0,true);g.lineTo(w-3,0);g.closePath()}
     g.save();shape();g.clip();
     var gl=g.createLinearGradient(0,0,w,0);gl.addColorStop(0,'rgba(255,255,255,.75)');gl.addColorStop(.5,'rgba(255,255,255,.45)');gl.addColorStop(1,'rgba(220,214,200,.7)');g.fillStyle=gl;g.fillRect(0,0,w,h);
     var n=tube.length,fullN=n-hide;
-    for(var u=0;u<n;u++){var amt=u<fullN?1:Math.max(0,Math.min(1,n-u-hide));if(amt<=0)continue;var yy=h-4-(u+amt)*SEG;g.fillStyle=COLS[tube[u]];g.fillRect(0,yy,w,SEG*amt+1);
+    for(var u=0;u<n;u++){var amt=u<fullN?1:Math.max(0,Math.min(1,n-u-hide));if(amt<=0)continue;var yy=h-4-(u+amt)*SEG,hd=u<hidN;g.fillStyle=hd?'#4a433c':COLS[tube[u]];g.fillRect(0,yy,w,SEG*amt+1);
+      if(hd){g.fillStyle='rgba(241,236,226,.12)';for(var dx=0;dx<w;dx+=8)g.fillRect(dx,yy,4,SEG*amt);g.font='700 20px "IBM Plex Mono", monospace';g.fillStyle='#f1ece2';g.textAlign='center';g.textBaseline='middle';g.fillText('?',w/2,yy+SEG*amt/2+1)}
       /* léger dégradé dans chaque couche pour un effet liquide */
       g.fillStyle='rgba(0,0,0,.10)';g.fillRect(w*.68,yy,w*.32,SEG*amt+1);g.fillStyle='rgba(255,255,255,.12)';g.fillRect(0,yy,w,3)}
     if(add>0){g.fillStyle=COLS[addCol];g.fillRect(0,h-4-(n+add)*SEG,w,SEG*add+1)}
@@ -194,7 +218,7 @@
       C.keysText('Souris : clique une fiole puis une autre · Clavier : <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> choisissent une fiole, <kbd>Espace</kbd> prend puis verse (ou <kbd>1</kbd>…<kbd>9</kbd> <kbd>0</kbd>) · <kbd>Z</kbd> annule · <kbd>R</kbd> recommence · <kbd>T</kbd> +1 tube · <kbd>H</kbd> indice');
       var sv=pSaved(C);
       C.over('Potions','Range les couleurs : chaque fiole doit finir remplie d\'une seule couleur.<br>On ne verse que sur la même couleur ou dans une fiole vide. Moins tu fais de coups, plus tu gagnes d\'étoiles.'+(sv&&sv.lv>1||sv&&!sv.nw&&sv.mv?'<br><b>Partie sauvegardée : tu reprends au niveau '+sv.lv+'.</b><br><button type="button" class="ghost" data-pot-r1>Repartir du niveau 1</button>':''),sv?'Continuer':'Jouer')},
-    start:function(C){if(C.mode==='bot'){duelStart(C,genSolvable(C));return}if(!pLoad(C))pReset(C,false)},
+    start:function(C){if(C.mode==='bot'){duelStart(C,genSolvable(C));return}if(!pLoad(C)){pReset(C,false);pMech(C)}},
     close:function(C){if(P&&C.running)pSave(C)},
     mouse:function(C,t,x,y){if(P&&t!=='up')P.kb=0;if(t==='down'&&C.running)pClick(C,x,y);pHover(C,x,y)},
     key:function(C,code,down){if(!down||!C.running||!P||P.won)return;
@@ -224,7 +248,9 @@
         var dn=full(t)&&!(a&&i===a.b);
         if(i===P.sel||(hint&&(i===hint.a||i===hint.b))){var col=i===P.sel?'243,198,35':'74,208,216',pulse=hint&&i!==P.sel?.35+Math.sin(P.t*8)*.2:.5;g.fillStyle='rgba('+col+','+pulse+')';rr(g,p.x-7,p.y-10+lf,p.w+14,p.h+16,14);g.fill()}
         if(P.flash[i]){g.fillStyle='rgba(255,255,255,'+(P.flash[i]*1.4)+')';rr(g,p.x-6,p.y-8,p.w+12,p.h+14,14);g.fill()}
-        drawTube(g,p,t,sh,lf,0,0,add,a?a.col:0,dn,dn?Math.min(1,1-(P.flash[i]||0)*1.2+.4):0);
+        drawTube(g,p,t,sh,lf,0,0,add,a?a.col:0,dn,dn?Math.min(1,1-(P.flash[i]||0)*1.2+.4):0,hidOf(i),masked(i));
+        /* fiole masquée : cadenas avec la couleur à finir pour l'ouvrir */
+        if(masked(i)){var mx=p.x+p.w/2+sh,my=p.y-30+lf;g.fillStyle=INK;rr(g,mx-15,my-6,30,24,5);g.fill();g.strokeStyle=INK;g.lineWidth=4;g.beginPath();g.arc(mx,my-6,9,Math.PI,0);g.stroke();g.fillStyle=COLS[P.mask.col];g.beginPath();g.arc(mx,my+6,7,0,7);g.fill();g.strokeStyle='#f1ece2';g.lineWidth=2;g.stroke()}
         /* numéro de touche sous la fiole */
         if(i<10)mono(g,String((i+1)%10),p.x+p.w/2,p.y+p.h+29,11,'rgba(20,18,16,.45)');
         if(P.kb&&i===P.cur&&C.running){var cy=p.y+p.h+40+Math.sin(P.t*6)*2;g.fillStyle=RED;g.strokeStyle=INK;g.lineWidth=2.5;g.beginPath();g.moveTo(p.x+p.w/2,cy-9);g.lineTo(p.x+p.w/2+10,cy+5);g.lineTo(p.x+p.w/2-10,cy+5);g.closePath();g.fill();g.stroke();g.strokeStyle=RED;g.lineWidth=3;rr(g,p.x-6,p.y-9+lf,p.w+12,p.h+15,13);g.stroke()}});
@@ -234,7 +260,7 @@
         var mv=a.t<.25?e(a.t/.25):a.t>.8?1-e((a.t-.8)/.2):1,dir=B.x>=A.x?1:-1,tx=B.x-A.x-dir*(A.w*.18),ty=B.y-A.y-26;
         var ang=dir*mv*1.15,pp=Math.max(0,Math.min(1,(a.t-.25)/.55)),ox=tx*mv,oy=ty*mv;
         if(pp>0&&pp<1){var lipx=A.x+ox+A.w/2+dir*A.w*.3,lipy=A.y+oy+4;g.strokeStyle=COLS[a.col];g.lineWidth=6;g.lineCap='round';g.beginPath();g.moveTo(lipx,lipy);g.lineTo(B.x+B.w/2,B.y+B.h-4-(P.tubes[a.b].length+a.k*pp)*SEG);g.stroke()}
-        drawTube(g,A,P.tubes[a.a],ox,oy,ang,a.k*pp,0,0,false,0)}
+        drawTube(g,A,P.tubes[a.a],ox,oy,ang,a.k*pp,0,0,false,0,hidOf(a.a))}
       P.spark.forEach(function(s){g.fillStyle=s.c;g.globalAlpha=Math.min(1,s.t*2.5);g.beginPath();g.arc(s.x,s.y,3.5,0,7);g.fill();g.globalAlpha=1});
       pBtns().forEach(function(b,i){var hv=P.hb===i&&!b.off&&C.running,yy=b.y-(hv?2:0);
         g.fillStyle='rgba(20,18,16,.18)';rr(g,b.x+3,b.y+4,b.w,b.h,8);g.fill();
