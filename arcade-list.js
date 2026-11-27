@@ -34,7 +34,8 @@ window.ARCADE_LIST=[
   {id:'bj',img:'thumb-bj.svg?v=1',n:'Blackjack',sub:'Casino · approche-toi de 21, seul ou à plusieurs',pl:'1–5',cat:'pc tel solo',modes:[['solo','Solo','Contre le croupier'],['online','En ligne','Tout le salon à la table']]},
   {id:'poker',img:'thumb-poker.svg?v=1',n:'Poker',sub:'Casino · Texas Hold\'em, contre des bots ou à plusieurs',pl:'1–6',cat:'pc tel solo',modes:[['solo','Solo','Toi contre 3 bots'],['online','En ligne','2 à 6 joueurs du salon']]},
   {id:'roue',img:'thumb-roue.svg?v=1',n:'La Roue',sub:'Casino · mise et fais tourner la roue',pl:'1',cat:'pc tel solo',modes:[['solo','Solo','×1 à ×40']]},
-  {id:'marz',img:'thumb-marz.svg?v=2',n:'Marzoukeur',sub:'Fun · attrape les burgers, enchaîne les combos',pl:'1',cat:'pc tel solo',modes:[['solo','Solo','Le plus de kilos avant la ruine']]}
+  {id:'marz',img:'thumb-marz.svg?v=2',n:'Marzoukeur',sub:'Fun · attrape les burgers, enchaîne les combos',pl:'1',cat:'pc tel solo',modes:[['solo','Solo','Le plus de kilos avant la ruine']]},
+  {id:'bitume',img:'thumb-bitume.svg?v=1',n:'Bitume',sub:'Action · vole des voitures, missions, police aux trousses',pl:'1',cat:'pc tel solo',modes:[['histoire','Histoire','8 missions, partie sauvegardée'],['libre','Balade libre','La ville rien que pour toi'],['chaos','Chaos','Police aux trousses, tiens bon']]}
 ];
 (function(){
   var tiles=document.getElementById('tiles'),anchor=document.getElementById('v-geo');if(!tiles||!anchor)return;

@@ -15,6 +15,7 @@ Site de mini-jeux dans le navigateur, solo ou entre potes. Aucun compte, aucun s
 - **Bunker 3D** : FPS en raycasting sur une grande carte générée. 3 modes : deathmatch (3 min), zombies (vagues) et battle royale (zone qui rétrécit, dernier debout). Visée souris haut/bas/côtés, ou au doigt sur téléphone.
 - **Pixel Kart** : course en vue arrière, boosts, flaques d'huile, 3 tours. Solo contre 5 karts, ou à 2 en écran partagé (J1 ZQSD, J2 flèches).
 - **Néon Rush** : course à 3 couloirs, saute et glisse sous les obstacles.
+- **Bitume** : ville en vue du dessus. Vole des voitures, fais 8 missions (livraisons, taxi, course, voiture dorée…), et sème la police (1 à 5 étoiles, hélicoptère à 4). Histoire sauvegardée, balade libre et mode Chaos.
 - **Devine où** : tu es lâché dans une ville en 3D (MapLibre + OpenFreeMap, bâtiments en volume, aucun nom affiché), tu te déplaces, puis tu poses ton point sur la mini-carte. Solo ou en salon : le plus proche gagne.
 
 ## Salons en ligne

@@ -21,7 +21,9 @@
     /* v66 : casino — gros boutons sous le jeu quand le téléphone est en hauteur */
     bj:[['x','Digit2','+25'],['x','Digit4','+100'],['x','Space','OK'],['x','KeyH','CARTE'],['x','KeyS','RESTER'],['x','KeyD','×2']],
     poker:[['x','KeyF','COUCHER'],['x','KeyC','SUIVRE'],['x','KeyR','RELANCE'],['x','KeyA','TAPIS'],['x','Space','SUITE']],
-    roue:[['x','Space','LANCER']]
+    roue:[['x','Space','LANCER']],
+    /* v69 : Bitume — joystick pour marcher ou conduire, monter dans une voiture, frapper ou freiner */
+    bitume:[['u','ArrowUp','▲'],['l','ArrowLeft','◀'],['d','ArrowDown','▼'],['r','ArrowRight','▶'],['x','KeyE','VOITURE'],['x','Space','COUP<br>FREIN']]
   };
   var CAS={bj:1,poker:1,roue:1};
   var KEY={KeyW:'z',KeyA:'q',KeyS:'s',KeyD:'d',Space:' ',ArrowUp:'ArrowUp',ArrowDown:'ArrowDown',ArrowLeft:'ArrowLeft',ArrowRight:'ArrowRight'};
