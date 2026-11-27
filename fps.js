@@ -1352,7 +1352,7 @@
     if(e.kind==='z'&&mine)addPts(10);
     if(e.hp<=0){e.alive=false;e.headshot=!!head;
       if(mine){kills++;A.kill(head);lastKill=performance.now();if(head)addFeed('Tir dans la tête !');if(e.kind==='z')addPts(e.type==='brute'?500:head?90:50)}
-      if(e.kind==='z'){var r=Math.random();if(e.type==='brute'){addItem('coin',e.x,e.z);addItem('ammo',e.x+1,e.z);addItem('med',e.x-1,e.z)}else if(r<.3)addItem('coin',e.x,e.z);else if(r<.39)addItem('ammo',e.x,e.z);else if(r<.435)addItem('med',e.x,e.z);/* v80 : munitions et soins -10 %, et 10 % de chance d'un loot spécial */if(Math.random()<.1)addItem(PP.pick(PWK),e.x+.7,e.z+.4)}
+      if(e.kind==='z'){var r=Math.random();if(e.type==='brute'){addItem('coin',e.x,e.z);addItem('ammo',e.x+1,e.z);addItem('med',e.x-1,e.z)}else if(r<.3)addItem('coin',e.x,e.z);else if(r<.39)addItem('ammo',e.x,e.z);else if(r<.435)addItem('med',e.x,e.z);/* v80 : munitions et soins -10 %, et 7 % de chance d'un loot spécial (v102) */if(Math.random()<.07)addItem(PP.pick(PWK),e.x+.7,e.z+.4)}
       if(e.type==='exploder'){var ex=e.x,ez=e.z;setTimeout(function(){explode(ex,1,ez,4.2,110,'un kamikaze',true)},60)}
       if(e.kind==='b'){var t=by+' a éliminé '+e.name;addFeed(t);if(online&&auth)net.broadcast({t:'fb-feed',txt:t})}
       e.dieT=e.kind==='z'?4.5:1.2;if(e.kind==='z'){startDeath(e);A.zdie(e)}
@@ -1504,6 +1504,8 @@
     feed.forEach(function(f){f.ttl-=dt});if(feed.length&&feed[feed.length-1].ttl<=0){feed.pop();renderFeed()}
     stepNades(dt);stepBooms(dt);stepDoors(dt);stepDeps(dt);
     if(mode==='zombie')secretStep(dt);
+    /* v102 : la mitrailleuse garde 2154 munitions au maximum (chargeur + réserve) */
+    if(P&&P.guns&&P.guns.lmg){var lg=P.guns.lmg;if(lg.mag+lg.res>2154)lg.res=Math.max(0,2154-lg.mag)}
     if(mode==='zombie'&&P&&P.pkW!==wave){P.pkW=wave;if(wave>0)spawnPerk()}
     if(online)sendState(dt);
   }
