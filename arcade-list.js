@@ -10,7 +10,7 @@ window.ARCADE_LIST=[
   {id:'golf',n:'Mini-golf 3D',sub:'3D · 9 trous, moulin, sable et eau',pl:'1–4',cat:'pc solo 3d',modes:[['solo','Solo','Le moins de coups'],['duel','2 joueurs','Chacun son tour'],['trio','3 joueurs','Chacun son tour'],['quad','4 joueurs','Chacun son tour']]},
   {id:'arch',n:'Tir à l\'arc 3D',sub:'3D · vent et distance',pl:'1–2',cat:'pc solo 3d',modes:[['solo','Solo','10 flèches'],['duel','2 joueurs','Chacun son tour']]},
   {id:'tanks',n:'Tanks',sub:'Duel · obus qui rebondissent',pl:'1–2',cat:'pc solo',modes:[['solo','Solo','Contre l\'ordinateur'],['duel','2 joueurs','Même clavier']]},
-  {id:'navale',n:'Bataille navale',sub:'Stratégie · coule la flotte',pl:'1–2',cat:'tel solo',modes:[['solo','Solo','Contre l\'ordinateur'],['online','En ligne','Contre un pote du salon']]},
+  {id:'navale',n:'Bataille navale',sub:'Stratégie · coule la flotte',pl:'1–4',cat:'tel solo',modes:[['solo','Solo','Contre 1 à 3 ordis'],['online','En ligne','De 2 à 4 dans le salon']]},
   {id:'typing',n:'Course de frappe',sub:'Clavier · tape plus vite que les autres',pl:'1–8',cat:'pc tel solo',modes:[['solo','Solo','Contre 3 bots'],['online','En ligne','Tout le salon']]},
   {id:'quiz',n:'Quiz',sub:'Party · culture générale chrono',pl:'1–12',cat:'tel solo',modes:[['solo','Solo','10 questions'],['online','En ligne','Tout le salon répond']]},
   {id:'memory',n:'Memory',sub:'Cartes · retrouve les paires',pl:'1–2',cat:'pc solo',modes:[['solo','Solo','Le moins de coups'],['duel','2 joueurs','Chacun son tour']]},

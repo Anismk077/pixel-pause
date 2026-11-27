@@ -1,4 +1,4 @@
-/* Pixel Pause — jeux arcade, lot 2 : Bowling 3D, Mini-golf 3D, Tir à l'arc 3D, Tanks, Bataille navale */
+/* Pixel Pause — jeux arcade, lot 2 : Bowling 3D, Mini-golf 3D, Tir à l'arc 3D, Tanks, Bataille navale (v97 : placement à la main, grille 10 à 16, 2 à 4 joueurs) */
 (function(){
   'use strict';
   var sfx=PP.sfx,ag=PP.ag,INK='#141210',CR='#f1ece2',RED='#e2361b',YEL='#f3c623',BLU='#3fa9ff',GRN='#3fe09a';
@@ -323,40 +323,227 @@
   })();
 
   /* ================= BATAILLE NAVALE ================= */
+  /* v97 : on place sa flotte soi-même (glisser-déposer, toucher un navire pour le tourner, ou Hasard),
+     grille de 10×10 à 16×16 (plus de navires quand elle grandit), et de 2 à 4 joueurs : contre 1 à 3 ordis, ou entre potes du salon.
+     Téléphone tenu en hauteur : le jeu passe en format vertical (grille visée en haut, ta flotte en bas).
+     Ta dernière flotte est gardée pour chaque taille de grille. */
   (function(){
-    var S,N=10,SH=[5,4,3,3,2],CS=34,LX=70,RX=550,TY=110;
-    function empty(){var b=[];for(var i=0;i<N;i++){b.push([]);for(var j=0;j<N;j++)b[i].push(0)}return b}
-    function place(){var b=empty(),ships=[];SH.forEach(function(len,id){for(var t=0;t<500;t++){var h=Math.random()<.5,x=Math.random()*(h?N-len+1:N)|0,y=Math.random()*(h?N:N-len+1)|0,ok=true,cells=[];for(var k=0;k<len;k++){var cx=x+(h?k:0),cy=y+(h?0:k);for(var dx=-1;dx<=1;dx++)for(var dy=-1;dy<=1;dy++){var ax=cx+dx,ay=cy+dy;if(ax>=0&&ay>=0&&ax<N&&ay<N&&b[ax][ay])ok=false}cells.push([cx,cy])}if(!ok)continue;cells.forEach(function(c){b[c[0]][c[1]]=id+1});ships.push({len:len,cells:cells,hits:0});break}});return {b:b,ships:ships,shots:empty()}}
-    function shootAt(F,x,y){if(F.shots[x][y])return null;var id=F.b[x][y];F.shots[x][y]=id?2:1;if(!id)return {hit:false};var sh=F.ships[id-1];sh.hits++;return {hit:true,sunk:sh.hits===sh.len?sh.cells:null}}
+    var S=null,CN=null,tok=0,SIZES=[10,12,14,16],LET='ABCDEFGHIJKLMNOP',PCOL=[CR,YEL,BLU,GRN],
+      FLEET={10:[5,4,3,3,2],12:[5,4,4,3,3,2],14:[5,4,4,3,3,3,2,2],16:[5,5,4,4,3,3,3,2,2]};
+    function touch(){return document.body.classList.contains('pp-touch')}
+    function optN(){var n=PP.store('nv-n');return SIZES.indexOf(n)>=0?n:10}
+    function optP(){var p=PP.store('nv-p');return p>=2&&p<=4?p:2}
+    function grid0(N){var b=[];for(var i=0;i<N;i++){b.push([]);for(var j=0;j<N;j++)b[i].push(0)}return b}
+    function cellsOf(s){var c=[];for(var k=0;k<s.len;k++)c.push([s.x+(s.h?k:0),s.y+(s.h?0:k)]);return c}
+    /* un navire ne déborde pas et ne touche aucun autre, même en diagonale */
+    function fits(N,occ,s){var c=cellsOf(s);for(var i=0;i<c.length;i++){var x=c[i][0],y=c[i][1];if(x<0||y<0||x>=N||y>=N)return false;for(var dx=-1;dx<=1;dx++)for(var dy=-1;dy<=1;dy++){var a=x+dx,b=y+dy;if(a>=0&&b>=0&&a<N&&b<N&&occ[a][b])return false}}return true}
+    function occOf(N,list,skip){var o=grid0(N);list.forEach(function(s,i){if(i!==skip&&s.on)cellsOf(s).forEach(function(c){o[c[0]][c[1]]=i+1})});return o}
+    function randomLay(N){var lens=FLEET[N];for(var t=0;t<300;t++){var list=[],ok=true;for(var i=0;i<lens.length&&ok;i++){var s={len:lens[i],on:true,x:0,y:0,h:true},o=occOf(N,list),done=false;
+        for(var k=0;k<400&&!done;k++){s.h=Math.random()<.5;s.x=Math.random()*(s.h?N-s.len+1:N)|0;s.y=Math.random()*(s.h?N:N-s.len+1)|0;if(fits(N,o,s))done=true}if(done)list.push(s);else ok=false}if(ok)return list}return null}
+    function board(N,list){var F={N:N,b:grid0(N),ships:[],shots:grid0(N),sunk:0,total:FLEET[N].length,real:true,last:null};list.forEach(function(s,i){var c=cellsOf(s);c.forEach(function(q){F.b[q[0]][q[1]]=i+1});F.ships.push({len:s.len,cells:c,hits:0})});return F}
+    function view(N){return {N:N,b:grid0(N),ships:[],shots:grid0(N),sunk:0,total:FLEET[N].length,real:false,last:null}}
+    function shootAt(F,x,y){var id=F.b[x][y];F.shots[x][y]=id?2:1;if(!id)return {hit:false,sunk:null};var sh=F.ships[id-1];sh.hits++;return {hit:true,sunk:sh.hits===sh.len?sh.cells:null}}
     function allSunk(F){return F.ships.every(function(s){return s.hits===s.len})}
-    function aiPick(){var F=S.me,t=S.ai;while(t.q.length){var c=t.q.shift();if(c[0]>=0&&c[1]>=0&&c[0]<N&&c[1]<N&&!F.shots[c[0]][c[1]])return c}var c2;do{c2=[Math.random()*N|0,Math.random()*N|0]}while(F.shots[c2[0]][c2[1]]||(c2[0]+c2[1])%2);return c2}
-    function aiTurn(C){setTimeout(function(){if(S.over)return;var c=aiPick(),r=shootAt(S.me,c[0],c[1]);S.last=c;sfx.play(r.hit?'hit':'tick');if(r.hit){if(r.sunk){r.sunk.forEach(function(q){for(var dx=-1;dx<=1;dx++)for(var dy=-1;dy<=1;dy++){var a=q[0]+dx,b=q[1]+dy;if(a>=0&&b>=0&&a<N&&b<N&&!S.me.shots[a][b])S.me.shots[a][b]=3}});S.ai.q=[]}else S.ai.q=[[c[0]+1,c[1]],[c[0]-1,c[1]],[c[0],c[1]+1],[c[0],c[1]-1]].concat(S.ai.q);
-      if(allSunk(S.me))return end(C,false);S.msg='L\'ordi a touché, il rejoue';aiTurn(C)}else{S.turn=0;S.msg='À toi de tirer'}},650)}
-    function end(C,won){S.over=true;C.stop();sfx.play(won?'win':'lose');if(won)C.win();setTimeout(function(){C.over(won?'Flotte ennemie coulée !':'Ta flotte est coulée','Tirs : <b>'+S.count+'</b>','Rejouer')},700)}
-    function markSunk(F,cells){cells.forEach(function(q){for(var dx=-1;dx<=1;dx++)for(var dy=-1;dy<=1;dy++){var a=q[0]+dx,b=q[1]+dy;if(a>=0&&b>=0&&a<N&&b<N&&!F.shots[a][b])F.shots[a][b]=3}})}
+    function markSunk(F,cells){var N=F.N;cells.forEach(function(q){for(var dx=-1;dx<=1;dx++)for(var dy=-1;dy<=1;dy++){var a=q[0]+dx,b=q[1]+dy;if(a>=0&&b>=0&&a<N&&b<N&&!F.shots[a][b])F.shots[a][b]=3}});cells.forEach(function(q){F.shots[q[0]][q[1]]=4})}
+    function nm(i){return i===S.me?'Toi':S.P[i].name}
+    function aliveN(){return S.P.filter(function(p){return p.alive}).length}
+    function nextAlive(i){var n=S.P.length;for(var k=1;k<=n;k++){var j=(i+k)%n;if(S.P[j].alive)return j}return i}
+    function opps(i){var r=[];S.P.forEach(function(p,j){if(j!==i&&p.alive)r.push(j)});return r}
+    function fixTgt(){var o=opps(S.me);if(o.indexOf(S.tgt)<0)S.tgt=o.length?o[0]:S.tgt}
+
+    function fresh(C,N,names,me,ids){tok++;S={N:N,P:names.map(function(n,i){return {name:n,bot:C.mode==='solo'&&i!==me,alive:true,F:view(N),id:ids?ids[i]:null,out:0}}),me:me,turn:0,tgt:me===0?1:0,ph:'pre',count:0,msg:'',hover:null,pl:[],drag:null,sel:-1,bad:null,ready:{},deaths:0,busy:false,g:null,solo:C.mode==='solo'}}
+    function saveLay(){try{PP.text('nv-lay-'+S.N,JSON.stringify(S.pl.map(function(s){return [s.x,s.y,s.h?1:0]})))}catch(e){}}
+    function loadLay(N){try{var a=JSON.parse(PP.text('nv-lay-'+N)||'null');if(!a||a.length!==FLEET[N].length)return null;var list=FLEET[N].map(function(l,i){return {len:l,on:true,x:a[i][0]|0,y:a[i][1]|0,h:!!a[i][2]}});for(var i=0;i<list.length;i++)if(!fits(N,occOf(N,list,i),list[i]))return null;return list}catch(e){return null}}
+    function initPlace(C){var saved=loadLay(S.N);S.pl=saved||FLEET[S.N].map(function(l){return {len:l,on:false,x:0,y:0,h:true}});S.ph='place';S.sel=-1;S.drag=null;
+      S.msg=saved?'Ta dernière flotte est remise en place':'Glisse tes navires sur la grille';
+      C.keysText('Glisse un navire sur la grille · touche-le pour le tourner (ou <kbd>R</kbd>) · <b>Hasard</b> place tout · <b>Prêt</b> pour commencer')}
+
+    /* ---------- écrans de départ et de fin ---------- */
+    var BTN='font:700 12px \'IBM Plex Mono\',monospace;padding:7px 10px;margin:2px;border:2px solid #f1ece2;cursor:pointer;';
+    function chip(k,v,on,t){return '<button type="button" data-nv-'+k+'="'+v+'" style="'+BTN+'background:'+(on?'#f1ece2':'transparent')+';color:'+(on?'#141210':'#f1ece2')+'">'+t+'</button>'}
+    function opts(withP){var n=optN(),p=optP(),h='<div style="margin-top:10px">';
+      if(withP)h+='<small style="opacity:.75;display:block;margin-bottom:4px">Joueurs</small>'+[2,3,4].map(function(v){return chip('p',v,v===p,v+' joueurs')}).join('');
+      return h+'<small style="opacity:.75;display:block;margin:8px 0 4px">Grille</small>'+SIZES.map(function(v){return chip('n',v,v===n,v+'×'+v+' · '+FLEET[v].length+' navires')}).join('')+'</div>'}
+    function intro(C){S.reov=function(){intro(C)};
+      if(C.mode==='solo'){var p=optP();C.over('Bataille navale','Toi contre '+(p-1)+' ordi'+(p>2?'s':'')+'. Place ta flotte toi-même (ou au hasard), puis tirez chacun votre tour. Touché = tu rejoues. Le dernier navire à flot gagne.'+opts(true),'Jouer',function(){startSolo(C)});return}
+      var pl=C.net.players||[];
+      if(!C.net.isHost){C.over('Bataille navale','De 2 à 4 joueurs du salon. Le chef choisit la grille et lance la partie, puis chacun place sa flotte.',false);C.net.relay({t:'nv-hi'});return}
+      C.over('Bataille navale',Math.min(4,pl.length)+' joueur'+(pl.length>1?'s':'')+' du salon'+(pl.length>4?' (les 4 premiers jouent)':'')+'. Chacun place sa flotte, puis on tire chacun son tour sur la flotte de son choix. Le dernier navire à flot gagne.'+opts(false),'Lancer la partie',function(){hostLaunch(C)})}
+    document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-nv-n],[data-nv-p]');if(!b||!CN||!S||PP.cur()!=='navale')return;e.preventDefault();
+      if(b.dataset.nvN)PP.store('nv-n',+b.dataset.nvN);if(b.dataset.nvP)PP.store('nv-p',+b.dataset.nvP);sfx.play('ui');if(S.reov)S.reov()});
+    function startSolo(C){var p=optP(),names=['Toi'];for(var i=1;i<p;i++)names.push('Ordi '+i);fresh(C,optN(),names,0,null);initPlace(C);C.go()}
+    function hostLaunch(C){var pl=C.net.players||[];if(pl.length<2){PP.toast('Il faut au moins 2 joueurs dans le salon','warn');return}
+      var cfg={t:'nv-cfg',g:Math.random().toString(36).slice(2,9),n:optN(),ids:pl.slice(0,4).map(function(p){return p.id})};
+      fromCfg(C,cfg);C.net.relay(cfg);initPlace(C);C.go()}
+    function fromCfg(C,cfg){var pl=C.net.players||[],names=cfg.ids.map(function(id,i){var p=pl.filter(function(q){return q.id===id})[0];return p&&p.name?String(p.name).slice(0,14):'Joueur '+(i+1)});
+      fresh(C,cfg.n,names,cfg.ids.indexOf(C.net.me.id),cfg.ids);S.g=cfg.g;S.cfg=cfg;S.ids=cfg.ids}
+    function onCfg(C,d){C.stop();fromCfg(C,d);
+      if(S.me<0){S.ph='spect';C.over('Bataille navale','Une partie est lancée entre les 4 premiers du salon. Attends la prochaine !',false);return}
+      S.reov=null;C.over('Bataille navale',S.P.length+' joueurs · grille '+S.N+'×'+S.N+' · '+FLEET[S.N].length+' navires.<br>Place ta flotte, puis appuie sur Prêt.','Placer ma flotte',function(){initPlace(C);C.go()})}
+    function finish(C,w){S.ph='over';tok++;C.stop();var n=S.P.length,mp=S.P[S.me],rank=mp.alive?1:n-mp.out+1,won=w===S.me,rec='';
+      sfx.play(won?'win':'lose');
+      if(won){C.win();if(S.solo){var nb=C.best('tirs-'+S.N+'-'+n,S.count,true);rec=nb?'<br><b>Nouveau record</b> pour cette partie !':'<br>Record : <b>'+C.best('tirs-'+S.N+'-'+n)+'</b> tirs'}}
+      var order=S.P.map(function(p,i){return i}).sort(function(a,b){var A=S.P[a],B=S.P[b];return (A.alive?1e3:A.out)<(B.alive?1e3:B.out)?1:-1});
+      var tab=n>2?'<br>'+order.map(function(i,k){return (k+1)+'. '+(i===S.me?'<b>Toi</b>':PP.esc(S.P[i].name))}).join(' · '):'';
+      var title=won?'Flotte ennemie coulée !':n>2?'Tu finis '+(rank===1?'1er':rank+'e')+' sur '+n:'Ta flotte est coulée';
+      var msg='Tirs : <b>'+S.count+'</b>'+rec+tab;
+      setTimeout(function(){if(PP.cur()!=='navale'||S.ph!=='over')return;
+        if(S.solo){S.reov=function(){C.over(title,msg+opts(true),'Rejouer',function(){startSolo(C)})};S.reov()}
+        else if(C.net.isHost){S.reov=function(){C.over(title,msg+opts(false),'Revanche',function(){hostLaunch(C)})};S.reov()}
+        else C.over(title,msg+'<br>Le chef relance la revanche.',false)},800)}
+
+    /* ---------- tirs ---------- */
+    function resolveLocal(f,to,x,y){var F=S.P[to].F,r;if(F.shots[x][y]&&F.shots[x][y]!==3)r={hit:false,sunk:null,dup:true};else r=shootAt(F,x,y);
+      return {f:f,to:to,x:x,y:y,hit:r.hit,sunk:r.sunk,dup:!!r.dup,dead:!!(r.sunk&&allSunk(F))}}
+    function apply(C,r,local){if(!S||S.ph!=='play'&&S.ph!=='wait')return;var p=S.P[r.to],sh=S.P[r.f],F=p&&p.F;if(!F||!sh)return;
+      if(!local&&!r.dup&&!(F.shots[r.x][r.y]&&F.shots[r.x][r.y]!==3))F.shots[r.x][r.y]=r.hit?2:1;
+      if(!r.dup)F.last=[r.x,r.y];
+      if(r.sunk&&!r.dup){markSunk(F,r.sunk);F.sunk++}
+      if(r.f===S.me){S.busy=false;if(r.hit){sfx.play('hit');if(r.sunk){S.msg='Coulé ! Rejoue';C.pop('COULÉ !',RED);C.shake(8)}else S.msg='Touché ! Rejoue'}else{sfx.play('tick');S.msg='Dans l\'eau…'}}
+      else if(r.to===S.me){if(r.hit){sfx.play('hit');C.shake(5);S.msg=sh.name+(r.sunk?' a coulé un de tes navires':' t\'a touché')}else{sfx.play('tick');S.msg=sh.name+' a tiré dans l\'eau'}}
+      else{if(r.hit)sfx.play('tick');S.msg=sh.name+' → '+p.name+(r.sunk?' : coulé !':r.hit?' : touché':' : dans l\'eau')}
+      if(r.dead&&p.alive){p.alive=false;p.out=++S.deaths;if(r.to===S.me){if(aliveN()>1)S.msg='Ta flotte est coulée : tu regardes la fin'}else C.pop((p.name+' coulé').toUpperCase(),YEL)}
+      if(aliveN()<=1){var w=-1;S.P.forEach(function(q,i){if(q.alive)w=i});return finish(C,w)}
+      if(S.solo&&!S.P[S.me].alive)return finish(C,-1);
+      if(!(r.hit&&!r.dup&&sh.alive))S.turn=nextAlive(r.f);
+      fixTgt();
+      if(S.solo&&S.P[S.turn].bot)botLater(C)}
+    function fire(C,x,y){var to=S.tgt;S.count++;S.busy=true;
+      if(S.solo){apply(C,resolveLocal(S.me,to,x,y),true);return}
+      S.msg='…';C.net.relay({t:'nv-shot',g:S.g,f:S.me,to:to,x:x,y:y})}
+    /* ordis : ils finissent d'abord un navire touché (sur n'importe quelle flotte), sinon ils tirent un peu au hasard en damier */
+    function hunt(F){var N=F.N,out=[];for(var x=0;x<N;x++)for(var y=0;y<N;y++)if(F.shots[x][y]===2)[[1,0],[-1,0],[0,1],[0,-1]].forEach(function(d){var a=x+d[0],b=y+d[1];if(a<0||b<0||a>=N||b>=N||F.shots[a][b])return;
+      var bx=x-d[0],by=y-d[1],line=bx>=0&&by>=0&&bx<N&&by<N&&F.shots[bx][by]===2;out.push({x:a,y:b,s:line?2:1})});return out}
+    function randomCell(F){var N=F.N,c=[],all=[];for(var x=0;x<N;x++)for(var y=0;y<N;y++)if(!F.shots[x][y]){all.push({x:x,y:y});if((x+y)%2===0)c.push({x:x,y:y})}var L=c.length?c:all;return L[Math.random()*L.length|0]}
+    function botLater(C){var t=tok;setTimeout(function(){if(t!==tok||!S||S.ph!=='play'||PP.cur()!=='navale')return;var i=S.turn;if(!S.P[i].bot)return;
+      var tg=opps(i),best=null;if(!tg.length)return;
+      tg.forEach(function(j){var h=hunt(S.P[j].F);if(!h.length)return;var m=Math.max.apply(null,h.map(function(q){return q.s}));if(!best||m>best.m)best={j:j,m:m,c:h.filter(function(q){return q.s===m})}});
+      var j,c;if(best){j=best.j;c=best.c[Math.random()*best.c.length|0]}else{j=tg[Math.random()*tg.length|0];c=randomCell(S.P[j].F)}
+      if(!c)return;apply(C,resolveLocal(i,j,c.x,c.y),true)},S.P.length>2?520:650)}
+    function checkAll(C){if(S.ph!=='wait')return;for(var i=0;i<S.P.length;i++)if(S.P[i].alive&&!S.ready[i])return;
+      S.ph='play';if(aliveN()<=1){var w=-1;S.P.forEach(function(q,i){if(q.alive)w=i});finish(C,w);return}S.turn=S.P[0].alive?0:nextAlive(0);fixTgt();sfx.play('go');S.msg=S.turn===S.me?'À toi de tirer':'C\'est '+S.P[S.turn].name+' qui commence';C.pop('FEU !',RED,'90px')}
+    function dropGone(C){if(!S||S.solo||!S.ids||(S.ph!=='play'&&S.ph!=='wait'&&S.ph!=='place'))return;var ids=(C.net.players||[]).map(function(p){return p.id}),ch=false;
+      S.P.forEach(function(p,i){if(p.alive&&p.id&&ids.indexOf(p.id)<0&&i!==S.me){p.alive=false;p.out=++S.deaths;ch=true;S.msg=p.name+' a quitté la partie'}});if(!ch)return;
+      if(S.ph==='place')return;
+      if(aliveN()<=1){var w=-1;S.P.forEach(function(q,i){if(q.alive)w=i});finish(C,w);return}
+      if(!S.P[S.turn].alive)S.turn=nextAlive(S.turn);if(S.busy&&!S.P[S.tgt].alive)S.busy=false;fixTgt();checkAll(C)}
+    function ready(C){if(S.pl.some(function(s){return !s.on})){S.msg='Place d\'abord tous tes navires (ou Hasard)';sfx.play('tick');return}
+      saveLay();S.P[S.me].F=board(S.N,S.pl);S.drag=null;S.sel=-1;
+      C.keysText('Touche une case de la grille ennemie pour tirer · en haut, choisis la flotte visée · touché = tu rejoues');
+      if(S.solo){S.P.forEach(function(p,i){if(i!==S.me)p.F=board(S.N,randomLay(S.N))});S.ph='play';S.turn=S.me;fixTgt();sfx.play('go');S.msg='À toi de tirer : touche la grille ennemie';return}
+      S.ph='wait';S.ready[S.me]=1;sfx.play('ui');C.net.relay({t:'nv-ready',g:S.g,f:S.me});S.msg='En attente des autres…';checkAll(C)}
+
+    /* ---------- disposition (paysage 960×540, ou vertical sur téléphone en hauteur) ---------- */
+    function fit(C){var P=touch()&&innerHeight>innerWidth*1.1,W=P?540:960,H=P?Math.max(860,Math.min(1100,Math.round(540*(innerHeight-72)/Math.max(1,innerWidth)))):540;
+      if(C.W!==W||C.H!==H){C.W=W;C.H=H;C.cv.width=W;C.cv.height=H}}
+    function layout(C){var W=C.W,H=C.H,P=H>W,N=S.N,L={P:P};
+      if(S.ph==='place'){var cs,bx,bw;
+        if(P){cs=Math.floor(470/N);L.g={x:50,y:80,cs:cs};var dy=80+cs*N+22;L.btnY=H-82;L.dock={x:30,y:dy,w:480,h:L.btnY-dy-12};bx=30;bw=480;L.title=[270,26];L.msgY=54}
+        else{cs=Math.floor(420/N);L.g={x:60,y:96,cs:cs};L.dock={x:530,y:112,w:400,h:330};L.btnY=462;bx=530;bw=400;L.title=[730,44];L.msgY=78}
+        var bwi=(bw-30)/4;L.btns=[['rot','TOURNER'],['rnd','HASARD'],['clr','VIDER'],['ok','PRÊT !']].map(function(b,i){return {id:b[0],t:b[1],x:bx+i*(bwi+10),y:L.btnY,w:bwi,h:58}});return L}
+      var opp=S.P.map(function(p,i){return i}).filter(function(i){return i!==S.me});
+      if(P){var ct=Math.floor(470/N);L.t={x:50,y:96,cs:ct};L.tabs={x:20,y:12,w:500,h:52};var bY=96+ct*N+26;L.ban=[270,bY];L.msgP=[270,bY+30];
+        var my=bY+76,av=Math.min(300,H-my-14),cm=Math.max(8,Math.floor(av/N));L.m={x:34,y:my,cs:cm};L.list={x:34+cm*N+22,y:my-6,w:520-(34+cm*N+22),rh:30}}
+      else{L.m={x:40,y:130,cs:Math.floor(320/N)};L.t={x:520,y:112,cs:Math.floor(400/N)};L.tabs={x:500,y:22,w:440,h:52};L.ban=[432,250];L.msgP=[520+L.t.cs*N/2,528];L.list={x:372,y:390,w:108,rh:24}}
+      var k=opp.length,gw=8,tw=(L.tabs.w-gw*(k-1))/k;L.tabL=opp.map(function(i,j){return {i:i,x:L.tabs.x+j*(tw+gw),y:L.tabs.y,w:tw,h:L.tabs.h}});return L}
+    function dockItems(L){var D=L.dock,dc=Math.min(L.g.cs,34),x=D.x,y=D.y+16,rowH=dc,out=[];
+      S.pl.forEach(function(s,i){if(s.on||(S.drag&&S.drag.i===i))return;var w=s.len*dc;if(x+w>D.x+D.w){x=D.x;y+=rowH+14}out.push({i:i,x:x,y:y,w:w,h:dc,dc:dc});x+=w+16});return out}
+    function inR(r,x,y){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h}
+
+    /* ---------- placement à la main ---------- */
+    function rotate(i){var s=S.pl[i],nh=!s.h,o=occOf(S.N,S.pl,i);
+      for(var k=0;k<s.len;k++){var c={len:s.len,h:nh,x:nh?s.x-k:s.x,y:nh?s.y:s.y-k};if(fits(S.N,o,c)){s.x=c.x;s.y=c.y;s.h=nh;sfx.play('ui');S.msg='Navire tourné';return}}
+      S.bad={i:i,t:performance.now()};sfx.play('tick');S.msg='Pas la place pour le tourner ici'}
+    function snap(L){var D=S.drag,G=L.g,N=S.N,s=S.pl[D.i],cx=Math.floor((D.px-G.x)/G.cs),cy=Math.floor((D.py-G.y)/G.cs);
+      D.inGrid=cx>=0&&cy>=0&&cx<N&&cy<N;D.cand={len:s.len,h:D.h,x:D.h?cx-D.k:cx,y:D.h?cy:cy-D.k};D.ok=D.inGrid&&fits(N,occOf(N,S.pl,D.i),D.cand)}
+    function button(C,id){
+      if(id==='rot'){if(S.sel>=0&&S.pl[S.sel].on)rotate(S.sel);else{S.msg='Touche d\'abord un navire posé sur la grille';sfx.play('tick')}}
+      if(id==='rnd'){var l=randomLay(S.N);if(l){S.pl=l;S.sel=-1;sfx.play('pickup');S.msg='Flotte placée au hasard'}}
+      if(id==='clr'){S.pl.forEach(function(s){s.on=false;s.h=true});S.sel=-1;sfx.play('ui');S.msg='Glisse tes navires sur la grille'}
+      if(id==='ok')ready(C)}
+    function placeMouse(C,L,t,x,y){var G=L.g,N=S.N,D=S.drag;
+      if(t==='down'){
+        var b=L.btns.filter(function(q){return inR(q,x,y)})[0];if(b){button(C,b.id);return}
+        var gx=Math.floor((x-G.x)/G.cs),gy=Math.floor((y-G.y)/G.cs);
+        if(gx>=0&&gy>=0&&gx<N&&gy<N){var id=occOf(N,S.pl)[gx][gy];if(id){var s=S.pl[id-1];S.sel=id-1;S.drag={i:id-1,k:s.h?gx-s.x:gy-s.y,h:s.h,from:'grid',sx:x,sy:y,px:x,py:y,moved:false};snap(L);return}}
+        var it=dockItems(L).filter(function(d){return x>=d.x-4&&x<=d.x+d.w+4&&y>=d.y-8&&y<=d.y+d.h+8})[0];
+        if(it){S.sel=it.i;S.drag={i:it.i,k:Math.max(0,Math.min(S.pl[it.i].len-1,Math.floor((x-it.x)/it.dc))),h:true,from:'dock',sx:x,sy:y,px:x,py:y,moved:false};snap(L);sfx.play('ui')}
+        return}
+      if(!D)return;
+      if(t==='move'){D.px=x;D.py=y;if(Math.hypot(x-D.sx,y-D.sy)>8)D.moved=true;snap(L);return}
+      if(t==='up'){S.drag=null;var sp=S.pl[D.i];
+        if(!D.moved){if(D.from==='grid')rotate(D.i);else S.msg='Glisse-le jusqu\'à la grille';return}
+        if(D.ok){sp.x=D.cand.x;sp.y=D.cand.y;sp.h=D.h;sp.on=true;sfx.play('pickup');var left=S.pl.filter(function(q){return !q.on}).length;S.msg=left?'Encore '+left+' navire'+(left>1?'s':'')+' à placer':'Flotte prête : appuie sur Prêt !'}
+        else if(D.from==='grid'&&!D.inGrid){sp.on=false;sp.h=true;S.sel=-1;sfx.play('tick');S.msg='Navire remis au port'}
+        else{S.bad={i:D.i,t:performance.now()};sfx.play('tick');S.msg=D.inGrid?'Les navires ne doivent pas se toucher':'Pose-le sur la grille'}}}
+
+    /* ---------- dessin ---------- */
+    function shipRR(g,x,y,len,h,cs,col,a){var m=Math.max(1,Math.min(3,cs*.12)),k=2*m+2;g.globalAlpha=a==null?1:a;g.fillStyle=col;PP.ag.rr(g,x+m,y+m,(h?len:1)*cs-k,(h?1:len)*cs-k,Math.min(10,cs*.3));g.fill();g.globalAlpha=1}
+    function drawBoard(g,F,ox,oy,cs,o){var N=S.N,fs=Math.max(8,Math.min(12,cs*.42)),gap=cs>16?2:1;
+      if(o.labels&&cs>=18)for(var i=0;i<N;i++){ag.mono(g,LET[i],ox+i*cs+cs/2,oy-10,fs,'rgba(241,236,226,.5)');ag.mono(g,(i+1)+'',ox-13,oy+i*cs+cs/2,fs,'rgba(241,236,226,.5)')}
+      for(var x=0;x<N;x++)for(var y=0;y<N;y++){g.fillStyle=(x+y)%2?'#14466e':'#164d78';g.fillRect(ox+x*cs,oy+y*cs,cs-gap,cs-gap)}
+      if(o.ships)o.ships.forEach(function(s,i){if(!s.on||i===o.skip)return;shipRR(g,ox+s.x*cs,oy+s.y*cs,s.len,s.h,cs,'#8a929c');
+        if(o.sel===i){g.strokeStyle=YEL;g.lineWidth=3;PP.ag.rr(g,ox+s.x*cs+1,oy+s.y*cs+1,(s.h?s.len:1)*cs-4,(s.h?1:s.len)*cs-4,Math.min(10,cs*.3));g.stroke()}
+        if(S.bad&&S.bad.i===i&&performance.now()-S.bad.t<450){g.strokeStyle=RED;g.lineWidth=4;g.strokeRect(ox+s.x*cs,oy+s.y*cs,(s.h?s.len:1)*cs-2,(s.h?1:s.len)*cs-2)}});
+      if(F)for(x=0;x<N;x++)for(y=0;y<N;y++){var px=ox+x*cs,py=oy+y*cs,v=F.shots[x][y],c=cs/2-1;if(!v)continue;
+        if(v===4){g.fillStyle='rgba(90,26,16,.85)';g.fillRect(px,py,cs-gap,cs-gap)}
+        if(v===2||v===4){g.fillStyle=RED;g.beginPath();g.arc(px+c,py+c,cs*.27,0,7);g.fill();var q=cs*.27;g.strokeStyle=YEL;g.lineWidth=cs>20?2:1.5;g.beginPath();g.moveTo(px+q,py+q);g.lineTo(px+cs-q-2,py+cs-q-2);g.moveTo(px+cs-q-2,py+q);g.lineTo(px+q,py+cs-q-2);g.stroke()}
+        else{g.fillStyle=v===1?'rgba(241,236,226,.85)':'rgba(241,236,226,.3)';g.beginPath();g.arc(px+c,py+c,Math.max(2,cs*.12),0,7);g.fill()}}
+      if(F&&F.last){g.strokeStyle='#fff';g.lineWidth=2;g.strokeRect(ox+F.last[0]*cs,oy+F.last[1]*cs,cs-gap,cs-gap)}
+      if(o.hover){g.strokeStyle=YEL;g.lineWidth=3;g.strokeRect(ox+o.hover[0]*cs,oy+o.hover[1]*cs,cs-gap,cs-gap)}
+      if(o.dim){g.fillStyle='rgba(8,20,34,.6)';g.fillRect(ox-1,oy-1,N*cs+2,N*cs+2);ag.txt(g,o.dim,ox+N*cs/2,oy+N*cs/2,Math.min(48,N*cs/6),'rgba(241,236,226,.8)')}}
+    function drawPlace(C,g,L){var G=L.g,N=S.N,D=S.drag;
+      ag.txt(g,'PLACE TA FLOTTE',L.title[0],L.title[1],L.P?30:36,CR);ag.mono(g,S.msg||'',L.title[0],L.msgY,13,YEL);
+      drawBoard(g,null,G.x,G.y,G.cs,{labels:true,ships:S.pl,skip:D?D.i:-1,sel:S.sel});
+      if(D&&D.moved&&D.inGrid){var c=cellsOf(D.cand);g.fillStyle=D.ok?'rgba(63,224,154,.35)':'rgba(226,54,27,.4)';c.forEach(function(q){if(q[0]>=0&&q[1]>=0&&q[0]<N&&q[1]<N)g.fillRect(G.x+q[0]*G.cs,G.y+q[1]*G.cs,G.cs-2,G.cs-2)})}
+      var items=dockItems(L);ag.mono(g,items.length||D&&D.from==='dock'?'AU PORT · glisse-les sur la grille':'TOUS TES NAVIRES SONT PLACÉS',L.dock.x+L.dock.w/2,L.dock.y,11,'rgba(241,236,226,.6)');
+      items.forEach(function(it){shipRR(g,it.x-3,it.y-3,S.pl[it.i].len,true,it.dc,'#8a929c');if(S.bad&&S.bad.i===it.i&&performance.now()-S.bad.t<450){g.strokeStyle=RED;g.lineWidth=3;g.strokeRect(it.x-2,it.y-2,it.w,it.h)}});
+      if(D&&D.moved){var s=S.pl[D.i],cs=G.cs;shipRR(g,D.px-(D.h?D.k*cs+cs/2:cs/2),D.py-(D.h?cs/2:D.k*cs+cs/2),s.len,D.h,cs,D.ok?'#c9d1da':'#8a929c',.85)}
+      var all=S.pl.every(function(s){return s.on});
+      L.btns.forEach(function(b){var ok=b.id!=='ok'||all;g.fillStyle=b.id==='ok'?(all?YEL:'rgba(241,236,226,.15)'):'rgba(241,236,226,.12)';PP.ag.rr(g,b.x,b.y,b.w,b.h,8);g.fill();
+        if(b.id!=='ok'){g.strokeStyle='rgba(241,236,226,.35)';g.lineWidth=2;g.stroke()}ag.mono(g,b.t,b.x+b.w/2,b.y+b.h/2,L.P?13:14,b.id==='ok'&&all?INK:ok?CR:'rgba(241,236,226,.45)')})}
+    function drawPlay(C,g,L){var N=S.N,me=S.P[S.me],T=S.P[S.tgt],myTurn=S.ph==='play'&&S.turn===S.me&&me.alive;
+      L.tabL.forEach(function(tb){var p=S.P[tb.i],on=tb.i===S.tgt;g.fillStyle=on?YEL:p.alive?'rgba(241,236,226,.12)':'rgba(0,0,0,.3)';PP.ag.rr(g,tb.x,tb.y,tb.w,tb.h,8);g.fill();
+        var col=on?INK:p.alive?CR:'rgba(241,236,226,.35)',nmx=p.name.length>11?p.name.slice(0,10)+'…':p.name;
+        ag.mono(g,nmx,tb.x+tb.w/2,tb.y+tb.h*.36,Math.min(14,tb.w/8),col);ag.mono(g,p.alive?(p.F.total-p.F.sunk)+'/'+p.F.total+' navires':'COULÉ',tb.x+tb.w/2,tb.y+tb.h*.72,10,col);
+        if(S.ph==='play'&&S.turn===tb.i){g.fillStyle=RED;g.beginPath();g.arc(tb.x+10,tb.y+10,5,0,7);g.fill()}});
+      if(T)drawBoard(g,T.F,L.t.x,L.t.y,L.t.cs,{labels:true,hover:myTurn&&T.alive&&!S.busy&&!touch()?S.hover:null,dim:!T.alive?'COULÉ':S.ph==='wait'?'EN ATTENTE…':null});
+      var mc=L.m.cs;ag.mono(g,'TA FLOTTE',L.m.x+N*mc/2,L.m.y-(mc>=18?28:12),13,me.alive?CR:'rgba(241,236,226,.4)');
+      drawBoard(g,me.F,L.m.x,L.m.y,mc,{labels:true,ships:S.pl,dim:me.alive?null:'COULÉE'});
+      var bt,bc;if(S.ph==='wait'){bt='EN ATTENTE';bc='rgba(241,236,226,.6)'}else if(myTurn){bt='À TOI';bc=YEL}else if(!me.alive){bt='TU REGARDES';bc='rgba(241,236,226,.5)'}else{bt='TOUR : '+S.P[S.turn].name.toUpperCase();bc='rgba(241,236,226,.6)'}
+      if(L.P)ag.txt(g,bt,L.ban[0],L.ban[1],30,bc);else if(myTurn||S.ph==='wait')ag.txt(g,bt,L.ban[0],L.ban[1],S.ph==='wait'?24:44,bc);else{ag.mono(g,me.alive?'TOUR DE':'',L.ban[0],L.ban[1]-26,12,bc);ag.txt(g,me.alive?S.P[S.turn].name.toUpperCase().slice(0,10):'TU REGARDES',L.ban[0],L.ban[1]+6,26,bc)}
+      ag.mono(g,S.msg||'',L.msgP[0],L.msgP[1],12,'rgba(241,236,226,.85)');
+      var Li=L.list;S.P.forEach(function(p,i){var y=Li.y+i*Li.rh+Li.rh/2,col=p.alive?CR:'rgba(241,236,226,.35)';g.fillStyle=PCOL[i%4];g.globalAlpha=p.alive?1:.35;g.beginPath();g.arc(Li.x+6,y,5,0,7);g.fill();g.globalAlpha=1;
+        ag.mono(g,(i===S.me?'Toi':p.name).slice(0,L.P?12:8)+(S.ph==='play'&&S.turn===i?' ◀':''),Li.x+18,y,12,col,'left');
+        ag.mono(g,S.ph==='wait'?(S.ready[i]?'prêt':'place…'):p.alive?(p.F.total-p.F.sunk)+'/'+p.F.total:'coulé',Li.x+Li.w,y,12,col,'right')})}
+
     PP.arcade({id:'navale',
-      setup:function(C){S={me:place(),op:C.mode==='solo'?place():{b:empty(),ships:SH.map(function(l){return {len:l,cells:[],hits:0}}),shots:empty()},turn:0,ai:{q:[]},over:false,count:0,msg:'',hover:null,sunkOp:0};
-        if(C.mode==='online'){var ids=C.net.players.map(function(p){return p.id}),role=ids.indexOf(C.net.me.id);if(role>1){C.over('Bataille navale','Cette partie se joue à deux : les deux premiers du salon s\'affrontent.',false);return}S.ready={};S.turn=C.net.isHost?0:1;C.listen(function(m){if(m.t!=='rel')return;var d=m.d;
-            if(d.t==='nv-shot'){var r=shootAt(S.me,d.x,d.y);if(r&&r.sunk)markSunk(S.me,r.sunk);C.net.relay({t:'nv-res',x:d.x,y:d.y,hit:r&&r.hit,sunk:r&&r.sunk});sfx.play(r&&r.hit?'hit':'tick');if(allSunk(S.me)){C.net.relay({t:'nv-win'});end(C,false);return}S.turn=r&&r.hit?1:0;S.msg=S.turn?'Touché, il rejoue':'À toi de tirer'}
-            if(d.t==='nv-res'){S.op.shots[d.x][d.y]=d.hit?2:1;if(d.sunk){S.sunkOp++;markSunk(S.op,d.sunk);d.sunk.forEach(function(q){S.op.shots[q[0]][q[1]]=4})}S.turn=d.hit?0:1;S.msg=d.hit?(d.sunk?'Coulé ! Rejoue':'Touché ! Rejoue'):'Dans l\'eau…';sfx.play(d.hit?'hit':'tick')}
-            if(d.t==='nv-win')end(C,true)})}
-        C.keysText('Clique sur la grille de droite pour tirer · ta flotte est à gauche · touché = tu rejoues');
-        C.over('Bataille navale',(C.mode==='solo'?'Contre l\'ordinateur.':'Contre ton pote du salon, l\'hôte tire en premier.')+' 5 navires placés au hasard. Coule toute la flotte d\'en face.','Jouer')},
-      start:function(C){if(S.count||S.over)this.setup(C),C.hide();S.msg=S.turn===0?'À toi de tirer':'L\'autre tire en premier'},
-      mouse:function(C,t,x,y){var gx=Math.floor((x-RX)/CS),gy=Math.floor((y-TY)/CS);S.hover=gx>=0&&gy>=0&&gx<N&&gy<N?[gx,gy]:null;if(t!=='down'||!C.running||!S.hover||S.turn!==0||S.over)return;if(S.op.shots[gx][gy])return;S.count++;
-        if(C.mode==='online'){S.turn=2;S.msg='…';C.net.relay({t:'nv-shot',x:gx,y:gy});return}
-        var r=shootAt(S.op,gx,gy);sfx.play(r.hit?'hit':'tick');if(r.hit){if(r.sunk){markSunk(S.op,r.sunk);r.sunk.forEach(function(q){S.op.shots[q[0]][q[1]]=4});S.msg='Coulé ! Rejoue';C.pop('COULÉ !','#e2361b');C.shake(8)}else S.msg='Touché ! Rejoue';if(allSunk(S.op))end(C,true)}else{S.msg='Dans l\'eau…';S.turn=1;aiTurn(C)}},
-      step:function(C){C.hud('<span>Tirs <b>'+S.count+'</b></span><span>'+(S.msg||'')+'</span>')},
-      draw:function(C){var g=C.g;var bg=g.createLinearGradient(0,0,0,540);bg.addColorStop(0,'#0f2840');bg.addColorStop(1,'#081a2c');g.fillStyle=bg;g.fillRect(0,0,960,540);
-        function grid(ox,F,mine){ag.mono(g,mine?'TA FLOTTE':'FLOTTE ENNEMIE',ox+N*CS/2,TY-40,16,mine?CR:YEL);for(var i=0;i<N;i++){ag.mono(g,'ABCDEFGHIJ'[i],ox+i*CS+CS/2,TY-14,11,'rgba(241,236,226,.5)');ag.mono(g,(i+1)+'',ox-14,TY+i*CS+CS/2,11,'rgba(241,236,226,.5)')}
-          for(var x=0;x<N;x++)for(var y=0;y<N;y++){var px=ox+x*CS,py=TY+y*CS;g.fillStyle=(x+y)%2?'#14466e':'#164d78';g.fillRect(px,py,CS-2,CS-2);var id=F.b[x][y],s=F.shots[x][y];
-            if(mine&&id){g.fillStyle='#8a929c';PP.ag.rr(g,px+3,py+3,CS-8,CS-8,6);g.fill()}
-            if(s===4){g.fillStyle='#5a1a10';g.fillRect(px,py,CS-2,CS-2)}
-            if(s===2||s===4){g.fillStyle=RED;g.beginPath();g.arc(px+CS/2-1,py+CS/2-1,9,0,7);g.fill();g.strokeStyle=YEL;g.lineWidth=2;g.beginPath();g.moveTo(px+9,py+9);g.lineTo(px+CS-11,py+CS-11);g.moveTo(px+CS-11,py+9);g.lineTo(px+9,py+CS-11);g.stroke()}
-            else if(s===1||s===3){g.fillStyle=s===1?'rgba(241,236,226,.85)':'rgba(241,236,226,.3)';g.beginPath();g.arc(px+CS/2-1,py+CS/2-1,4,0,7);g.fill()}}
-          if(!mine&&S.hover&&S.turn===0&&C.running){g.strokeStyle=YEL;g.lineWidth=3;g.strokeRect(ox+S.hover[0]*CS,TY+S.hover[1]*CS,CS-2,CS-2)}
-          if(mine&&S.last){g.strokeStyle='#fff';g.lineWidth=2;g.strokeRect(ox+S.last[0]*CS,TY+S.last[1]*CS,CS-2,CS-2)}}
-        grid(LX,S.me,true);grid(RX,S.op,false);
-        if(C.running)ag.txt(g,S.turn===0?'À TOI':'…',480,TY+N*CS/2,40,S.turn===0?YEL:'rgba(241,236,226,.4)')}});
+      setup:function(C){CN=C;tok++;S={ph:'pre',P:[],N:optN(),me:0,solo:C.mode==='solo'};C.stop();
+        if(C.mode==='online')C.listen(function(m){if(!S)return;if(m.t==='players'){dropGone(C);return}if(m.t!=='rel'||!m.d||!/^nv-/.test(m.d.t||''))return;var d=m.d;
+          if(d.t==='nv-hi'){if(C.net.isHost&&S.cfg&&(S.ph==='place'||S.ph==='wait'))C.net.relay(S.cfg);return}
+          if(d.t==='nv-cfg'){if(S.g!==d.g&&d.ids)onCfg(C,d);return}
+          if(d.g!==S.g)return;
+          if(d.t==='nv-ready'){S.ready[d.f]=1;checkAll(C);return}
+          if(d.t==='nv-shot'){if(d.to!==S.me||!S.P[S.me].F.real)return;var res=resolveLocal(d.f,S.me,d.x,d.y);res.t='nv-res';res.g=S.g;C.net.relay(res);apply(C,res,true);return}
+          if(d.t==='nv-res')apply(C,d,false)});
+        C.keysText('Place ta flotte à la main ou au hasard · grille de 10 à 16 cases · de 2 à 4 joueurs');
+        intro(C)},
+      start:function(C){if(C.mode==='solo')startSolo(C)},
+      close:function(){tok++},
+      key:function(C,code,down){if(!down||!S||S.ph!=='place'||code!=='KeyR')return;if(S.drag){S.drag.h=!S.drag.h;if(S.drag.h)S.drag.k=Math.min(S.drag.k,S.pl[S.drag.i].len-1);snap(layout(C))}else if(S.sel>=0&&S.pl[S.sel].on)rotate(S.sel)},
+      mouse:function(C,t,x,y){if(!S||!C.running||!S.P.length)return;var L=layout(C);
+        if(S.ph==='place')return placeMouse(C,L,t,x,y);
+        if(S.ph!=='play'&&S.ph!=='wait')return;
+        var T=L.t,N=S.N,gx=Math.floor((x-T.x)/T.cs),gy=Math.floor((y-T.y)/T.cs);S.hover=gx>=0&&gy>=0&&gx<N&&gy<N?[gx,gy]:null;
+        if(t!=='down')return;
+        var tb=L.tabL.filter(function(q){return inR(q,x,y)})[0];if(tb){if(S.P[tb.i].alive&&S.tgt!==tb.i){S.tgt=tb.i;sfx.play('ui')}return}
+        if(S.ph!=='play'||!S.hover||S.turn!==S.me||S.busy||!S.P[S.me].alive)return;
+        var P=S.P[S.tgt];if(!P||!P.alive||S.tgt===S.me||P.F.shots[gx][gy])return;fire(C,gx,gy)},
+      step:function(C){if(!S||!S.P.length)return;if(S.ph==='place'){var n=S.pl.filter(function(s){return s.on}).length;C.hud('<span>Navires placés <b>'+n+'/'+S.pl.length+'</b></span><span>'+PP.esc(S.msg||'')+'</span>')}
+        else C.hud('<span>Tirs <b>'+S.count+'</b></span><span>'+PP.esc(S.msg||'')+'</span>')},
+      draw:function(C){fit(C);var g=C.g,W=C.W,H=C.H,bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#0f2840');bg.addColorStop(1,'#081a2c');g.fillStyle=bg;g.fillRect(0,0,W,H);
+        if(!S)return;
+        if(!S.P.length||S.ph==='pre'||S.ph==='spect'){var N=S.N||10,cs=Math.floor(Math.min(W,H)*.8/N);g.globalAlpha=.35;for(var x=0;x<N;x++)for(var y=0;y<N;y++){g.fillStyle=(x+y)%2?'#14466e':'#164d78';g.fillRect((W-N*cs)/2+x*cs,(H-N*cs)/2+y*cs,cs-2,cs-2)}g.globalAlpha=1;return}
+        var L=layout(C);if(S.ph==='place')drawPlace(C,g,L);else drawPlay(C,g,L)}});
   })();
 })();

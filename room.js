@@ -27,7 +27,7 @@
     {id:'c4',name:'Quatre en ligne',desc:'Aligne 4 jetons, de 2 à 4 joueurs',min:2,max:4},
     {id:'chess',name:'Échecs',desc:'Un contre un, deux plateaux si vous êtes 4',min:2,max:8},
     {id:'potion',name:'Potions (duel)',desc:'Même casse-tête, le premier qui finit gagne',min:2,max:8},
-    {id:'navale',name:'Bataille navale',desc:'Coule la flotte d\'en face',min:2,max:2}
+    {id:'navale',name:'Bataille navale',desc:'De 2 à 4 flottes, grille au choix',min:2,max:4}
   ];
   var GN={};ONLINE.forEach(function(g){GN[g.id]=g.name});
   var curGame=null;
