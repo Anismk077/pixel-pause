@@ -386,3 +386,5 @@
 .fx-boss b{display:block;font:400 22px/1 Anton,Impact,sans-serif;color:#fff;letter-spacing:.06em;text-shadow:0 2px 0 #141210,0 0 12px rgba(226,54,27,.8);margin-bottom:5px}
 .fx-boss>i{display:block;height:12px;background:rgba(20,18,16,.85);border:2px solid #141210;box-shadow:0 0 0 1px #e2361b}
 .fx-boss>i>i{display:block;height:100%;background:linear-gradient(#ff5a3a,#b01a0a);transition:width .2s}
+.fps-drinkfx{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .7s ease-out;background:radial-gradient(ellipse at center,transparent 35%,var(--c,#fff) 120%);z-index:4}
+.fps-drinkfx.on{opacity:.85;transition:opacity .08s}
