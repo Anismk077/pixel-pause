@@ -11,25 +11,40 @@
   var sfx=PP.sfx,net=PP.net,INK='#141210',CR='#f1ece2';
   var RAR=[{n:'Commune',c:'#a3a8ad',d:'#55595e'},{n:'Rare',c:'#3a8cff',d:'#17448e'},{n:'Épique',c:'#a04ee0',d:'#55207f'},{n:'Légendaire',c:'#f3c623',d:'#8f700a'},{n:'Mythique',c:'#e2361b',d:'#7d1606'}];
   /* dmg : dégâts par coup, cd : secondes entre 2 coups, rng : portée en cases, spl : zone, ch : rebonds, slow : ralentit, stun : étourdit, aura : accélère les voisins */
+  /* les unités d'Anis. sh : nom court sur la case, p : passif */
   var U={
-    arc:{n:'Archer',r:0,dmg:9,cd:.8,rng:2.6,s:'arc'},
-    fro:{n:'Frondeur',r:0,dmg:13,cd:1.2,rng:2.3,spl:.6,s:'orb'},
-    ecu:{n:'Écuyer',r:0,dmg:17,cd:1,rng:1.6,s:'epee'},
-    arb:{n:'Arbalétrière',r:1,dmg:30,cd:.75,rng:3,s:'arc'},
-    app:{n:'Apprenti mage',r:1,dmg:26,cd:1.1,rng:2.6,spl:.9,s:'orb'},
-    giv:{n:'Givreuse',r:1,dmg:18,cd:.9,rng:2.6,slow:.4,s:'gel'},
-    eli:{n:'Tireur d\'élite',r:2,dmg:150,cd:1.3,rng:4.5,s:'vis'},
-    pyr:{n:'Pyromancienne',r:2,dmg:58,cd:1,rng:2.8,spl:1.1,s:'feu'},
-    ora:{n:'Orageux',r:2,dmg:52,cd:1,rng:3,ch:4,s:'ecl'},
-    dra:{n:'Dragonnière',r:3,dmg:190,cd:.95,rng:3.2,spl:1.3,s:'feu'},
-    mag:{n:'Archimage',r:3,dmg:130,cd:.8,rng:3.6,ch:6,s:'ecl'},
-    pal:{n:'Paladine',r:3,dmg:230,cd:1,rng:2.4,stun:.5,aura:.2,s:'bou'},
-    phe:{n:'Phénix',r:4,dmg:520,cd:.7,rng:4,spl:1.6,s:'feu'},
-    tit:{n:'Titan du Vide',r:4,dmg:1300,cd:1.4,rng:3,spl:.9,stun:1,s:'poing'}
+    luc:{n:'Luciathe',r:0,dmg:9,cd:.8,rng:2.6,s:'arc'},
+    oni:{n:'Onika',r:0,dmg:5,cd:.45,rng:2.2,s:'vis'},
+    maz:{n:'Mazouka',r:0,dmg:12,cd:1.2,rng:2.3,spl:.6,s:'orb'},
+    ban:{n:'Bankalex',r:0,dmg:18,cd:1,rng:1.6,s:'epee'},
+    jui:{n:'Juinik',r:0,dmg:7,cd:.9,rng:2.5,slow:.25,s:'gel'},
+    ily:{n:'Ilya',r:0,dmg:14,cd:1.3,rng:3.4,s:'arc'},
+    tho:{n:'Thomas',r:0,dmg:8,cd:1,rng:2.4,ch:2,s:'ecl'},
+    har:{n:'Haram',r:1,dmg:30,cd:.75,rng:3,s:'arc'},
+    hal:{n:'Halal',r:1,dmg:26,cd:1.1,rng:2.6,spl:.9,s:'orb'},
+    kas:{n:'Kasher',r:1,dmg:18,cd:.9,rng:2.6,slow:.4,s:'gel'},
+    hlf:{n:'Halouf',r:1,dmg:22,cd:.5,rng:2.2,s:'epee'},
+    bou:{n:'Bouzelouf',r:1,dmg:24,cd:1,rng:2.8,ch:3,s:'ecl'},
+    cac:{n:'Caca',r:2,dmg:58,cd:1,rng:2.8,spl:1.1,bossx:1.3,s:'orb',p:'Odeur : +30 % de dégâts contre les boss'},
+    pip:{n:'Pipi',r:2,dmg:40,cd:.5,rng:2.6,slow:.3,s:'goutte',p:'Flaque : ralentit les slimes de 30 %'},
+    cha:{n:'Chameau',r:2,dmg:150,cd:1.3,rng:4.5,crit:.2,s:'vis',p:'Bosse : 20 % de coups critiques (×2)'},
+    toi:{n:'Toilette',r:2,dmg:52,cd:1,rng:3,ch:4,aura:.15,s:'ecl',p:'Chasse d\'eau : les voisins attaquent 15 % plus vite'},
+    vac:{n:'Vache',r:2,dmg:70,cd:1.1,rng:2.4,stun:.3,lait:10,s:'poing',p:'Lait : +4 pièces toutes les 10 s'},
+    moi:{n:'Moise',r:3,dmg:190,cd:.95,rng:3.2,spl:1.3,push:12,s:'bou',p:'Mer ouverte : toutes les 12 s, repousse les slimes à portée'},
+    exa:{n:'Exaucer',r:3,dmg:130,cd:.8,rng:3.6,ch:6,gemk:.03,s:'ecl',p:'Vœu : 3 % de chance de gagner une gemme par slime tué'},
+    chi:{n:'Chirac',r:3,dmg:230,cd:1,rng:2.4,stun:.5,glob:.1,s:'poing',p:'Discours : +10 % de dégâts à tout ton territoire'},
+    cdc:{n:'Croix-de-Chavaux',sh:'Chavaux',r:3,dmg:160,cd:.7,rng:3.8,vsl:.5,s:'vis',p:'Carrefour : +50 % de dégâts aux slimes ralentis ou étourdis'},
+    gog:{n:'GOG',r:4,dmg:1300,cd:1.4,rng:3,spl:.9,stun:1,s:'poing',p:'Colosse : étourdit 1 s à chaque coup'},
+    mag:{n:'MAGOG',r:4,dmg:450,cd:.6,rng:4,ch:5,nodec:1,s:'ecl',p:'Écho : ses éclairs rebondissent sans perdre de force'},
+    son:{n:'SONGOKU',r:4,dmg:520,cd:.7,rng:4,spl:1.6,blast:8,s:'etoile',p:'Rafale : toutes les 8 s, frappe tous les slimes à portée (×3)'},
+    h:{n:'H',r:4,dmg:300,cd:.35,rng:3.2,aura:.2,s:'lettre',p:'Hâte : les voisins attaquent 20 % plus vite'},
+    cap:{n:'CAPORAL',r:4,dmg:800,cd:1,rng:3.4,spl:1.2,glob:.15,s:'galon',p:'Garde-à-vous : +15 % de dégâts à tout ton territoire'}
   };
-  var BYR=[[],[],[],[],[]];Object.keys(U).forEach(function(k){BYR[U[k].r].push(k)});
-  var SELL=[8,20,50,130,350],PARI=[[2,1,.5],[3,2,.2],[4,4,.08]],GRP=[0,0,1,1,2],WMAX=80,LIM=100,PER=28;
-  var HPT=2.3,BOSSM=22,TC=['#6fbf5a','#4fc0e0','#e0c94f','#e0884f','#c04fe0','#e04f8a','#9aa3ad','#5a6cff'],DIF={normal:{hp:1,n:'Normal'},dur:{hp:1.55,n:'Difficile'},online:{hp:1.25,n:'À 2'}};
+  /* recettes des mythiques : 1 exemplaire de chaque, pris sur le territoire */
+  var REC={gog:['har','cac','moi'],mag:['hal','pip','exa'],son:['tho','cha','chi'],h:['kas','toi','cdc'],cap:['ban','hlf','bou','vac']},RK=Object.keys(REC);
+  var BYR=[[],[],[],[],[]];Object.keys(U).forEach(function(k){if(U[k].r<4)BYR[U[k].r].push(k)});
+  var SELL=[8,20,50,130,350],PARI=[[2,1,.3],[3,2,.1]],GRP=[0,0,1,1,2],WMAX=80,LIM=100,PER=28;
+  var HPT=2.6,BOSSM=22,TC=['#6fbf5a','#4fc0e0','#e0c94f','#e0884f','#c04fe0','#e04f8a','#9aa3ad','#5a6cff'],DIF={normal:{hp:1,n:'Normal'},dur:{hp:1.55,n:'Difficile'},online:{hp:1.25,n:'À 2'}};
   var EK=[{h:1,v:1.5,c:'#6fbf5a'},{h:.6,v:2.4,c:'#e8a23a'},{h:1.8,v:1.05,c:'#7d6bd6'},{h:BOSSM,v:.9,c:'#e2361b'}];
   function pick(a){return a[Math.floor(Math.random()*a.length)]}
   function rnd(){return Math.random()}
@@ -41,14 +56,17 @@
     if(!em.length)return -1;i=pick(em);T.g[i]={u:id,n:1,cd:[.2]};T.aura=null;return i}
   function roll(){var x=rnd();return x<.006?3:x<.075?2:x<.33?1:0}
   function summon(T){if(T.gold<T.cost||!room(T))return null;T.gold-=T.cost;T.cost+=1;var id=pick(BYR[roll()]);T.last=place(T,id);return id}
-  function fuse(T,i){var c=T.g[i];if(!c||c.n<3||U[c.u].r>=4)return null;var id=pick(BYR[U[c.u].r+1]);T.g[i]=null;T.last=place(T,id);return id}
+  function fuse(T,i){var c=T.g[i];if(!c||c.n<3||U[c.u].r>=3)return null;var id=pick(BYR[U[c.u].r+1]);T.g[i]=null;T.last=place(T,id);return id}
+  function have(T,id){var b=-1;for(var i=0;i<32;i++){var c=T.g[i];if(c&&c.u===id&&(b<0||c.n<T.g[b].n))b=i}return b}
+  function canCraft(T,m){return REC[m].every(function(id){return have(T,id)>=0})}
+  function craft(T,m){if(!canCraft(T,m))return null;REC[m].forEach(function(id){var i=have(T,id),c=T.g[i];c.n--;c.cd.pop();if(c.n<=0)T.g[i]=null});T.aura=null;T.last=place(T,m);return m}
   function sell(T,i){var c=T.g[i];if(!c)return false;T.gold+=SELL[U[c.u].r];c.n--;c.cd.pop();if(c.n<=0)T.g[i]=null;T.aura=null;return true}
   function pari(T,k){var p=PARI[k];if(T.gems<p[1]||!room(T))return 0;T.gems-=p[1];if(rnd()>=p[2])return -1;var id=pick(BYR[p[0]]);T.last=place(T,id);return id}
   function upCost(T,k){var l=T.up[k];return k===0?30+30*l:k===1?80+60*l:2+l}
   function upgrade(T,k){var c=upCost(T,k);if(k<2){if(T.gold<c)return false;T.gold-=c}else{if(T.gems<c)return false;T.gems-=c}T.up[k]++;return true}
   function move(T,a,b){var A=T.g[a],B=T.g[b];if(!A)return;if(B&&B.u===A.u&&B.n+A.n<=3){B.n+=A.n;B.cd=B.cd.concat(A.cd);T.g[a]=null}else{T.g[a]=B;T.g[b]=A}T.aura=null}
-  function mult(T,id){return (1+.15*T.up[GRP[U[id].r]])*(T.bonus||1)}
-  function auraMap(T){var m=new Array(32).fill(0);for(var i=0;i<32;i++){var c=T.g[i];if(!c||!U[c.u].aura)continue;var cx=i%8,cy=i/8|0;
+  function mult(T,id){return (1+.15*T.up[GRP[U[id].r]]+(T.gb||0))*(T.bonus||1)}
+  function auraMap(T){var m=new Array(32).fill(0),gc=0,gp=0;T.g.forEach(function(c){if(c&&U[c.u].glob){if(c.u==='chi')gc+=c.n;else gp+=c.n}});T.gb=Math.min(.3,gc*.1)+Math.min(.45,gp*.15);for(var i=0;i<32;i++){var c=T.g[i];if(!c||!U[c.u].aura)continue;var cx=i%8,cy=i/8|0;
       for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){var x=cx+dx,y=cy+dy;if((dx||dy)&&x>=0&&x<8&&y>=0&&y<4)m[y*8+x]=Math.min(.5,m[y*8+x]+U[c.u].aura*c.n/3)}}return m}
   /* position sur le chemin : rectangle de (-0.5,-0.5) à (8.5,4.5), en unités de case */
   function pos(s,o){s=((s%PER)+PER)%PER;if(s<9){o.x=-.5+s;o.y=-.5}else if(s<14){o.x=8.5;o.y=-.5+(s-9)}else if(s<23){o.x=8.5-(s-14);o.y=4.5}else{o.x=-.5;o.y=4.5-(s-23)}return o}
@@ -56,12 +74,12 @@
   function hpOf(w,D){var t=Math.floor((w-1)/10);return 20*(1+.12*((w-1)%10))*Math.pow(HPT,t)*D.hp}
   function enemy(w,D,boss){var x=rnd(),k=boss?3:w%5===3?(x<.5?1:0):w%5===4?(x<.3?2:0):(x<.1?1:x<.18?2:0),K=EK[k],h=hpOf(w,D)*K.h*(boss?(w>=WMAX?3:1)*(1+w/40):1);return {s:0,hp:h,max:h,v:K.v,k:k,boss:boss,sl:0,slf:0,st:0,x:-.5,y:-.5,hit:0}}
 
-  function hurt(T,e,d,u){if(e.hp<=0)return;e.hp-=d;e.hit=.1;if(u.slow){e.sl=1.6;e.slf=u.slow}if(u.stun)e.st=Math.max(e.st,e.boss?u.stun*.25:u.stun)}
+  function hurt(T,e,d,u){if(e.hp<=0)return;e.hp-=d;e.by=u;e.hit=.1;if(u.slow){e.sl=1.6;e.slf=u.slow}if(u.stun)e.st=Math.max(e.st,e.boss?u.stun*.25:u.stun)}
   function strike(T,cx,cy,u,id,tg,dmg){
     hurt(T,tg,dmg,u);var col=RAR[u.r].c;
     if(T.fx.length<70)T.fx.push({k:'shot',x1:cx,y1:cy,x2:tg.x,y2:tg.y,t:.14,c:col});
     if(u.spl){T.e.forEach(function(o){if(o!==tg&&Math.hypot(o.x-tg.x,o.y-tg.y)<u.spl)hurt(T,o,dmg*.7,u)});if(T.fx.length<70)T.fx.push({k:'boom',x:tg.x,y:tg.y,r:u.spl,t:.25,c:col})}
-    if(u.ch){var prev=tg,done=[tg],d=dmg;for(var j=1;j<u.ch;j++){var nx=null,nd=1.8;T.e.forEach(function(o){if(done.indexOf(o)<0&&o.hp>0){var dd=Math.hypot(o.x-prev.x,o.y-prev.y);if(dd<nd){nd=dd;nx=o}}});if(!nx)break;d*=.85;hurt(T,nx,d,u);done.push(nx);if(T.fx.length<70)T.fx.push({k:'shot',x1:prev.x,y1:prev.y,x2:nx.x,y2:nx.y,t:.14,c:col});prev=nx}}}
+    if(u.ch){var prev=tg,done=[tg],d=dmg;for(var j=1;j<u.ch;j++){var nx=null,nd=1.8;T.e.forEach(function(o){if(done.indexOf(o)<0&&o.hp>0){var dd=Math.hypot(o.x-prev.x,o.y-prev.y);if(dd<nd){nd=dd;nx=o}}});if(!nx)break;if(!u.nodec)d*=.85;hurt(T,nx,d,u);done.push(nx);if(T.fx.length<70)T.fx.push({k:'shot',x1:prev.x,y1:prev.y,x2:nx.x,y2:nx.y,t:.14,c:col});prev=nx}}}
   /* avance un territoire : les ennemis tournent, les gardiens tirent. Renvoie l'or gagné et si un boss est mort */
   function stepTerr(T,w,dt){
     var out={boss:false};
@@ -71,16 +89,22 @@
       for(var k=0;k<c.n;k++){c.cd[k]-=dt*sp;if(c.cd[k]>0)continue;
         var tg=null,bd=u.rng;for(var j=0;j<T.e.length;j++){var e=T.e[j];if(e.hp<=0)continue;var d=Math.hypot(e.x-cx,e.y-cy)-(e.boss?.3:0);if(d<=bd&&(!tg||e.boss&&!tg.boss||d<bd&&!(tg.boss&&!e.boss))){tg=e;bd=e.boss?u.rng:d}}
         if(!tg){c.cd[k]=0;continue}
-        c.cd[k]=u.cd*(.9+rnd()*.2);c.at=.15;strike(T,cx,cy,u,c.u,tg,u.dmg*m)}
+        c.cd[k]=u.cd*(.9+rnd()*.2);c.at=.15;var dm=u.dmg*m;if(u.bossx&&tg.boss)dm*=u.bossx;if(u.vsl&&(tg.sl>0||tg.st>0))dm*=1+u.vsl;if(u.crit&&rnd()<u.crit){dm*=2;if(T.fx.length<70)T.fx.push({k:'txt',x:tg.x,y:tg.y,s:'CRIT',t:.5,c:'#f3c623'})}strike(T,cx,cy,u,c.u,tg,dm)}
+      /* passifs à minuterie : Lait, Mer ouverte, Rafale */
+      if(u.lait){c.pt=(c.pt==null?u.lait:c.pt)-dt;if(c.pt<=0){c.pt=u.lait;T.gold+=4*c.n;if(T.fx.length<70)T.fx.push({k:'txt',x:cx,y:cy-.3,s:'+'+4*c.n,t:.9,c:'#f3c623'})}}
+      if(u.push||u.blast){var per=u.push||u.blast;c.pt=(c.pt==null?per:c.pt)-dt;if(c.pt<=0){var near=T.e.filter(function(e){return e.hp>0&&Math.hypot(e.x-cx,e.y-cy)<=u.rng});if(near.length){c.pt=per;
+        if(u.push)near.forEach(function(e){if(!e.boss)e.s=(e.s-2.5+PER)%PER});else near.forEach(function(e){hurt(T,e,u.dmg*m*3*c.n,u)});
+        if(T.fx.length<70)T.fx.push({k:'boom',x:cx,y:cy,r:u.rng,t:.4,c:u.push?'#7fd0ff':'#ffb020'})}else c.pt=.5}}
       if(c.at>0)c.at-=dt}
     var gold=2;
-    T.e=T.e.filter(function(e){if(e.hp>0)return true;T.kills++;if(e.boss){T.gold+=40+w*3;T.gems+=3+Math.floor(w/10);out.boss=true}else T.gold+=gold;
+    T.e=T.e.filter(function(e){if(e.hp>0)return true;T.kills++;if(e.boss){T.gold+=40+w*3;T.gems+=3+Math.floor(w/10);out.boss=true}else T.gold+=gold;if(e.by&&e.by.gemk&&rnd()<e.by.gemk){T.gems++;if(T.fx.length<70)T.fx.push({k:'txt',x:e.x,y:e.y,s:'+1 gemme',t:.9,c:'#4fe0d0'})}
       if(T.fx.length<70)T.fx.push({k:'die',x:e.x,y:e.y,t:.3,c:EK[e.k].c,r:e.boss?.7:.3});return false});
     T.fx.forEach(function(f){f.t-=dt});T.fx=T.fx.filter(function(f){return f.t>0});
     return out}
   /* l'allié ordi : il invoque, fusionne, vend quand c'est plein et améliore */
   function bot(T){
-    for(var i=0;i<32;i++){var c=T.g[i];if(c&&c.n===3&&U[c.u].r<4){fuse(T,i);return}}
+    for(var i=0;i<32;i++){var c=T.g[i];if(c&&c.n===3&&U[c.u].r<3){fuse(T,i);return}}
+    for(i=0;i<RK.length;i++)if(canCraft(T,RK[i])){craft(T,RK[i]);return}
     if(T.gems>=upCost(T,2)+2&&T.g.some(function(c){return c&&U[c.u].r===4})){upgrade(T,2);return}
     if(T.gems>=2&&rnd()<.6){pari(T,rnd()<.5?1:0);return}
     if(!room(T)&&T.gold>=T.cost){var lo=-1,lr=9;for(i=0;i<32;i++){c=T.g[i];if(c&&c.n<3&&U[c.u].r<lr){lr=U[c.u].r;lo=i}}if(lo>=0&&lr<2)sell(T,lo);return}
@@ -116,7 +140,10 @@
         again?'Rejouer':false,again?function(){if(G.mode==='online')hostStart(C);else{startSolo(C);C.go()}}:null);
       if(!again)CP.over(win?'Victoire !':'Défaite',PP.$('garde-msg').innerHTML+'<br>Le chef du salon peut relancer.',false)},1300)}
 
-  function step(C,dt){if(!G||G.over)return;G.time+=dt;G.warn=Math.max(0,G.warn-dt);
+  function wheelStep(C,dt){var W=G.wheel;if(!W)return;W.t+=dt;var f=Math.min(1,W.t/W.dur),r=W.end*(1-Math.pow(1-f,3)),seg=Math.floor(r/(Math.PI/8));if(seg!==W.tick&&f<1){W.tick=seg;sfx.play('tick')}W.rot=r;
+    if(W.t>=W.dur&&!W.done){W.done=true;var T=G.T[0];if(W.win){var id=pick(BYR[PARI[W.k][0]]);T.last=place(T,id);if(T.last<0){T.gems+=PARI[W.k][1];say('Plus de place : gemmes rendues',0)}else got(C,id,'Pari gagné : ')}else{say('Raté…',0);sfx.play('lose')}}
+    if(W.t>=W.dur+.9)G.wheel=null}
+  function step(C,dt){if(!G||G.over)return;G.time+=dt;wheelStep(C,dt);G.warn=Math.max(0,G.warn-dt);
     G.t-=dt;var loc=G.ally==='bot'?G.T:[G.T[0]];
     if(G.spawnN>0){G.spawnT-=dt;while(G.spawnN>0&&G.spawnT<=0){loc.forEach(function(T){T.e.push(enemy(G.w,G.D,G.boss))});G.spawnN--;G.spawnT+=G.iv||1}}
     loc.forEach(function(T){stepTerr(T,G.w,dt)});
@@ -131,13 +158,13 @@
     else if(G.t<=0)nextWave()}
 
   /* ---------- salon à 2 ---------- */
-  function sync(){var T=G.T[0];net.relay({t:'gd-s',g:T.g.map(function(c){return c?c.u+c.n:0}),e:T.e.slice(0,110).map(function(e){return [+e.s.toFixed(2),Math.max(1,Math.round(e.hp/e.max*99)),e.k,e.boss?1:0,+((e.st>0?0:e.sl>0?1-e.slf:1)*e.v).toFixed(2)]}),n:T.e.length,w:G.w,gold:T.gold,nm:G.T[0].name})}
+  function sync(){var T=G.T[0];net.relay({t:'gd-s',g:T.g.map(function(c){return c?c.u+':'+c.n:0}),e:T.e.slice(0,110).map(function(e){return [+e.s.toFixed(2),Math.max(1,Math.round(e.hp/e.max*99)),e.k,e.boss?1:0,+((e.st>0?0:e.sl>0?1-e.slf:1)*e.v).toFixed(2)]}),n:T.e.length,w:G.w,gold:T.gold,nm:G.T[0].name})}
   function onNet(C,m){if(m.t!=='rel'||!m.d)return;var d=m.d;
     if(d.t==='gd-go'){if(net.isHost)return;var sl=net.slot(net.me.id);
       if(sl>1){G=null;C.over('Partie à 2 joueurs','DEFEND MONTREUIL se joue à <b>2 maximum</b>. Cette partie a déjà ses 2 joueurs.',false);return}
       newGame('online','net',[net.me.name||'Toi',d.host||'Allié']);C.go();return}
     if(!G||G.ally!=='net')return;
-    if(d.t==='gd-s'){var old=P;P={g:d.g.map(function(s){if(!s)return null;var u=s.slice(0,3);return U[u]?{u:u,n:+s.slice(3)||1}:null}),e:d.e.map(function(a){var o={s:a[0],hp:a[1],max:99,k:a[2],boss:!!a[3],v:a[4],x:0,y:0};return o}),n:d.n,w:d.w,gold:d.gold,fx:old?old.fx:[]};if(d.nm)G.T[1].name=d.nm;return}
+    if(d.t==='gd-s'){var old=P;P={g:d.g.map(function(s){if(!s)return null;var a=String(s).split(':');return U[a[0]]?{u:a[0],n:+a[1]||1}:null}),e:d.e.map(function(a){var o={s:a[0],hp:a[1],max:99,k:a[2],boss:!!a[3],v:a[4],x:0,y:0};return o}),n:d.n,w:d.w,gold:d.gold,fx:old?old.fx:[]};if(d.nm)G.T[1].name=d.nm;return}
     if(d.t==='gd-x'&&!G.over){G.fromNet=true;finish(C,false,'Ton allié a été débordé.');return}
     if(d.t==='gd-boss30'){G.pdone=true;if(G.done&&!G.over)finish(C,true);return}
     if(d.t==='gd-done'&&!G.over){G.fromNet=true;finish(C,true)}}
@@ -149,10 +176,10 @@
   /* ---------- mise en page : paysage (PC, téléphone couché) ou vertical (téléphone en hauteur) ---------- */
   function tall(){return document.body.classList.contains('pp-touch')&&innerHeight>innerWidth}
   function layout(C){var v=tall();if(LY&&LY.v===v)return;
-    if(v)LY={v:v,W:540,H:960,ter:[{ox:10,oy:304,cs:52},{ox:70,oy:56,cs:40}],
-      b:{info:[10,626,520,54],sum:[10,688,250,112],fus:[270,688,125,112],sel:[405,688,125,112],p0:[10,812,166,66],p1:[187,812,166,66],p2:[364,812,166,66],u0:[10,886,166,66],u1:[187,886,166,66],u2:[364,886,166,66]}};
+    if(v)LY={v:v,W:540,H:960,ter:[{ox:10,oy:282,cs:52},{ox:90,oy:56,cs:36}],
+      b:{info:[10,600,520,80],sum:[10,688,250,112],fus:[270,688,125,112],sel:[405,688,125,112],p0:[10,812,166,66],p1:[187,812,166,66],rec:[364,812,166,66],u0:[10,886,166,66],u1:[187,886,166,66],u2:[364,886,166,66]}};
     else LY={v:v,W:960,H:540,ter:[{ox:20,oy:62,cs:44},{ox:500,oy:62,cs:44}],
-      b:{info:[20,334,300,92],sum:[336,330,288,100],fus:[640,334,145,92],sel:[795,334,145,92],p0:[20,442,140,88],p1:[170,442,140,88],p2:[320,442,140,88],u0:[500,442,140,88],u1:[650,442,140,88],u2:[800,442,140,88]}};
+      b:{info:[20,334,300,92],sum:[336,330,288,100],fus:[640,334,145,92],sel:[795,334,145,92],p0:[20,442,140,88],p1:[170,442,140,88],rec:[320,442,140,88],u0:[500,442,140,88],u1:[650,442,140,88],u2:[800,442,140,88]}};
     C.W=LY.W;C.H=LY.H;C.cv.width=LY.W;C.cv.height=LY.H}
   function inR(r,x,y){return x>=r[0]&&x<=r[0]+r[2]&&y>=r[1]&&y<=r[1]+r[3]}
   function cellAt(x,y){var t=LY.ter[0],gx=(x-t.ox)/t.cs-1,gy=(y-t.oy)/t.cs-1;if(gx<0||gx>=8||gy<0||gy>=4)return -1;return (gy|0)*8+(gx|0)}
@@ -161,9 +188,13 @@
   function say(t,ok){G.wtxt=t;G.warn=1.8;G.wok=ok}
   function act(C,a){if(!G||G.over||!C.running)return;var T=G.T[0],id;
     if(a==='sum'){if(!room(T)){say('Plus de place : fusionne ou vends',0);sfx.play('lose');return}if(T.gold<T.cost){say('Pas assez d\'or',0);return}id=summon(T);got(C,id,'');return}
-    if(a==='fus'){var c=T.g[T.sel];if(!c){say('Choisis d\'abord une case',0);return}if(c.n<3){say('Il faut 3 '+U[c.u].n+' sur la case',0);return}if(U[c.u].r>=4){say('Déjà au maximum',0);return}id=fuse(T,T.sel);T.sel=T.last;got(C,id,'Fusion : ');return}
+    if(a==='fus'){var c=T.g[T.sel];if(!c){say('Choisis d\'abord une case',0);return}if(c.n<3){say('Il faut 3 '+U[c.u].n+' sur la case',0);return}if(U[c.u].r>=3){say('Les mythiques se créent avec les RECETTES',0);return}id=fuse(T,T.sel);T.sel=T.last;got(C,id,'Fusion : ');return}
     if(a==='sel'){if(T.sel<0||!T.g[T.sel]){say('Choisis d\'abord une case',0);return}var r=U[T.g[T.sel].u].r;sell(T,T.sel);say('+'+SELL[r]+' or',1);sfx.play('tick');if(!T.g[T.sel])T.sel=-1;return}
-    if(a[0]==='p'){var k=+a[1],p=PARI[k];if(T.gems<p[1]){say('Il faut '+p[1]+' gemme'+(p[1]>1?'s':''),0);return}if(!room(T)){say('Plus de place',0);return}id=pari(T,k);if(id===-1){say('Raté…',0);sfx.play('lose')}else got(C,id,'Pari gagné : ');return}
+    if(a==='rec'){G.rec=!G.rec;sfx.play('ui');return}
+    if(a==='p0'||a==='p1'){var k=+a[1],p=PARI[k];if(G.wheel){return}if(T.gems<p[1]){say('Il faut '+p[1]+' gemme'+(p[1]>1?'s':''),0);return}if(!room(T)){say('Plus de place',0);return}
+      /* la roue : une part gagnante (couleur de la rareté) et une part « raté », elle tourne puis s'arrête sur le résultat */
+      T.gems-=p[1];var win=rnd()<p[2],A=Math.PI*2,la=win?(.15+rnd()*.7)*p[2]*A:(p[2]+(.1+rnd()*.8)*(1-p[2]))*A;
+      G.wheel={k:k,win:win,t:0,dur:2.4,end:-Math.PI/2-la+A*5,tick:0};sfx.play('ui');return}
     if(a[0]==='u'){k=+a[1];if(!upgrade(T,k)){say(k<2?'Pas assez d\'or':'Pas assez de gemmes',0);return}say('Amélioration niveau '+T.up[k]+' !',1);sfx.play('pickup')}}
   function got(C,id,pre){if(!id)return;var u=U[id];say(pre+u.n+' ('+RAR[u.r].n.toLowerCase()+')',1);
     if(u.r>=3){C.pop(RAR[u.r].n.toUpperCase()+' !',RAR[u.r].c,'54px');sfx.play('win')}else if(u.r===2){C.pop('ÉPIQUE !',RAR[2].c,'42px');sfx.play('go')}else sfx.play('pickup')}
@@ -183,12 +214,18 @@
     else if(s==='feu'){g.moveTo(x,y-r*.8);g.quadraticCurveTo(x+r*.7,y,x+r*.35,y+r*.6);g.lineTo(x-r*.35,y+r*.6);g.quadraticCurveTo(x-r*.7,y,x,y-r*.8);g.fill()}
     else if(s==='ecl'){g.moveTo(x+r*.2,y-r*.8);g.lineTo(x-r*.35,y+r*.05);g.lineTo(x+r*.15,y+r*.05);g.lineTo(x-r*.2,y+r*.8);g.stroke()}
     else if(s==='bou'){g.moveTo(x-r*.55,y-r*.6);g.lineTo(x+r*.55,y-r*.6);g.lineTo(x+r*.5,y+r*.1);g.quadraticCurveTo(x,y+r*.8,x,y+r*.8);g.quadraticCurveTo(x,y+r*.8,x-r*.5,y+r*.1);g.closePath();g.fill()}
+    else if(s==='goutte'){g.moveTo(x,y-r*.8);g.quadraticCurveTo(x+r*.65,y+r*.1,x,y+r*.65);g.quadraticCurveTo(x-r*.65,y+r*.1,x,y-r*.8);g.fill()}
+    else if(s==='etoile'){for(var j=0;j<10;j++){var a2=j*Math.PI/5-Math.PI/2,rr2=j%2?r*.35:r*.85;if(j)g.lineTo(x+Math.cos(a2)*rr2,y+Math.sin(a2)*rr2);else g.moveTo(x+Math.cos(a2)*rr2,y+Math.sin(a2)*rr2)}g.closePath();g.fill()}
+    else if(s==='lettre'){g.font='900 '+(r*1.7)+'px Inter, system-ui, sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('H',x,y+r*.05)}
+    else if(s==='galon'){for(var j=0;j<3;j++){g.moveTo(x-r*.7,y-r*.5+j*r*.45);g.lineTo(x,y-r*.1+j*r*.45);g.lineTo(x+r*.7,y-r*.5+j*r*.45)}g.stroke()}
     else if(s==='poing'){rr(g,x-r*.5,y-r*.45,r,r*.9,r*.25);g.fill()}
     g.restore()}
   function unitTile(g,x,y,cs,c,sel,at){var u=U[c.u],R=RAR[u.r],p=cs*.08,w=cs-2*p,yy=y+(at>0?-cs*.05:0);
     g.fillStyle=R.d;rr(g,x+p,yy+p+2,w,w,cs*.16);g.fill();g.fillStyle=R.c;rr(g,x+p,yy+p,w,w-2,cs*.16);g.fill();
     if(u.r===4){g.strokeStyle='rgba(255,220,180,.9)';g.lineWidth=2;g.stroke()}
-    icon(g,u.s,x+cs/2,yy+cs*.44,cs*.3);
+    icon(g,u.s,x+cs/2,yy+cs*.52,cs*.24);
+    var nm=u.sh||u.n,fs=Math.max(7,cs*.2);g.font='800 '+fs+'px Inter, system-ui, sans-serif';var tw=g.measureText(nm).width;if(tw>w-4)fs*=(w-4)/tw;
+    txt(g,nm,x+cs/2,yy+p+cs*.15,fs,INK,'center','800');
     for(var i=0;i<3;i++){g.fillStyle=i<c.n?INK:'rgba(20,18,16,.22)';g.beginPath();g.arc(x+cs/2+(i-1)*cs*.17,yy+cs*.8,cs*.055,0,7);g.fill()}
     if(sel){g.strokeStyle='#fff';g.lineWidth=3;rr(g,x+p-2,yy+p-2,w+4,w+4,cs*.18);g.stroke()}}
   function drawTerr(g,t,V,me,label,col,wv){var tm=G?G.time:0,tier=Math.floor(((wv||1)-1)/10);var cs=t.cs,X=function(gx){return t.ox+(gx+1)*cs},Y=function(gy){return t.oy+(gy+1)*cs};
@@ -206,7 +243,7 @@
     for(i=0;i<32;i++){var c=V.g[i];if(c)unitTile(g,X(i%8),Y(i/8|0),cs,c,i===sel,c.at)}
     if(sel>=0&&V.g[sel]){g.strokeStyle='rgba(255,255,255,.5)';g.lineWidth=2;g.setLineDash([6,5]);g.beginPath();g.arc(X(sel%8+.5),Y((sel/8|0)+.5),U[V.g[sel].u].rng*cs,0,7);g.stroke();g.setLineDash([])}
     /* tirs */
-    (V.fx||[]).forEach(function(f){g.globalAlpha=Math.min(1,f.t*6);if(f.k==='shot'){g.strokeStyle=f.c;g.lineWidth=3;g.beginPath();g.moveTo(X(f.x1),Y(f.y1));g.lineTo(X(f.x2),Y(f.y2));g.stroke()}
+    (V.fx||[]).forEach(function(f){g.globalAlpha=Math.min(1,f.t*6);if(f.k==='txt'){txt(g,f.s,X(f.x),Y(f.y)-(1-f.t)*cs*.6,Math.max(11,cs*.3),f.c,'center','900')}else if(f.k==='shot'){g.strokeStyle=f.c;g.lineWidth=3;g.beginPath();g.moveTo(X(f.x1),Y(f.y1));g.lineTo(X(f.x2),Y(f.y2));g.stroke()}
       else{g.strokeStyle=f.c;g.lineWidth=f.k==='die'?2:3;g.beginPath();g.arc(X(f.x),Y(f.y),(f.k==='die'?(f.r||.3)*(1.5-f.t*2):f.r*(1.2-f.t*2))*cs,0,7);g.stroke()}});g.globalAlpha=1;
     /* ennemis */
     var o={x:0,y:0};
@@ -245,20 +282,61 @@
     var B=LY.b,r=B.info;g.fillStyle='#24211e';rr(g,r[0],r[1],r[2],r[3],12);g.fill();
     coin(g,r[0]+18,r[1]+18,9);txt(g,''+T.gold,r[0]+32,r[1]+18,17,'#f3c623','left','800');
     gem(g,r[0]+(LY.v?120:110),r[1]+18,9);txt(g,''+T.gems,r[0]+(LY.v?134:124),r[1]+18,17,'#4fe0d0','left','800');
-    var c=T.sel>=0?T.g[T.sel]:null,ly2=r[1]+(LY.v?40:46);
-    if(c){var u=U[c.u],m=mult(T,c.u);txt(g,u.n+' ×'+c.n,r[0]+(LY.v?200:14),LY.v?r[1]+18:ly2,15,RAR[u.r].c,'left','800');
-      txt(g,RAR[u.r].n+' · '+Math.round(u.dmg*m/u.cd*c.n)+' dégâts/s'+(u.spl?' · zone':'')+(u.ch?' · rebonds':'')+(u.slow?' · ralentit':'')+(u.stun?' · étourdit':'')+(u.aura?' · aura':''),r[0]+14,LY.v?ly2:ly2+24,12,'rgba(241,236,226,.75)','left','600')}
-    else txt(g,LY.v?'Touche une unité, puis une autre case pour la déplacer':'Touche une unité pour la choisir,',r[0]+14,ly2,12,'rgba(241,236,226,.6)','left','600'),LY.v||txt(g,'puis une autre case pour la déplacer.',r[0]+14,ly2+20,12,'rgba(241,236,226,.6)','left','600');
+    var c=T.sel>=0?T.g[T.sel]:null,dim='rgba(241,236,226,.65)';
+    if(c){var u=U[c.u],m=mult(T,c.u),st=RAR[u.r].n+' · '+Math.round(u.dmg*m/u.cd*c.n)+' dégâts/s · portée '+u.rng+(u.spl?' · zone':'')+(u.ch?' · rebonds':'')+(u.slow?' · ralentit':'')+(u.stun?' · étourdit':''),pa=u.p?'Passif · '+u.p:'Pas de passif';
+      if(LY.v){txt(g,u.n+' ×'+c.n,r[0]+200,r[1]+18,15,RAR[u.r].c,'left','800');txt(g,st,r[0]+14,r[1]+42,12,'rgba(241,236,226,.8)','left','600');txt(g,pa,r[0]+14,r[1]+63,11.5,u.p?'#f3c623':dim,'left','600')}
+      else{txt(g,u.n+' ×'+c.n,r[0]+14,r[1]+40,15,RAR[u.r].c,'left','800');txt(g,st,r[0]+14,r[1]+60,11,'rgba(241,236,226,.8)','left','600');g.save();g.beginPath();g.rect(r[0],r[1],r[2]-6,r[3]);g.clip();txt(g,pa,r[0]+14,r[1]+79,10.5,u.p?'#f3c623':dim,'left','600');g.restore()}}
+    else{txt(g,'Touche une unité pour la choisir, puis une',r[0]+14,r[1]+(LY.v?42:44),12,dim,'left','600');txt(g,'autre case pour la déplacer. 3 identiques = fusion.',r[0]+14,r[1]+(LY.v?62:64),12,dim,'left','600')}
     button(g,B.sum,'INVOQUER',T.cost+' or',  '#e8a23a',T.gold>=T.cost&&room(T),false);
-    var canF=c&&c.n===3&&U[c.u].r<4;button(g,B.fus,'FUSION',canF?'→ '+RAR[U[c.u].r+1].n:'3 identiques','#a04ee0',canF,canF);
+    var canF=c&&c.n===3&&U[c.u].r<3;button(g,B.fus,'FUSION',canF?'→ '+RAR[U[c.u].r+1].n:c&&U[c.u].r>=3?'voir recettes':'3 identiques','#a04ee0',canF,canF);
     button(g,B.sel,'VENDRE',c?'+'+SELL[U[c.u].r]+' or':'1 unité','#55595e',!!c,false);
-    var PN=['Épique','Légend.','Mythique'];
+    var PN=['Épique','Légend.'];var nc=RK.filter(function(m){return canCraft(T,m)}).length;button(g,B.rec,'RECETTES',nc?nc+' mythique'+(nc>1?'s':'')+' prêt'+(nc>1?'s':'')+' !':'Mythiques','#7d1606',true,!!nc);
     PARI.forEach(function(p,k){button(g,B['p'+k],'PARI '+PN[k],p[1]+' gemme'+(p[1]>1?'s':'')+' · '+Math.round(p[2]*100)+' %',RAR[p[0]].d,T.gems>=p[1],false)});
     var UN=['Amél. C/R','Amél. É/L','Amél. Myth.'],UC=['#17448e','#55207f','#7d1606'];
     [0,1,2].forEach(function(k){var co=upCost(T,k);button(g,B['u'+k],UN[k]+' '+T.up[k],co+(k<2?' or':' gemmes'),UC[k],k<2?T.gold>=co:T.gems>=co,false)});
     /* message */
     if(G.warn>0&&G.wtxt){g.globalAlpha=Math.min(1,G.warn*2);var mt=LY.ter[0],my=mt.oy+mt.cs*3;g.font='800 16px Inter, system-ui, sans-serif';var tw=g.measureText(G.wtxt).width+28;
-      g.fillStyle='rgba(20,18,16,.88)';rr(g,mt.ox+mt.cs*5-tw/2,my-18,tw,36,10);g.fill();txt(g,G.wtxt,mt.ox+mt.cs*5,my,16,G.wok?'#3fe09a':G.boss&&/BOSS/.test(G.wtxt)?'#e2361b':'#f3c623','center','800');g.globalAlpha=1}}
+      g.fillStyle='rgba(20,18,16,.88)';rr(g,mt.ox+mt.cs*5-tw/2,my-18,tw,36,10);g.fill();txt(g,G.wtxt,mt.ox+mt.cs*5,my,16,G.wok?'#3fe09a':G.boss&&/BOSS/.test(G.wtxt)?'#e2361b':'#f3c623','center','800');g.globalAlpha=1}
+    if(G.wheel)drawWheel(g);
+    if(G.rec)drawRec(g)}
+
+  function drawWheel(g){var W=G.wheel,p=PARI[W.k],t=LY.ter[0],cx=t.ox+t.cs*5,cy=t.oy+t.cs*3,R=t.cs*2.3,A=Math.PI*2,rot=W.rot||0,col=RAR[p[0]].c;
+    g.fillStyle='rgba(10,9,8,.55)';g.beginPath();g.arc(cx,cy,R+18,0,A);g.fill();
+    g.save();g.translate(cx,cy);g.rotate(rot);
+    /* part gagnante puis 3 parts « raté » */
+    g.fillStyle=col;g.beginPath();g.moveTo(0,0);g.arc(0,0,R,0,p[2]*A);g.closePath();g.fill();
+    for(var i=0;i<3;i++){var a0=p[2]*A+(1-p[2])*A*i/3,a1=p[2]*A+(1-p[2])*A*(i+1)/3;g.fillStyle=i%2?'#3a3530':'#4a443d';g.beginPath();g.moveTo(0,0);g.arc(0,0,R,a0,a1);g.closePath();g.fill()}
+    g.strokeStyle=INK;g.lineWidth=3;g.beginPath();g.arc(0,0,R,0,A);g.stroke();
+    var mid=p[2]*A/2;g.save();g.rotate(mid);txt(g,RAR[p[0]].n.toUpperCase(),R*.58,0,Math.max(11,R*.16),INK,'center','900');g.restore();
+    for(i=0;i<3;i++){g.save();g.rotate(p[2]*A+(1-p[2])*A*(i+.5)/3);txt(g,'RATÉ',R*.6,0,Math.max(10,R*.14),'rgba(241,236,226,.7)','center','800');g.restore()}
+    g.restore();
+    g.fillStyle='#24211e';g.beginPath();g.arc(cx,cy,R*.16,0,A);g.fill();g.strokeStyle=col;g.lineWidth=3;g.stroke();
+    /* flèche en haut */
+    g.fillStyle='#fff';g.strokeStyle=INK;g.lineWidth=2;g.beginPath();g.moveTo(cx-12,cy-R-14);g.lineTo(cx+12,cy-R-14);g.lineTo(cx,cy-R+8);g.closePath();g.fill();g.stroke();
+    if(W.done){g.globalAlpha=Math.min(1,(W.t-W.dur)*4);big(g,W.win?'GAGNÉ !':'RATÉ…',cx,cy+R+2,Math.max(26,R*.36),W.win?col:'#f1ece2');g.globalAlpha=1}}
+
+  /* ---------- panneau des recettes des mythiques ---------- */
+  function recBox(){return LY.v?[10,110,520,760]:[110,50,740,470]}
+  function recRow(i){var b=recBox();return LY.v?[b[0]+10,b[1]+64+i*134,b[2]-20,124]:[b[0]+12,b[1]+60+i*80,b[2]-24,72]}
+  function recBtn(i){var r=recRow(i);return LY.v?[r[0]+r[2]-150,r[1]+64,140,50]:[r[0]+r[2]-140,r[1]+12,128,48]}
+  function recClose(){var b=recBox();return [b[0]+b[2]-56,b[1]+8,48,44]}
+  function recClick(C,x,y){if(inR(recClose(),x,y)||!inR(recBox(),x,y)){G.rec=false;sfx.play('ui');return}
+    var T=G.T[0];RK.forEach(function(m,i){if(inR(recBtn(i),x,y)){if(!canCraft(T,m)){say('Il manque des unités',0);sfx.play('lose');return}T.sel=-1;var id=craft(T,m);G.rec=false;got(C,id,'Invoqué : ')}})}
+  function drawRec(g){var T=G.T[0],b=recBox();g.fillStyle='rgba(10,9,8,.7)';g.fillRect(0,0,LY.W,LY.H);
+    g.fillStyle='#24211e';rr(g,b[0],b[1],b[2],b[3],16);g.fill();g.strokeStyle=RAR[4].c;g.lineWidth=3;g.stroke();
+    big(g,'RECETTES DES MYTHIQUES',b[0]+20,b[1]+30,LY.v?24:28,RAR[4].c,'left');
+    var cl=recClose();g.fillStyle='#3a3530';rr(g,cl[0],cl[1],cl[2],cl[3],10);g.fill();txt(g,'✕',cl[0]+cl[2]/2,cl[1]+cl[3]/2,20,CR,'center','800');
+    RK.forEach(function(m,i){var r=recRow(i),u=U[m],ok=canCraft(T,m);g.fillStyle=ok?'#3a2420':'#2d2a26';rr(g,r[0],r[1],r[2],r[3],12);g.fill();
+      var ts=LY.v?52:54;unitTile(g,r[0]+8,r[1]+(LY.v?8:9),ts,{u:m,n:0},false,0);
+      txt(g,u.n,r[0]+ts+20,r[1]+(LY.v?20:20),LY.v?18:17,RAR[4].c,'left','900');
+      var x=r[0]+ts+20,y=r[1]+(LY.v?46:44);g.font='700 13px Inter, system-ui, sans-serif';
+      REC[m].forEach(function(id,j){var has=have(T,id)>=0,s=(j?' + ':'')+U[id].n;g.fillStyle=j?'rgba(241,236,226,.6)':CR;
+        if(j){g.textAlign='left';g.textBaseline='middle';g.fillStyle='rgba(241,236,226,.5)';g.fillText(' + ',x,y);x+=g.measureText(' + ').width}
+        g.fillStyle=has?'#3fe09a':RAR[U[id].r].c;g.globalAlpha=has?1:.55;g.fillText(U[id].n,x,y);x+=g.measureText(U[id].n).width;g.globalAlpha=1});
+      txt(g,u.p,r[0]+(LY.v?14:ts+20),r[1]+(LY.v?74:62),11,'rgba(243,198,35,.9)','left','600');
+      if(LY.v){}
+      button(g,recBtn(i),'CRÉER',ok?'prêt !':'il manque…','#e2361b',ok,ok)});
+    txt(g,'En vert : déjà sur ton territoire. Les unités utilisées disparaissent.',b[0]+b[2]/2,b[1]+b[3]-16,12,'rgba(241,236,226,.6)','center','600')}
 
   /* une petite règle de style : en vertical, le plateau ne dépasse pas l'écran */
   (function(){var s=document.createElement('style');s.textContent='.pp-touch #v-garde .stage.fs-on>canvas:first-child{width:auto;max-width:100%;max-height:calc(100dvh - 70px - env(safe-area-inset-top,0px));margin:0 auto}';document.head.appendChild(s)})();
@@ -276,9 +354,10 @@
       if(s&&s.mode===C.mode)C.over('DEFEND MONTREUIL',INTRO+'<br><br>Partie sauvegardée : <b>vague '+s.w+'</b>.<br><button type="button" class="primary" id="garde-new" style="margin-top:10px">Nouvelle partie</button>','Continuer (vague '+s.w+')',function(){resume(s);C.go()});
       else C.over('DEFEND MONTREUIL',INTRO,'Jouer')},
     start:function(C){startSolo(C)},
-    key:function(C,code,down){if(!down)return;var A={Space:'sum',KeyF:'fus',KeyV:'sel',Digit1:'p0',Digit2:'p1',Digit3:'p2',Digit4:'u0',Digit5:'u1',Digit6:'u2',Numpad1:'p0',Numpad2:'p1',Numpad3:'p2',Numpad4:'u0',Numpad5:'u1',Numpad6:'u2'}[code];
+    key:function(C,code,down){if(!down)return;var A={Space:'sum',KeyF:'fus',KeyV:'sel',Digit1:'p0',Digit2:'p1',Digit3:'rec',Digit4:'u0',Digit5:'u1',Digit6:'u2',Numpad1:'p0',Numpad2:'p1',Numpad3:'rec',Numpad4:'u0',Numpad5:'u1',Numpad6:'u2'}[code];
       if(A)act(C,A);if(code==='Escape'&&G)G.T[0].sel=-1},
     mouse:function(C,t,x,y){if(t!=='down'||!G||G.over||!C.running)return;var B=LY.b;
+      if(G.rec){recClick(C,x,y);return}
       for(var k in B)if(k!=='info'&&inR(B[k],x,y)){act(C,k);return}
       var T=G.T[0],i=cellAt(x,y);if(i<0){T.sel=-1;return}
       if(T.sel<0){if(T.g[i]){T.sel=i;sfx.play('tick')}return}
