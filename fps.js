@@ -1062,13 +1062,13 @@
   function newPlayer(sp){return {x:sp.x,z:sp.z,y:0,vy:0,yaw:Math.random()*6.28,pitch:0,hp:100,ar:0,pts:500,earned:0,guns:{pistol:{mag:12,res:Infinity}},inv:['pistol'],gun:'pistol',prev:'pistol',cd:0,rel:0,kick:0,bob:0,afk:false,shotN:0,lastHurt:0,by:'',slide:0,slideCd:0,crouch:0,aimT:0,fastRel:false,perks:{},up:{}}}
   /* v80 : loots spéciaux (10 % de chance quand un zombie meurt) : MUNITION MAX, BRASS BRASS AU MAX, SOLDE, TSAR BOMBA, INSTA KILL, FULL HEAL */
   var PW={x2:0,sale:0,tsar:0,insta:0},PWK=['xmax','x2','sale','tsar','insta','fheal'],
-    PWD={xmax:{n:'MUNITION MAX',c:'#3fa9ff'},x2:{n:'BRASS BRASS AU MAX',c:'#3fa9ff',t:60},sale:{n:'SOLDE',c:'#3fe09a',t:60},tsar:{n:'TSAR BOMBA',c:'#ff8a3d',t:60},insta:{n:'INSTA KILL',c:'#e2361b',t:30},fheal:{n:'FULL HEAL',c:'#3fa9ff'}};
+    PWD={xmax:{n:'MUNITION MAX',c:'#3fa9ff'},x2:{n:'BRASS BRASS AU MAX',c:'#3fa9ff',t:30},sale:{n:'SOLDE',c:'#3fe09a',t:30},tsar:{n:'TSAR BOMBA',c:'#ff8a3d',t:30},insta:{n:'INSTA KILL',c:'#e2361b',t:15},fheal:{n:'FULL HEAL',c:'#3fa9ff'}};
   function pwOn(k,from){var d=PWD[k];if(!d||!P)return;A.buy();addFeed((from?from+' a pris ':'')+d.n);center(d.n);setTimeout(function(){if(UI.center.textContent===d.n)center('')},1600);
     if(k==='xmax'){Object.keys(P.guns).forEach(function(g){var a=P.guns[g];if(!a||!GUNS[g])return;a.mag=magOf(g);if(a.res!==Infinity)a.res=Math.max(a.res,Math.round((isFinite(GUNS[g].res)?GUNS[g].res:GUNS[g].mag*4)*1.5))})}
     else if(k==='fheal'){if(!dead&&!P.down)P.hp=maxHp()}
     else{PW[k]=d.t;if(k==='tsar'||k==='insta')pwZ()}
     hud();pwHud(true)}
-  function pwZ(){if(coop&&!auth)return;ents.forEach(function(e){if(!e.alive||e.kind!=='z')return;if(PW.tsar>0&&!e.tsar){e.tsar=1;e.hp=Math.max(1,Math.ceil(e.hp/2))}if(PW.insta>0)e.hp=Math.min(e.hp,1)})}
+  function pwZ(){if(coop&&!auth)return;ents.forEach(function(e){if(!e.alive||e.kind!=='z')return;if(PW.tsar>0&&!e.tsar){e.tsar=1;e.hp=Math.max(1,Math.ceil(e.hp/2))}if(PW.insta>0&&!e.boss)e.hp=Math.min(e.hp,1)})}
   var pwT=0;function pwStep(dt){var any=false;Object.keys(PW).forEach(function(k){if(PW[k]>0){PW[k]=Math.max(0,PW[k]-dt);any=true;if(PW[k]===0)addFeed(PWD[k].n+' terminé')}});if(PW.tsar>0||PW.insta>0)pwZ();pwT-=dt;if(pwT<=0||!any&&UI.pw&&!UI.pw.hidden){pwT=.2;pwHud()}}
   function pwHud(){if(!cv.parentNode)return;if(!UI.pw){UI.pw=document.createElement('div');UI.pw.className='fx-pw';cv.parentNode.appendChild(UI.pw)}
     var h=Object.keys(PW).filter(function(k){return PW[k]>0}).map(function(k){var d=PWD[k],pc=PW[k]/d.t*100;return '<div class="pw-r'+(PW[k]<5?' end':'')+'" style="--c:'+d.c+'"><i>'+pwIco(k)+'</i><span>'+d.n+'</span><b>'+Math.ceil(PW[k])+'</b><em style="width:'+pc+'%"></em></div>'}).join('');
