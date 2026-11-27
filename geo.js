@@ -88,7 +88,18 @@
   function go(n){V.steps++;load({id:n.id,c:n.c,h:n.h},false)}
   function getJSON(u,ms){var ac=window.AbortController?new AbortController():null,t=setTimeout(function(){if(ac)ac.abort()},ms||7000);return fetch(u,ac?{signal:ac.signal}:{}).then(function(r){clearTimeout(t);if(!r.ok)throw new Error(r.status);return r.json()},function(e){clearTimeout(t);throw e})}
   function apiFor(h){return h?'https://'+h+'/api':API}
-  function item(id,c,h){var k=c+'/'+id;if(!cache[k])cache[k]=getJSON(apiFor(h)+'/collections/'+c+'/items/'+id,5000).catch(function(){return getJSON(API+'/collections/'+c+'/items/'+id,4000)}).catch(function(e){delete cache[k];throw e});return cache[k]}
+  /* v88 : la fiche de la photo est demandée au serveur d'origine ; s'il traîne, on la demande aussi au catalogue commun, le premier qui répond gagne */
+  function any(ps){return new Promise(function(ok,ko){var n=ps.length,f=0,last;ps.forEach(function(p){p.then(ok,function(e){last=e;if(++f===n)ko(last)})})})}
+  function item(id,c,h){var k=c+'/'+id;if(cache[k])return cache[k];var settled=false;
+    var a=getJSON(apiFor(h)+'/collections/'+c+'/items/'+id,6000);a.then(function(){settled=true},function(){});
+    var b=!h?a:new Promise(function(ok,ko){setTimeout(function(){if(settled)return ko(new Error('inutile'));getJSON(API+'/collections/'+c+'/items/'+id,6000).then(ok,ko)},1200)});
+    cache[k]=any([a,b]).catch(function(e){delete cache[k];throw e});return cache[k]}
+  /* les images ont une adresse directe : on les charge en même temps que la fiche, sans l'attendre */
+  function picUrl(h,id,f){return apiFor(h)+'/pictures/'+id+'/'+f+'.jpg'}
+  var BADK=PP.key?PP.key('geo-bad'):'geo-bad';
+  function bad(){try{return JSON.parse(localStorage.getItem(BADK))||[]}catch(e){return []}}
+  function markBad(id){var b=bad();if(b.indexOf(id)<0){b.push(id);try{localStorage.setItem(BADK,JSON.stringify(b.slice(-60)))}catch(e){}}}
+  function goodPlaces(){var b=bad(),l=PLACES.filter(function(q){return b.indexOf(q.id)<0});return l.length>=10?l:PLACES}
   function chevron(){
     var s=new THREE.Shape();s.moveTo(0,.55);s.lineTo(.55,-.05);s.lineTo(.3,-.05);s.lineTo(0,.28);s.lineTo(-.3,-.05);s.lineTo(-.55,-.05);s.lineTo(0,.55);
     var g=new THREE.Group(),m=new THREE.Mesh(new THREE.ShapeGeometry(s),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.92,side:THREE.DoubleSide,depthTest:false}));
@@ -111,29 +122,37 @@
       });return out;
     },function(){return out});
   }
+  function tex(u,ms){return new Promise(function(ok,ko){var l=new THREE.TextureLoader();l.setCrossOrigin('anonymous');var tt=setTimeout(function(){ko(new Error('timeout'))},ms);l.load(u,function(t){clearTimeout(tt);ok(t)},undefined,function(e){clearTimeout(tt);ko(e)})})}
   function load(p,first){
     if(!init3d())return;V.busy=true;
     var tok=V.tok=(V.tok||0)+1;
-    $('geo-loading').hidden=false;$('geo-loading').textContent=first?'Chargement de la rue':'On avance';
+    $('geo-loading').hidden=false;$('geo-loading').classList.remove('soft');$('geo-loading').textContent=first?'Chargement de la rue':'On avance';
     HOST=p.h||HOST;
-    item(p.id,p.c,p.h).then(function(f){
-      if(tok!==V.tok)return;
-      var url=(f.assets.sd||f.assets.hd).href,thumb=f.assets.thumb&&f.assets.thumb.href,az=f.properties['view:azimuth']||0,shown=false;
-      function apply(t,hd){if(tok!==V.tok)return;t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;var old=V.sph.material;V.sph.material=new THREE.MeshBasicMaterial({map:t});if(old.map)old.map.dispose();old.dispose();V.sph.rotation.y=(270-az)*Math.PI/180;
-        if(!shown){shown=true;V.cur={id:p.id,c:p.c,h:p.h,ll:[f.geometry.coordinates[1],f.geometry.coordinates[0]]};if(first){V.start={id:p.id,c:p.c,h:p.h};V.H=Math.random()*360;V.P=-.06;V.fov=75;V.cam.fov=75;V.cam.updateProjectionMatrix();V.steps=0}V.busy=false}
-        if(hd){$('geo-loading').hidden=true}else{$('geo-loading').textContent='Image en haute qualité…'}draw()}
-      function tex(u,ms){return new Promise(function(ok,ko){var l=new THREE.TextureLoader();l.setCrossOrigin('anonymous');var tt=setTimeout(function(){ko(new Error('timeout'))},ms);l.load(u,function(t){clearTimeout(tt);ok(t)},undefined,function(e){clearTimeout(tt);ko(e)})})}
-      /* d'abord une petite image floue tout de suite, puis la vraie image ; les flèches arrivent à part */
-      var hdDone=false;if(thumb)tex(thumb,5000).then(function(t){if(!hdDone)apply(t,false)}).catch(function(){});
-      neighbours(f,p.c).then(function(nb){if(tok!==V.tok)return;V.nb=nb;setArrows();if(!locked)$('geo-status').textContent=nb.length?'Avance avec les flèches au sol, ou Z / flèche haut. Clique sur la carte pour poser ton point.':'Pas de chemin ici : regarde autour de toi puis pose ton point sur la carte.';
-        nb.forEach(function(n){item(n.id,n.c,n.h).then(function(g){var i=new Image();i.crossOrigin='anonymous';i.src=(g.assets.sd||g.assets.hd).href}).catch(function(){})})});
-      V.nb=[];setArrows();
-      return tex(url,15000).then(function(t){hdDone=true;apply(t,true)},function(e){if(shown){$('geo-loading').hidden=true;return}throw e});
-    }).catch(function(){
-      if(tok!==V.tok)return;V.busy=false;
+    var az=null,lvl=0,shown=false,itP=item(p.id,p.c,p.h);
+    function rot(){return (270-(az||0))*Math.PI/180}
+    function apply(t,l){if(tok!==V.tok||l<=lvl){t.dispose();return}lvl=l;t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;var old=V.sph.material;V.sph.material=new THREE.MeshBasicMaterial({map:t});if(old.map)old.map.dispose();old.dispose();V.sph.rotation.y=rot();
+      if(!shown){shown=true;V.cur={id:p.id,c:p.c,h:p.h,ll:p.ll||(V.cur&&V.cur.ll)};if(first){V.start={id:p.id,c:p.c,h:p.h,ll:p.ll};V.H=Math.random()*360;V.P=-.06;V.fov=75;V.cam.fov=75;V.cam.updateProjectionMatrix();V.steps=0}V.busy=false}
+      if(l===2){$('geo-loading').hidden=true;afterSd()}else{$('geo-loading').classList.add('soft');$('geo-loading').textContent='Image en haute qualité…'}draw()}
+    /* petite image tout de suite, puis la bonne image ; les deux partent en même temps que la fiche */
+    tex(picUrl(p.h,p.id,'thumb'),6000).catch(function(){return itP.then(function(f){return f.assets.thumb?tex(f.assets.thumb.href,6000):null})}).then(function(t){if(t)apply(t,1)}).catch(function(){});
+    tex(picUrl(p.h,p.id,'sd'),14000).catch(function(){return itP.then(function(f){return tex((f.assets.sd||f.assets.hd).href,15000)})}).then(function(t){apply(t,2)},function(){
+      if(tok!==V.tok)return;if(lvl){$('geo-loading').hidden=true;return}
+      V.busy=false;if(first)markBad(p.id);
       if(first&&V.onfail){$('geo-loading').textContent='Rue indisponible, on en prend une autre';V.onfail()}
-      else{$('geo-loading').hidden=true;$('geo-status').textContent='Cette photo ne charge pas, essaie une autre flèche.'}
-    });
+      else{$('geo-loading').hidden=true;$('geo-status').textContent='Cette photo ne charge pas, essaie une autre flèche.'}});
+    var nbDone=false,sdDone=false;
+    function afterSd(){sdDone=true;preNb()}
+    function preNb(){if(!nbDone||!sdDone||tok!==V.tok)return;/* on prépare seulement les petites images des rues voisines (et la bonne image de celle d'en face) pour ne pas ralentir celle-ci */
+      var front=null,fd=60;V.nb.forEach(function(n){var d=angDiff(n.b,V.H);if(d<fd){fd=d;front=n}var i=new Image();i.crossOrigin='anonymous';i.src=picUrl(n.h,n.id,'thumb')});
+      if(front){var j=new Image();j.crossOrigin='anonymous';j.src=picUrl(front.h,front.id,'sd')}}
+    V.nb=[];setArrows();
+    itP.then(function(f){
+      if(tok!==V.tok)return;var na=f.properties['view:azimuth']||0;
+      /* la photo tourne pour pointer au nord : on tourne le regard d'autant, l'image ne saute pas */
+      if(lvl){var d=((270-na)-(270-(az||0)));V.H=(V.H-d+720)%360;}az=na;V.sph.rotation.y=rot();
+      var ll=[f.geometry.coordinates[1],f.geometry.coordinates[0]];if(V.cur&&V.cur.id===p.id)V.cur.ll=ll;draw();
+      return neighbours(f,p.c).then(function(nb){if(tok!==V.tok)return;V.nb=nb;setArrows();nbDone=true;preNb();if(!locked)$('geo-status').textContent=nb.length?'Avance avec les flèches au sol, ou Z / flèche haut. Clique sur la carte pour poser ton point.':'Pas de chemin ici : regarde autour de toi puis pose ton point sur la carte.'});
+    }).catch(function(){});
   }
   function show3d(p,onfail){if(!init3d())return;V.onfail=onfail||null;setTimeout(function(){V.r.domElement.dispatchEvent(new Event('resize'));draw()},0);load(p,true)}
   function newRound(p,onfail){locked=false;clearMap();show3d(p,onfail);$('geo-ok').disabled=true;$('geo-res').innerHTML='';$('geo-status').textContent='Clique sur la carte pour poser ton point.';$('geo-mini').classList.remove('big')}
@@ -142,20 +161,24 @@
   function open(){
     if(!initMap())return;
     setTimeout(function(){map.resize();if(V.ready)draw()},50);
-    if(net.inRoom()){listen();if(net.isHost)hostLobby();else guestWait();return}
+    if(net.inRoom()){
+      if(net.isHost){if(!H.rounds)hostLobby();else if(H.open){newRound(H.rounds[H.ri]);hostStatus()}else if(H.res)showResults(H.res,true);else hostLobby();return}
+      /* invité : on reprend la manche en cours (même si on est arrivé en retard), puis on demande à l'hôte où on en est */
+      G.k=null;if(G.end&&(!G.pending||G.end.at>G.pending.at))showEnd(G.end);else if(G.pending){guestRound(G.pending);if(G.res&&G.res.k===G.pending.k)showResults(G.res,false)}else guestWait();
+      net.send({t:'geo-hello'});return}
     if(!solo.rounds)soloNew();else soloRender();
   }
-  function close(){if(sub){sub();sub=null}cancelAnimationFrame(walkRaf);V.tok=(V.tok||0)+1}
+  function close(){cancelAnimationFrame(walkRaf);V.tok=(V.tok||0)+1}
   $('geo-ok').onclick=function(){
     if(!guess||locked)return;
-    if(net.inRoom()){locked=true;$('geo-ok').disabled=true;$('geo-status').textContent='Réponse envoyée, on attend les autres.';if(net.isHost){H.guesses.host=guess;hostCheck()}else net.send({t:'geo-g',ll:guess});return}
+    if(net.inRoom()){locked=true;$('geo-ok').disabled=true;$('geo-status').textContent='Réponse envoyée, on attend les autres.';if(net.isHost){H.guesses.host=guess;hostCheck()}else net.send({t:'geo-g',ll:guess,k:G.k});return}
     soloAnswer();
   };
 
   /* ---------- Solo ---------- */
-  function soloNew(){solo.rounds=PP.shuffle(PLACES).slice(0,5);solo.ri=0;solo.score=0;soloRender()}
-  function prefetch(p){if(!p)return;item(p.id,p.c,p.h).then(function(f){var i=new Image();i.crossOrigin='anonymous';i.src=(f.assets.sd||f.assets.hd).href;if(f.assets.thumb){var j=new Image();j.crossOrigin='anonymous';j.src=f.assets.thumb.href}}).catch(function(){})}
-  function soloRender(){var p=solo.rounds[solo.ri];setTimeout(function(){prefetch(solo.rounds[solo.ri+1])},1500);$('geo-round').textContent='Manche '+(solo.ri+1)+' / 5';$('geo-score').textContent=solo.score;newRound(p,function(){var used=solo.rounds.map(function(q){return q.id}),alt=PP.shuffle(PLACES).filter(function(q){return used.indexOf(q.id)<0})[0];if(alt){solo.rounds[solo.ri]=alt;soloRender()}})}
+  function soloNew(){solo.rounds=PP.shuffle(goodPlaces()).slice(0,5);solo.ri=0;solo.score=0;soloRender()}
+  function prefetch(p,thumbOnly){if(!p)return;item(p.id,p.c,p.h).catch(function(){});var j=new Image();j.crossOrigin='anonymous';j.src=picUrl(p.h,p.id,'thumb');if(!thumbOnly){var i=new Image();i.crossOrigin='anonymous';i.src=picUrl(p.h,p.id,'sd')}}
+  function soloRender(){var p=solo.rounds[solo.ri];setTimeout(function(){prefetch(solo.rounds[solo.ri+1])},4000);$('geo-round').textContent='Manche '+(solo.ri+1)+' / 5';$('geo-score').textContent=solo.score;newRound(p,function(){var used=solo.rounds.map(function(q){return q.id}),alt=PP.shuffle(goodPlaces()).filter(function(q){return used.indexOf(q.id)<0})[0];if(alt){solo.rounds[solo.ri]=alt;soloRender()}})}
   function soloAnswer(){
     sfx.play('ui');
     var p=solo.rounds[solo.ri],d=dist(guess,p.ll),pts=Math.round(5000*Math.exp(-d/600));if(d<1)pts=5000;
@@ -172,19 +195,29 @@
     };
   }
 
-  /* ---------- Salon : hôte ---------- */
+  /* ---------- Salon : hôte ----------
+     v88 : l'hôte vérifie que la rue charge avant de lancer la manche, puis envoie à tous exactement la même photo
+     (avec un numéro de manche). Un joueur qui arrive en retard, ou qui revient du salon, reçoit la manche en cours. */
   function hostLobby(){
-    H.rounds=null;H.ri=0;H.scores={};
+    H.rounds=null;H.ri=0;H.scores={};H.open=false;H.res=null;H.msg=null;
     $('geo-round').textContent='Salon '+net.code;$('geo-score').textContent='';
     $('geo-res').innerHTML='<div class="result"><h3>'+net.players.length+' joueurs</h3><p>5 manches. À chaque manche, tout le monde pose son point sur son téléphone : le plus proche du lieu gagne 1 point.</p><ul class="plist">'+net.players.map(function(p){return '<li>'+esc(p.name)+'</li>'}).join('')+'</ul><button type="button" id="geo-launch"'+(net.players.length<2?' disabled':'')+'>Lancer</button></div>';
     $('geo-status').textContent='';$('geo-ok').disabled=true;
-    $('geo-launch').onclick=function(){H.rounds=PP.shuffle(PLACES).slice(0,5);H.ri=0;H.scores={};hostRound()};
+    $('geo-launch').onclick=function(){H.rounds=PP.shuffle(goodPlaces()).slice(0,5);H.spare=PP.shuffle(goodPlaces()).filter(function(q){return H.rounds.indexOf(q)<0});H.ri=0;H.scores={};H.rounds.forEach(function(q,i){if(i<2)prefetch(q,i>0);else item(q.id,q.c,q.h).catch(function(){})});hostRound()};
   }
-  function hostRound(){
-    var p=H.rounds[H.ri];H.guesses={};H.open=true;
-    net.broadcast({t:'geo-r',r:H.ri+1,ll:p.ll,id:p.id,c:p.c,h:p.h});
+  function check(p){return new Promise(function(ok,ko){var t=setTimeout(function(){ko(new Error('lent'))},7000);item(p.id,p.c,p.h).then(function(f){clearTimeout(t);ok(f)},function(e){clearTimeout(t);ko(e)})})}
+  function hostRound(tries){
+    var p=H.rounds[H.ri];tries=tries||0;H.open=false;H.res=null;
+    $('geo-res').innerHTML='<div class="result"><p class="wait">Préparation de la manche '+(H.ri+1)+'</p></div>';
+    check(p).then(function(){startRound(p)},function(){markBad(p.id);var alt=H.spare&&H.spare.shift();if(alt&&tries<4){H.rounds[H.ri]=alt;hostRound(tries+1)}else startRound(p)});
+  }
+  function startRound(p){
+    H.guesses={};H.open=true;H.k=Date.now()+'-'+H.ri;var nx=H.rounds[H.ri+1];
+    H.msg={t:'geo-r',k:H.k,r:H.ri+1,ll:p.ll,id:p.id,c:p.c,h:p.h,nx:nx?{id:nx.id,c:nx.c,h:nx.h}:null,at:Date.now()};
+    net.broadcast(H.msg);
     $('geo-round').textContent='Manche '+(H.ri+1)+' / 5';$('geo-score').textContent=scoreLine();
-    newRound(p);hostStatus();
+    newRound(p,retryFor(p));hostStatus();
+    if(nx)setTimeout(function(){prefetch(nx)},5000);
   }
   function scoreLine(){return Object.keys(H.scores).map(function(n){return n+' '+H.scores[n]}).join(' · ')}
   function hostStatus(){
@@ -199,20 +232,30 @@
     var best=rows.filter(function(r){return r.ll}).sort(function(a,b){return a.d-b.d})[0];
     rows.forEach(function(r){r.win=!!best&&r===best});
     if(best)H.scores[best.name]=(H.scores[best.name]||0)+1;
-    var msg={t:'geo-res',place:{t:p.t,n:p.n,ll:p.ll},rows:rows,last:H.ri===4,scores:H.scores};
+    var msg={t:'geo-res',k:H.k,place:{t:p.t,n:p.n,ll:p.ll},rows:rows,last:H.ri===4,scores:H.scores};H.res=msg;
     net.broadcast(msg);showResults(msg,true);
   }
   function hostNext(){if(H.ri>=4)return hostEnd();H.ri++;hostRound()}
   function hostEnd(){
     var rows=Object.keys(H.scores).map(function(n){return {name:n,n:H.scores[n]}}).sort(function(a,b){return b.n-a.n});
-    net.broadcast({t:'geo-end',rows:rows});
+    H.endMsg={t:'geo-end',rows:rows,at:Date.now()};H.open=false;net.broadcast(H.endMsg);
     $('geo-res').innerHTML=endHtml(rows)+'<div class="row" style="margin-top:14px"><button type="button" id="geo-again">Rejouer</button><button type="button" class="ghost" data-go="room">Retour au salon</button></div></div>';
     $('geo-again').onclick=hostLobby;
   }
+  /* quelqu'un arrive ou revient : on lui renvoie l'état de la partie */
+  function hostSync(to){if(!H.rounds){if(H.endMsg)net.to(to,H.endMsg);return}if(H.msg)net.to(to,H.msg);if(!H.open&&H.res&&H.res.k===H.k)net.to(to,H.res)}
 
   /* ---------- Salon : invité ---------- */
+  function retryFor(pl){return function retry(){$('geo-loading').hidden=false;$('geo-loading').innerHTML='La photo met du temps à arriver… <button type="button" class="ghost" id="geo-retry">Réessayer</button>';var b=$('geo-retry');if(b)b.onclick=function(){V.onfail=retry;load(pl,true)}}}
   function guestWait(){$('geo-round').textContent='Salon '+net.code;$('geo-score').textContent='';$('geo-ok').disabled=true;$('geo-status').textContent='';$('geo-res').innerHTML='<div class="result"><p class="wait">L\'hôte lance la partie</p></div>'}
-  function guestRound(m){sfx.play('join');G.round=m.r;$('geo-round').textContent='Manche '+m.r+' / 5';newRound({ll:m.ll,id:m.id,c:m.c,h:m.h})}
+  function guestRound(m){
+    if(G.k===m.k)return;G.k=m.k;sfx.play('join');G.round=m.r;$('geo-round').textContent='Manche '+m.r+' / 5';
+    var pl={ll:m.ll,id:m.id,c:m.c,h:m.h};
+    /* on ne change jamais de lieu chez un invité : si la photo ne vient pas, on réessaie, la même */
+    newRound(pl,retryFor(pl));
+    if(m.nx)setTimeout(function(){if(G.k===m.k)prefetch(m.nx)},5000);
+  }
+  function showEnd(m){$('geo-res').innerHTML=endHtml(m.rows)+'<p class="wait">L\'hôte peut relancer</p></div>'}
 
   /* ---------- Résultats communs ---------- */
   var COLS=['#3cff6e','#3fa9ff','#ff5fd2','#ff8a3d','#ffd23f','#36d6c3','#f2efe6','#ff3b3b'];
@@ -232,20 +275,19 @@
   }
   function endHtml(rows){if(rows.length&&rows[0].name===net.me.name&&rows[0].n>0)PP.stat('geo','win');return '<div class="result"><h3>Classement</h3><p class="muted">Un point par manche gagnée.</p>'+(rows.length?rows.map(function(r,i){return '<div class="bar"><span>'+(i+1)+'. '+esc(r.name)+'</span><i style="width:'+(r.n*40)+'px;background:var(--y)"></i><span>'+r.n+'</span></div>'}).join(''):'<p>Personne n\'a marqué.</p>')}
 
-  function listen(){
-    if(sub)return;
-    sub=net.on(function(m,from){
-      if(PP.cur()!=='geo')return;
-      if(net.isHost){
-        if(m.t==='geo-g'&&H.open&&!H.guesses[from]){H.guesses[from]=m.ll;hostCheck()}
-        if(m.t==='players'&&!H.rounds)hostLobby();
-      }else{
-        if(m.t==='geo-r')guestRound(m);
-        if(m.t==='geo-res')showResults(m,false);
-        if(m.t==='geo-end'){$('geo-res').innerHTML=endHtml(m.rows)+'<p class="wait">L\'hôte peut relancer</p></div>'}
-      }
-    });
-  }
+  /* messages du salon : toujours écoutés, même si on n'est pas encore sur la page du jeu (on garde la manche en cours) */
+  net.on(function(m,from){
+    if(!net.inRoom())return;
+    if(net.isHost){
+      if(m.t==='geo-g'&&H.open&&(!m.k||m.k===H.k)&&!H.guesses[from]){H.guesses[from]=m.ll;if(PP.cur()==='geo')hostCheck();else if(Object.keys(H.guesses).length>=net.players.length)hostReveal()}
+      if((m.t==='geo-hello'||(m.t==='rejoin'&&m.game==='geo'))&&from)hostSync(from);
+      if(m.t==='players'&&!H.rounds&&PP.cur()==='geo')hostLobby();
+      return;
+    }
+    if(m.t==='geo-r'){if(!G.pending||G.pending.k!==m.k){G.pending=m;G.res=null}if(PP.cur()==='geo')guestRound(m)}
+    if(m.t==='geo-res'){G.res=m;if(PP.cur()==='geo'&&G.k===m.k)showResults(m,false)}
+    if(m.t==='geo-end'){G.end=m;G.pending=null;if(PP.cur()==='geo')showEnd(m)}
+  });
   PP._geo=function(){return {V:V,map:map}};
   PP.games.geo={open:open,close:close};
 })();
