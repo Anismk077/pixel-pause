@@ -609,17 +609,17 @@
     var counter=new THREE.Mesh(new THREE.BoxGeometry(S*.82,1.05,S*.82),lam({map:TX.shop}));counter.position.y=.525;g.add(counter);s.counter=counter;
     var top=new THREE.Mesh(new THREE.BoxGeometry(S*.9,.1,S*.9),lam({color:0x5a3a22}));top.position.y=1.1;g.add(top);s.top=top;
     var pole=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,2.1,8),lam({color:0x26282c}));pole.position.y=2.1;g.add(pole);
-    var sign=label([STN[s.tier].toUpperCase(),'E · ACHETER'],['#e2361b','#a46cf0','#e8b531'][s.tier]);sign.position.y=3.25;sign.scale.set(2.6,1.02,1);g.add(sign);s.sign=sign;
+    var sign=label([STN[s.tier].toUpperCase(),'E · ACHETER'],STCOL[s.tier]);sign.position.y=3.25;sign.scale.set(2.6,1.02,1);g.add(sign);s.sign=sign;
     var pl=new THREE.PointLight(0xffb070,1.4,11);pl.position.y=2.6;g.add(pl);s.pl=pl;
     scene.add(g);solidMeshes.push(counter);s.g=g;styleStand(s);s.pulse=0;
   }
   /* v100 : une armurerie améliorée change de look, comme les armes : violette (niveau 2) puis dorée (niveau 3),
      comptoir et plateau teintés, bandeau lumineux, anneau qui tourne, étoiles au-dessus et armes exposées à la couleur du niveau */
-  var STC=[0xffb070,0xa46cf0,0xe8b531];
-  function styleStand(s){var t=s.tier||0,g=s.g;if(!g)return;if(s.deco){g.remove(s.deco);s.deco.traverse(function(o){if(o.geometry)o.geometry.dispose()})}var d=new THREE.Group();g.add(d);s.deco=d;s.big=t===2;s.ring=s.glow=null;
-    s.counter.material.color.setHex([0xffffff,0xd2c0ff,0xffe6a0][t]);s.top.material.color.setHex([0x5a3a22,0x4a2f7a,0xb08a2a][t]);if(s.pl){s.pl.color.setHex(STC[t]);s.pl.intensity=1.4+t*.5}
-    (t===2?['minigun','ray','launcher']:t===1?['sniper','lmg','rifle']:['pistol','smg','rifle']).forEach(function(ty,i){var gm=buildGun(ty,t?UP_COL[t+1]:0x2b2b30);gm.scale.setScalar(1.5);gm.rotation.set(0,i*1.9+.4,Math.PI/2);gm.position.set(Math.cos(i*2.1)*.75,1.2,Math.sin(i*2.1)*.75);d.add(gm)});
-    s.pulse=1;if(!t)return;var col=UP_COL[t+1],em=new THREE.MeshBasicMaterial({color:col});
+  var STC=[0xffb070,0xa46cf0,0xe8b531,0x3fe0ff];
+  function styleStand(s){var t=s.tier||0,g=s.g;if(!g)return;if(s.deco){g.remove(s.deco);s.deco.traverse(function(o){if(o.geometry)o.geometry.dispose()})}var d=new THREE.Group();g.add(d);s.deco=d;s.big=t>=2;s.ring=s.glow=null;
+    s.counter.material.color.setHex([0xffffff,0xd2c0ff,0xffe6a0,0xc0f4ff][t]);s.top.material.color.setHex([0x5a3a22,0x4a2f7a,0xb08a2a,0x1f6a80][t]);if(s.pl){s.pl.color.setHex(STC[t]);s.pl.intensity=1.4+t*.5}
+    (t>=2?['minigun','ray','launcher']:t===1?['sniper','lmg','rifle']:['pistol','smg','rifle']).forEach(function(ty,i){var gm=buildGun(ty,t?STHEX[t]:0x2b2b30);gm.scale.setScalar(1.5);gm.rotation.set(0,i*1.9+.4,Math.PI/2);gm.position.set(Math.cos(i*2.1)*.75,1.2,Math.sin(i*2.1)*.75);d.add(gm)});
+    s.pulse=1;if(!t)return;var col=STHEX[t],em=new THREE.MeshBasicMaterial({color:col});
     [[0,.08,S*.42,S*.84,.06,.06],[0,.08,-S*.42,S*.84,.06,.06],[S*.42,.08,0,.06,.06,S*.84],[-S*.42,.08,0,.06,.06,S*.84],[0,1.06,S*.42,S*.84,.05,.05],[0,1.06,-S*.42,S*.84,.05,.05],[S*.42,1.06,0,.05,.05,S*.84],[-S*.42,1.06,0,.05,.05,S*.84]].forEach(function(b){var m=new THREE.Mesh(new THREE.BoxGeometry(b[3],b[4],b[5]),em);m.position.set(b[0],b[1],b[2]);d.add(m)});
     var ring=new THREE.Mesh(new THREE.TorusGeometry(1.15,.04,8,40),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.85}));ring.rotation.x=Math.PI/2;ring.position.y=1.75;d.add(ring);s.ring=ring;
     for(var k=0;k<t+1;k++){var st=label(['','★'],'#'+new THREE.Color(col).getHexString());st.scale.set(.9,.36,1);st.position.set((k-t/2)*.55,3.95,0);d.add(st)}
@@ -810,7 +810,10 @@
     else{var m=new THREE.Mesh(new THREE.BoxGeometry(S*.8,1.7,S*.8),lam({map:TX.crate}));m.position.y=.85;m.rotation.y=Math.floor(r()*4)*.2;g.add(m);solidMeshes.push(m)}
     g.rotation.y=Math.floor(r()*4)*Math.PI/2;return g;
   }
-  var world0='bunker',VS=.6,STN=['Armurerie','Armurerie avancée','Armurerie lourde'];
+  var world0='bunker',VS=.6,STN=['Armurerie','Armurerie avancée','Armurerie lourde','Armurerie d\'élite'],STCOL=['#e2361b','#a46cf0','#e8b531','#3fe0ff'],STHEX=[0,0xa46cf0,0xe8b531,0x3fe0ff];
+  /* v103 : l'amélioration N d'une arme demande une armurerie de niveau N (avancée = 1, lourde = 2, d'élite = 3) */
+  function upLock(){var lv=upLv(P.gun);return lv<3&&shopStand&&(shopStand.tier||0)<lv+1?lv+1:0}
+  function standUnl(t){return t===0?'Sniper, Mitrailleuse, Fusil tactique · amélioration 1 des armes':t===1?'Minigun, Pistolet à rayons, Lance-roquettes, Lance-grenades · amélioration 2 des armes':'Amélioration 3 des armes (niveau max)'}
 
   /* ---------- Modèles ---------- */
   function box(w,h,d,col,map){return new THREE.Mesh(new THREE.BoxGeometry(w,h,d),lam(map?{map:map}:{color:col}))}
@@ -1274,7 +1277,7 @@
       else if(c2==='t'){g.fillStyle='#2f5a26';g.beginPath();g.arc(x*k+k/2,z*k+k/2,k*.62,0,7);g.fill();g.strokeStyle='#1d3a18';g.lineWidth=1.5;g.stroke()}}
     /* armureries */
     PERKS.forEach(function(p){var px=p.x/S*k,pz=p.z/S*k;g.fillStyle='#'+new THREE.Color(PK[p.id].col).getHexString();g.fillRect(px-k*.6,pz-k*.6,k*1.2,k*1.2);g.strokeStyle='#141210';g.lineWidth=1.5;g.strokeRect(px-k*.6,pz-k*.6,k*1.2,k*1.2)});
-    STANDS.forEach(function(s){var px=(s.cx+.5)*k,pz=(s.cy+.5)*k,col=['#e2361b','#a46cf0','#e8b531'][s.tier||0];g.fillStyle=col;g.beginPath();g.arc(px,pz,k*.95,0,7);g.fill();g.strokeStyle='#f1ece2';g.lineWidth=2;g.stroke();g.fillStyle='#f1ece2';g.font='700 '+(k*1.1|0)+'px "IBM Plex Mono", monospace';g.textAlign='center';g.textBaseline='middle';g.fillText('$',px,pz+1)});
+    STANDS.forEach(function(s){var px=(s.cx+.5)*k,pz=(s.cy+.5)*k,col=STCOL[s.tier||0];g.fillStyle=col;g.beginPath();g.arc(px,pz,k*.95,0,7);g.fill();g.strokeStyle='#f1ece2';g.lineWidth=2;g.stroke();g.fillStyle='#f1ece2';g.font='700 '+(k*1.1|0)+'px "IBM Plex Mono", monospace';g.textAlign='center';g.textBaseline='middle';g.fillText('$',px,pz+1)});
     /* zones : nom, ou voile hachuré + cadenas si elle n'est pas encore débloquée */
     if(ZG)for(var zj=0;zj<9;zj++){var X0=((zj%3)*Zs+1)*k,Y0=(Math.floor(zj/3)*Zs+1)*k,WW=13*k,nm=(ZNAME[zj]||'').toUpperCase();g.textAlign='center';g.textBaseline='middle';
       if(UNL[zj]){g.fillStyle='rgba(241,236,226,.55)';g.font='700 '+(k*1.15|0)+'px "IBM Plex Mono", monospace';g.textAlign='left';g.fillText(nm,X0+5,Y0+9)}
@@ -1548,8 +1551,8 @@
     openingDoors.forEach(function(d){d.anim+=dt;var k=Math.min(1,d.anim/.9);d.m.position.y=WH/2+k*k*WH;if(k>=1){d.done=1;d.m.visible=false}});openingDoors=openingDoors.filter(function(d){return !d.done})}
   var SHOP_EXTRA=[{id:'ammo',n:'Munitions',d:'Remplit les réserves de toutes tes armes',p:400},{id:'vest1',n:'Gilet léger',d:'+50 d\'armure',p:350},{id:'vest2',n:'Gilet lourd',d:'Armure remplie à 100',p:750},{id:'heal',n:'Trousse de soin',d:'Vie au maximum',p:300},{id:'fast',n:'Mains rapides',d:'Recharges 40 % plus rapides',p:1500},
     {id:'turret',n:'Tourelle',d:'Double canon, tire seule 60 s · F pour la poser, V pour choisir',p:2000},{id:'wire',n:'Barbelés',d:'Ralentit et blesse les zombies · F pour poser, V pour choisir',p:800},{id:'mine',n:'Mine',d:'Explose quand un zombie passe · F pour poser, V pour choisir',p:600}];
-  var shopStand=null,STAND_UP=[3000,6000];
-  function setStandTier(s,t){if(!s||(s.tier||0)>=t)return;s.tier=t;if(s.g){styleStand(s);if(s.sign)s.g.remove(s.sign);var sign=label([STN[t].toUpperCase(),'E · ACHETER'],['#e2361b','#a46cf0','#e8b531'][t]);sign.position.y=3.25;sign.scale.set(2.6,1.02,1);s.g.add(sign);s.sign=sign}try{drawMiniBase()}catch(e){}}
+  var shopStand=null,STAND_UP=[3000,6000,10000];
+  function setStandTier(s,t){if(!s||(s.tier||0)>=t)return;s.tier=t;if(s.g){styleStand(s);if(s.sign)s.g.remove(s.sign);var sign=label([STN[t].toUpperCase(),'E · ACHETER'],STCOL[t]);sign.position.y=3.25;sign.scale.set(2.6,1.02,1);s.g.add(sign);s.sign=sign}try{drawMiniBase()}catch(e){}}
   /* v32 : défenses à poser (achetées à l'armurerie) : tourelle (5), barbelés (6), mine (7) */
   function zDmg(e,dmg){if(!e||!e.alive)return;if(coop&&!auth)net.send({t:'zc-hit',id:e.id,d:dmg,h:0});else damageEnt(e,dmg,net.me.name||'Toi',true,false)}
   /* v75 : tourelle refaite : socle hexagonal avec anneau lumineux, tête blindée arrondie, double canon avec ailettes, viseur lumineux */
@@ -1634,7 +1637,7 @@
     /* v45 : jamais deux boissons dans la même salle (zone) */
     var taken={},s=null;PERKS.forEach(function(q){taken[zoneOf(q.x,q.z)]=1;if(q.mx!=null)taken[zoneOf(q.mx-q.dx*.5,q.mz-q.dz*.5)]=1});s=perkSpot(taken);if(!s)return;
     var id=PP.pick(ids),p={id:id,x:s.x,z:s.z,mx:s.mx,mz:s.mz,dx:s.dx,dz:s.dz,ex:s.ex,ez:s.ez};buildPerk(p);PERKS.push(p);addFeed(PK[id].n+' est apparue sur la carte');try{drawMiniBase()}catch(e){}}
-  function shopList(){var tr=shopStand?shopStand.tier||0:0;return tr===2?['minigun','ray','tesla','rocket','launcher','lmg','bullpup','sniper','dmr']:tr===1?['sniper','hunter','lmg','autoshot','dmr','pdw','carbine','rifle','shotgun']:['magnum','revolver','smg','carbine','rifle','shotgun','pdw']}
+  function shopList(){var tr=shopStand?shopStand.tier||0:0;return tr>=2?['minigun','ray','tesla','rocket','launcher','lmg','bullpup','sniper','dmr']:tr===1?['sniper','hunter','lmg','autoshot','dmr','pdw','carbine','rifle','shotgun']:['magnum','revolver','smg','carbine','rifle','shotgun','pdw']}
   function bar(v){return '<i><em style="--w:'+Math.round(Math.max(.06,Math.min(1,v))*100)+'%"></em></i>'}
   var XI={ammo:'M5 4h3v3H5zM10 4h3v3h-3zM15 4h3v3h-3zM5 8h3v12H5zM10 8h3v12h-3zM15 8h3v12h-3z',vest1:'M8 2l-5 4v15h8v-6h2v6h8V6l-5-4-2 4h-4z',vest2:'M8 2l-6 4v16h9v-6h2v6h9V6l-6-4-2 4h-4zM7 9h10v3H7z',heal:'M9 3h6v6h6v6h-6v6H9v-6H3V9h6z',fast:'M13 2L4 14h7l-2 8 9-12h-7z',turret:'M9 4h6v5h7v3h-7v2l4 7h-3l-3-5h-2l-3 5H5l4-7v-2H2V9h7z',wire:'M2 8l4 8 4-8 4 8 4-8 4 8M2 16l4-8 4 8 4-8 4 8 4-8M3 4v16M21 4v16',mine:'M12 5a2 2 0 0 1 2 2v2h3l4 6v3H3v-3l4-6h3V7a2 2 0 0 1 2-2z'};
   var TIERN=['Commune','Rare','Épique','Lourde','Légendaire'];
@@ -1643,14 +1646,14 @@
   function shopItems(tab){var full=P.inv.length>=MAXSLOT,L=[];
     if(tab==='w')shopList().forEach(function(t){var g=GUNS[t],own=!!P.guns[t],p=own?Math.round(g.price/2):cost(g.price);L.push({id:t,n:T(g.n),sub:T(TIERN[g.tier]),tier:g.tier,p:p,ok:P.pts>=p,own:own,gun:g,ico:ICON[t],vb:'0 0 64 24',act:own?T('Racheter des munitions'):T('Acheter'),note:!own&&full?T('Remplace l\'arme que tu as en main'):''})});
     else if(tab==='e')SHOP_EXTRA.forEach(function(x){var done=x.id==='fast'&&P.fastRel;L.push({id:x.id,n:T(x.n),sub:T(x.d),tier:-1,p:cost(x.p),ok:P.pts>=cost(x.p)&&!done,own:done,ico:XI[x.id],vb:'0 0 24 24',act:done?T('Déjà acquis'):T('Acheter'),cnt:P.kit&&P.kit[x.id]?P.kit[x.id]:0})});
-    else{var stT=shopStand.tier||0;if(stT<2){var stP=cost(STAND_UP[stT]);L.push({id:'standup',n:T(STN[stT+1]),sub:T('Débloque ici')+' : '+(stT===0?'Sniper, Mitrailleuse, Fusil tactique':'Minigun, Pistolet à rayons, Lance-roquettes, Lance-grenades'),tier:stT+2,p:stP,ok:P.pts>=stP,ico:'M12 3l8 8h-5v10H9V11H4z',vb:'0 0 24 24',act:T('Améliorer l\'armurerie')})}
-      var lv=upLv(P.gun),gu=GUNS[P.gun],mx=lv>=3,upp=mx?0:cost(UP_PRICE[lv]);L.push({id:'upgrade',n:T(gu.n)+' '+'★★★'.slice(0,lv),sub:mx?T('Niveau maximum'):T('Niveau')+' '+(lv+1)+' : +40 % de dégâts, chargeur +30 %',tier:3,p:upp,ok:!mx&&P.pts>=upp,own:mx,ico:ICON[P.gun]||'',vb:'0 0 64 24',act:mx?T('Niveau maximum'):T('Améliorer')})}
+    else{var stT=shopStand.tier||0;if(stT<3){var stP=cost(STAND_UP[stT]);L.push({id:'standup',n:T(STN[stT+1]),sub:T('Débloque ici')+' : '+standUnl(stT),tier:Math.min(4,stT+2),p:stP,ok:P.pts>=stP,ico:'M12 3l8 8h-5v10H9V11H4z',vb:'0 0 24 24',act:T('Améliorer l\'armurerie')})}
+      var lv=upLv(P.gun),gu=GUNS[P.gun],mx=lv>=3,upp=mx?0:cost(UP_PRICE[lv]),lkU=upLock();L.push({id:'upgrade',n:T(gu.n)+' '+'★★★'.slice(0,lv),sub:mx?T('Niveau maximum'):lkU?'🔒 '+T('Verrouillé')+' : '+T('il faut une')+' '+T(STN[lkU])+' ('+T('niveau')+' '+lkU+')':T('Niveau')+' '+(lv+1)+' : +40 % de dégâts, chargeur +30 %',tier:3,p:upp,ok:!mx&&!lkU&&P.pts>=upp,own:mx,ico:ICON[P.gun]||'',vb:'0 0 64 24',act:mx?T('Niveau maximum'):lkU?'🔒 '+T(STN[lkU]):T('Améliorer')})}
     return L}
   function statRow(lbl,v,cur,fmt){var w=Math.max(.05,Math.min(1,v)),c=cur==null?null:Math.max(.05,Math.min(1,cur)),d=c==null?'':(v>cur+.01?'<em class="up">▲</em>':v<cur-.01?'<em class="dn">▼</em>':'');
     return '<div class="sh2-stat"><span>'+lbl+'</span><i>'+(c!=null?'<u style="--w:'+Math.round(c*100)+'%"></u>':'')+'<b style="--w:'+Math.round(w*100)+'%"></b></i><small>'+fmt+d+'</small></div>'}
   function shopHtml(){
     var L=shopItems(shopTab);if(!L.some(function(x){return x.id===shopSel}))shopSel=(L.filter(function(x){return x.ok})[0]||L[0]||{}).id;var S0=L.filter(function(x){return x.id===shopSel})[0];
-    var tier=shopStand.tier===2?3:shopStand.tier===1?2:1,TB=[['w',T('Armes')],['e',T('Équipement')],['u',T('Améliorations')]];
+    var tier=Math.min(3,(shopStand.tier||0)+1),TB=[['w',T('Armes')],['e',T('Équipement')],['u',T('Améliorations')]];
     var h='<div class="sh2 t'+tier+'"><div class="sh2-head"><div><small>'+T('Zone Morte')+' · '+T('Armurerie')+'</small><b>'+T(STN[shopStand.tier||0])+'</b></div><span class="sh-pts sh2-pts"><i></i><span>'+P.pts.toLocaleString('fr-FR')+'</span></span><button type="button" class="sh2-x" data-buy="close">'+T('Fermer')+' <kbd>E</kbd></button></div>';
     h+='<div class="sh2-body"><div class="sh2-left"><div class="sh2-tabs">'+TB.map(function(t){return '<button type="button" data-tab="'+t[0]+'" class="'+(t[0]===shopTab?'on':'')+'">'+t[1]+'</button>'}).join('')+'</div><div class="sh2-list">';
     L.forEach(function(x,i){h+='<button type="button" data-sel="'+x.id+'" class="sh2-row r'+(x.tier+1)+(x.id===shopSel?' on':'')+(x.ok?'':' no')+(x.own?' own':'')+'" style="--i:'+i+'"><span class="sh2-ri"><svg viewBox="'+x.vb+'"><path d="'+x.ico+'"/></svg></span><span class="sh2-rn"><b>'+x.n+'</b><small>'+(x.gun?x.sub:(x.cnt?'× '+x.cnt+' · ':'')+x.sub)+'</small></span><em>'+(x.own&&!x.gun?'✓':cost(x.p).toLocaleString('fr-FR'))+'</em></button>'});
@@ -1666,7 +1669,7 @@
   function shopMove(d){var L=shopItems(shopTab),i=L.map(function(x){return x.id}).indexOf(shopSel);i=Math.max(0,Math.min(L.length-1,i+d));shopSel=L[i]&&L[i].id;UI.shop.innerHTML=shopHtml();A.ui&&A.ui()}
   function shopHtmlOld(){
     var full=P.inv.length>=MAXSLOT,n=0;
-    var h='<div class="sh-head t'+(shopStand.tier===2?3:shopStand.tier===1?2:1)+'"><div><small>'+T('Zone Morte')+'</small><b>'+T(STN[shopStand.tier||0])+'</b></div><span class="sh-pts"><i></i><span>'+P.pts.toLocaleString('fr-FR')+'</span></span><button type="button" class="sh-x" data-buy="close">'+T('Fermer · E')+'</button></div><p class="sh-sec">'+T('Armes')+'</p><div class="sh-grid">';
+    var h='<div class="sh-head t'+Math.min(3,(shopStand.tier||0)+1)+'"><div><small>'+T('Zone Morte')+'</small><b>'+T(STN[shopStand.tier||0])+'</b></div><span class="sh-pts"><i></i><span>'+P.pts.toLocaleString('fr-FR')+'</span></span><button type="button" class="sh-x" data-buy="close">'+T('Fermer · E')+'</button></div><p class="sh-sec">'+T('Armes')+'</p><div class="sh-grid">';
     shopList().forEach(function(t){var g=GUNS[t],own=!!P.guns[t],p=own?Math.round(g.price/2):cost(g.price),ok=P.pts>=p;
       h+='<button type="button" class="sh-card t'+g.tier+(ok?'':' no')+(own?' own':'')+'" data-buy="'+t+'" style="--i:'+(n++)+'"><span class="sh-rar">'+T(TIERN[g.tier])+'</span>'+(own?'<span class="sh-badge">'+T('Possédée')+'</span>':'')+
         '<div class="sh-ico"><svg viewBox="0 0 64 24"><path d="'+ICON[t]+'"/></svg></div><b>'+T(g.n)+'</b><span class="sh-st"><span>'+T('Dégâts')+'</span>'+bar(g.dmg*g.pel/130)+'<span>'+T('Cadence')+'</span>'+bar(.1/g.rate)+'<span>'+T('Chargeur')+'</span>'+bar(g.mag/80)+'</span>'+
@@ -1674,9 +1677,9 @@
     h+='</div><p class="sh-sec">'+T('Équipement')+'</p><div class="sh-grid sh-extra">';
     SHOP_EXTRA.forEach(function(x){var done=x.id==='fast'&&P.fastRel,ok=P.pts>=cost(x.p)&&!done;h+='<button type="button" class="sh-card x'+(ok?'':' no')+(done?' own':'')+'" data-buy="'+x.id+'" style="--i:'+(n++)+'"><div class="sh-xi"><svg viewBox="0 0 24 24"><path d="'+XI[x.id]+'"/></svg></div><b>'+T(x.n)+'</b><span>'+T(x.d)+'</span><em class="sh-price">'+(done?T('acquis'):cost(x.p).toLocaleString('fr-FR'))+'</em></button>'});
     /* v32 : améliorer l'armurerie elle-même pour débloquer les armes du niveau au-dessus */
-    var stT=shopStand.tier||0;if(stT<2){var stP=cost(STAND_UP[stT]),okS=P.pts>=stP;h+='</div><p class="sh-sec">'+T('Améliorer l\'armurerie')+'</p><div class="sh-grid sh-extra"><button type="button" class="sh-card x'+(okS?'':' no')+'" data-buy="standup" style="--i:'+(n++)+'"><div class="sh-xi"><svg viewBox="0 0 24 24"><path d="M12 3l8 8h-5v10H9V11H4z"/></svg></div><b>'+T(STN[stT+1])+'</b><span>'+T('Débloque ici')+' : '+(stT===0?'Sniper, Mitrailleuse, Fusil tactique':'Minigun, Pistolet à rayons, Lance-roquettes, Lance-grenades')+'</span><em class="sh-price">'+stP.toLocaleString('fr-FR')+'</em></button>'}
-    var lv=upLv(P.gun),gu=GUNS[P.gun],mx=lv>=3,upp=mx?0:cost(UP_PRICE[lv]),okU=!mx&&P.pts>=upp;
-    h+='</div><p class="sh-sec">'+T('Améliorer l\'arme en main')+'</p><div class="sh-grid sh-extra"><button type="button" class="sh-card x'+(okU?'':' no')+(mx?' own':'')+'" data-buy="upgrade" style="--i:'+(n++)+'"><div class="sh-ico"><svg viewBox="0 0 64 24"><path d="'+(ICON[P.gun]||'')+'"/></svg></div><b>'+T(gu.n)+' '+'★★★'.slice(0,lv)+'</b><span>'+(mx?T('Niveau maximum'):T('Niveau')+' '+(lv+1)+' : +40 % de dégâts, chargeur +30 %')+'</span><em class="sh-price">'+(mx?'max':upp.toLocaleString('fr-FR'))+'</em></button>';
+    var stT=shopStand.tier||0;if(stT<3){var stP=cost(STAND_UP[stT]),okS=P.pts>=stP;h+='</div><p class="sh-sec">'+T('Améliorer l\'armurerie')+'</p><div class="sh-grid sh-extra"><button type="button" class="sh-card x'+(okS?'':' no')+'" data-buy="standup" style="--i:'+(n++)+'"><div class="sh-xi"><svg viewBox="0 0 24 24"><path d="M12 3l8 8h-5v10H9V11H4z"/></svg></div><b>'+T(STN[stT+1])+'</b><span>'+T('Débloque ici')+' : '+standUnl(stT)+'</span><em class="sh-price">'+stP.toLocaleString('fr-FR')+'</em></button>'}
+    var lv=upLv(P.gun),gu=GUNS[P.gun],mx=lv>=3,upp=mx?0:cost(UP_PRICE[lv]),lkU=upLock(),okU=!mx&&!lkU&&P.pts>=upp;
+    h+='</div><p class="sh-sec">'+T('Améliorer l\'arme en main')+'</p><div class="sh-grid sh-extra"><button type="button" class="sh-card x'+(okU?'':' no')+(mx?' own':'')+'" data-buy="upgrade" style="--i:'+(n++)+'"><div class="sh-ico"><svg viewBox="0 0 64 24"><path d="'+(ICON[P.gun]||'')+'"/></svg></div><b>'+T(gu.n)+' '+'★★★'.slice(0,lv)+'</b><span>'+(mx?T('Niveau maximum'):lkU?'🔒 '+T('Verrouillé')+' : '+T('il faut une')+' '+T(STN[lkU])+' ('+T('niveau')+' '+lkU+')':T('Niveau')+' '+(lv+1)+' : +40 % de dégâts, chargeur +30 %')+'</span><em class="sh-price">'+(mx?'max':lkU?'🔒':upp.toLocaleString('fr-FR'))+'</em></button>';
     return h+'</div>';
   }
   function shopRefresh(id){UI.shop.classList.remove('enter');UI.shop.innerHTML=shopHtml();var c=id&&UI.shop.querySelector('[data-buy="'+id+'"]');if(c){c.classList.add('bought');var st=document.createElement('span');st.className='sh-stamp';st.textContent=T('Acheté !');c.appendChild(st)}var pt=UI.shop.querySelector('.sh-pts');if(pt&&id){pt.classList.add('spent')}}
@@ -1686,9 +1689,9 @@
     if(s2){e.preventDefault();if(s2.dataset.tab){shopTab=s2.dataset.tab;shopSel=null;UI.shop.innerHTML=shopHtml();A.ui&&A.ui();return}
       var sid=s2.dataset.sel;if(sid===shopSel&&e.detail>=2){var bb=UI.shop.querySelector('.sh2-buy[data-buy="'+sid+'"]');if(bb)bb.click();return}if(sid!==shopSel){shopSel=sid;UI.shop.innerHTML=shopHtml();A.ui&&A.ui()}return}
     var b=e.target.closest('[data-buy]');if(!b)return;e.preventDefault();var id=b.dataset.buy;if(id==='close'){closeShop();return}
-    if(id==='standup'){var stT=shopStand.tier||0;if(stT>=2)return;var stP=cost(STAND_UP[stT]);if(P.pts<stP){A.deny();b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');return}
+    if(id==='standup'){var stT=shopStand.tier||0;if(stT>=3)return;var stP=cost(STAND_UP[stT]);if(P.pts<stP){A.deny();b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');return}
       P.pts-=stP;popPts(-stP);A.buy();setStandTier(shopStand,stT+1);if(coop)net.relay({g:'zstand',i:STANDS.indexOf(shopStand),t:stT+1,n:net.me.name});hud();shopRefresh();return}
-    if(id==='upgrade'){var lv=upLv(P.gun);if(lv>=3){A.deny();return}var upp=cost(UP_PRICE[lv]);if(P.pts<upp){A.deny();b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');return}
+    if(id==='upgrade'){var lv=upLv(P.gun);if(lv>=3){A.deny();return}var lkB=upLock();if(lkB){A.deny();PP.toast('Améliore d\'abord l\'armurerie : '+STN[lkB]+' (niveau '+lkB+')','warn');return}var upp=cost(UP_PRICE[lv]);if(P.pts<upp){A.deny();b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');return}
       P.pts-=upp;popPts(-upp);A.buy();P.up=P.up||{};P.up[P.gun]=lv+1;var ga=P.guns[P.gun];ga.mag=magOf(P.gun);if(ga.res!==Infinity)ga.res=Math.max(ga.res,magOf(P.gun)*4);setViewGun();hud();shopRefresh(id);return}
     var g=GUNS[id],x=SHOP_EXTRA.filter(function(q){return q.id===id})[0],p=g?(P.guns[id]?Math.round(g.price/2):cost(g.price)):cost(x.p);
     if(x&&id==='fast'&&P.fastRel)return;
