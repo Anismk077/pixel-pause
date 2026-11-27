@@ -1101,7 +1101,7 @@
   function removeItem(id){for(var i=items.length-1;i>=0;i--)if(items[i].id===id){scene.remove(items[i].m);items.splice(i,1)}}
 
   /* v97 : vie des zombies +5 % par vague (100 % à la vague 1, 105 % à la 2…) ; chaque boss a 5× la vie et 2× la vitesse du précédent (vitesse plafonnée sous le sprint du joueur) */
-  var BOSSW=15;function zHpMul(){return 1+Math.max(0,wave-1)*.05}
+  var BOSSW=10;function zHpMul(){return 1+Math.max(0,wave-1)*.05}
   function addZombie(type,mult){
     var t=ZT[type],s=spawnFar(14),m=zombieModel(type);
     m.position.set(s.x,-1.9,s.z);scene.add(m);dust(s.x,s.z);
