@@ -14,7 +14,7 @@
     plane:[['ag-plane-pts','Score',0,' pts']],maze:[['ag-maze-t-easy','Facile',1,' s'],['ag-maze-t-mid','Moyen',1,' s'],['ag-maze-t-hard','Difficile',1,' s'],['ag-maze-lvl','Aventure',0,'niv']],hoops:[['ag-hoops-pts','Points',0,' pts']],pool:[['ag-pool-coups','Coups',1,' coups']],
     marz:[['ag-marz-kg','Poids',0,' kg']],flap:[['ag-flap-pts','Cheminées',0,'']],snakeio:[['ag-snakeio-m','Taille',0,'']],
     potion:[['ag-potion-lvl-easy','Facile',0,'niv'],['ag-potion-lvl-mid','Moyen',0,'niv'],['ag-potion-lvl-hard','Difficile',0,'niv'],['ag-potion-lvl-exp','Expert',0,'niv']],
-    wire:[['ag-wire-pts','Panneaux',0,'']],
+    wire:[['ag-wire-pts','Panneaux',0,'']],debouche:[['ag-debouche-lvl-easy','Facile',0,'niv'],['ag-debouche-lvl-mid','Moyen',0,'niv'],['ag-debouche-lvl-hard','Difficile',0,'niv'],['ag-debouche-lvl-exp','Expert',0,'niv']],
     tours:[['ag-tours-cr','Tours détruites',0,'']],
     term:[['ag-term-t','Histoire',1,' s'],['ag-term-pts','Chrono',0,'']],
     blocs:[['ag-blocs-pts','Marathon',0,' pts'],['ag-blocs-sprint','Sprint',1,' s'],['ag-blocs-chrono','2 minutes',0,' pts']],saut:[['ag-saut-pts','Aventure',0,' pts'],['ag-saut-hard','Expert',0,' pts'],['ag-saut-duo','2 joueurs',0,' pts']],
