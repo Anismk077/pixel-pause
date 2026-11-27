@@ -226,7 +226,7 @@
 
   PP._volt=function(){return V};PP._voltF=function(){return {hurtZ:hurtZ,fire:fire}};PP._voltB=function(){return BOX};
   PP.arcade({id:'volt',three:true,
-    setup:function(C){ag.three(C);var sc=C.scene;while(sc.children.length)sc.remove(sc.children[0]);C.cam.fov=82;C.cam.near=.05;C.cam.far=800;C.cam.updateProjectionMatrix();sc.add(C.cam);
+    setup:function(C){ag.three(C);var sc=C.scene;while(sc.children.length)sc.remove(sc.children[0]);/* v104 : on enlève l'arme et la lumière de la partie d'avant restées accrochées à la caméra */while(C.cam.children.length)C.cam.remove(C.cam.children[0]);C.cam.fov=82;C.cam.near=.05;C.cam.far=800;C.cam.updateProjectionMatrix();sc.add(C.cam);
       var MP=C.mode==='online';V={C:C,mode:MP?'zombies':C.mode,mp:MP,host:!MP||!!C.net.isHost,rp:{},zmap:{},zid:1,dur:MP?240:180,pos:new THREE.Vector3(0,0,0),vel:new THREE.Vector3(),yaw:0,pitch:0,ground:false,jumps:0,wr:null,wrT:0,slide:0,grap:null,w:0,ammo:WEAP.map(function(w){return w.mag}),fireCd:0,reload:0,swap:0,recoil:0,roll:0,fovK:0,bob:0,land:0,fx:[],zs:[],tg:[],time:0,score:0,hits:0,kills:0,wave:0,spawnT:0,over:false,hurt:0,coyote:0,combo:0,comboT:0,air:0,rings:null,ri:0,rockets:[],decals:[],up:new THREE.Vector3(0,1,0),ui:V&&V.ui};
       if(MP)C.listen(function(m){onNet(C,m)});
       buildCity(C);var sp=[0,0],rs=V.mode==='course'?rng(99):Math.random;for(var k=0;k<200;k++){var x=(rs()*2-1)*20,z=(rs()*2-1)*20;if(!hit(x-.5,0,z-.5,x+.5,2,z+.5)){sp=[x,z];break}}if(MP){var sl=Math.max(0,(C.net.players||[]).map(function(q){return q.id}).indexOf(C.net.me.id));sp=[sp[0]+(sl%3)*2.2,sp[1]+Math.floor(sl/3)*2.2];if(hit(sp[0]-.5,0,sp[1]-.5,sp[0]+.5,2,sp[1]+.5))sp=[0,0]}V.pos.set(sp[0],0,sp[1]);
