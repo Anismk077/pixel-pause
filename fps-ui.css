@@ -369,3 +369,14 @@
 .fx-mates .fm-b i{display:block;height:100%;transition:width .25s}
 .fx-mates em{position:absolute;right:8px;bottom:9px;font-style:normal;font-size:9px;color:#f3c623}
 .pp-touch .fx-mates{top:auto;bottom:150px;min-width:150px;transform:scale(.85);transform-origin:left bottom}
+/* v80 : décompte des loots spéciaux, à droite */
+.fx-pw{position:absolute;right:12px;top:38%;z-index:6;pointer-events:none;display:flex;flex-direction:column;gap:6px;width:210px}
+.fx-pw[hidden]{display:none}
+.fx-pw .pw-r{position:relative;display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:8px;background:rgba(20,18,16,.82);border:2px solid var(--c);padding:6px 9px 9px;color:#f1ece2;font:700 11px "IBM Plex Mono",monospace;overflow:hidden;animation:pwIn .3s cubic-bezier(.2,.8,.2,1)}
+.fx-pw .pw-r i{font-style:normal;font-size:20px;line-height:1;color:var(--c);text-align:center}
+.fx-pw .pw-r b{font:400 24px/1 Anton,Impact,sans-serif;color:var(--c)}
+.fx-pw .pw-r em{position:absolute;left:0;bottom:0;height:3px;background:var(--c)}
+.fx-pw .pw-r.end{animation:pwBlink .5s infinite}
+@keyframes pwIn{from{transform:translateX(30px);opacity:0}}
+@keyframes pwBlink{50%{opacity:.45}}
+@media (hover:none){.fx-pw{top:17%;width:180px}}
