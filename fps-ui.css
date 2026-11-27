@@ -356,3 +356,16 @@
 #v-fps .fx-emo small{color:#6b645a}
 .fx-emo span.on{background:#e2361b!important;border-color:#141210!important;color:#fff;transform:scale(1.06)}
 .fx-emo span{transition:transform .08s,background .08s}
+/* v76 : panneau d'équipe */
+.fx-mates{position:absolute;left:12px;top:96px;z-index:6;pointer-events:none;display:flex;flex-direction:column;gap:4px;min-width:190px;font:700 11px "IBM Plex Mono",monospace;color:#f1ece2}
+.fx-mates[hidden]{display:none}
+.fx-mates .fm-t{background:rgba(20,18,16,.78);padding:5px 8px;border-left:3px solid #e2361b;font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+.fx-mates .fm-t b{color:#f3c623;font:400 20px/1 Anton,Impact,sans-serif;margin-left:6px;vertical-align:-2px}
+.fx-mates .fm-r{position:relative;display:grid;grid-template-columns:1fr auto;gap:3px 8px;background:rgba(20,18,16,.7);padding:5px 8px}
+.fx-mates .fm-r.me{border-left:3px solid #3fa9ff}
+.fx-mates .fm-r.off{opacity:.75}
+.fx-mates .fm-k{color:#f3c623}
+.fx-mates .fm-b{grid-column:1/-1;display:block;height:5px;background:rgba(255,255,255,.15)}
+.fx-mates .fm-b i{display:block;height:100%;transition:width .25s}
+.fx-mates em{position:absolute;right:8px;bottom:9px;font-style:normal;font-size:9px;color:#f3c623}
+.pp-touch .fx-mates{top:auto;bottom:150px;min-width:150px;transform:scale(.85);transform-origin:left bottom}

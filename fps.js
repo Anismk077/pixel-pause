@@ -992,6 +992,15 @@
   function sys(t){var l=document.createElement('div');l.className='sys';l.textContent=t;if(UI.log){UI.log.appendChild(l);while(UI.log.children.length>7)UI.log.removeChild(UI.log.firstChild)}}
   function addFeed(t){feed.unshift({t:t,ttl:5});if(feed.length>5)feed.pop();renderFeed()}
   function renderFeed(){UI.feed.innerHTML=feed.map(function(f){return '<div>'+esc(f.t)+'</div>'}).join('')}
+  /* v76 : panneau d'équipe dans l'image : zombies tués + vie de chaque coéquipier */
+  var matesT=0;function matesHud(dt){if(!P||!cv.parentNode)return;matesT-=dt;if(matesT>0)return;matesT=.25;
+    if(!UI.mates){UI.mates=document.createElement('div');UI.mates.className='fx-mates';cv.parentNode.appendChild(UI.mates)}
+    if(mode!=='zombie'){UI.mates.hidden=true;return}UI.mates.hidden=false;
+    function row(n,hp,mh,al,k,me){var st=al===0?'MORT':al===2?'À TERRE':'',pc=al===0?0:Math.max(0,Math.min(100,hp/(mh||100)*100)),col=al===2?'#f3c623':pc<30?'#e2361b':'#6fdc4a';
+      return '<div class="fm-r'+(me?' me':'')+(al!==1?' off':'')+'"><span class="fm-n">'+esc(String(n).slice(0,14))+'</span><span class="fm-k">☠ '+(k||0)+'</span><i class="fm-b"><i style="width:'+pc+'%;background:'+col+'"></i></i>'+(st?'<em>'+st+'</em>':'')+'</div>'}
+    var h='<div class="fm-t">Zombies tués <b>'+kills+'</b></div>'+row((net.me&&net.me.name)||'Toi',P.hp,maxHp(),dead?0:P.down?2:1,kills,true);
+    if(coop)Object.keys(remotes).forEach(function(id){var r=remotes[id];if(!r||r.hp==null)return;h+=row(r.n,r.hp,r.mh,r.al,r.kz,false)});
+    if(UI.mates._h!==h){UI.mates._h=h;UI.mates.innerHTML=h}}
   function hud(){
     if(!P||!UI.hp)return;
     var g=GUNS[P.gun],a=P.guns[P.gun];
@@ -1231,6 +1240,7 @@
     if(!dead&&P.down)stepDown(dt);else if(!dead){
       var afk=online&&now-lastInput>45000;if(afk!==P.afk){P.afk=afk;if(afk)addFeed('Tu es AFK : un bot joue pour toi');else{keys={};mouseDown=false;addFeed('Tu reprends la main');center('');sendAcc=0}}
       if(P.afk)autopilot(dt);
+      if(keys.TL||keys.TR||keys.TU||keys.TD){P.kTurn=Math.min(1,(P.kTurn||0)+dt*3);var ks=(aiming?.55:1)*(PP.settings.sens||100)/100*(.45+P.kTurn*.55);P.yaw+=((keys.TL?1:0)-(keys.TR?1:0))*2.9*ks*dt;P.pitch=Math.max(-1.45,Math.min(1.45,P.pitch+((keys.TU?1:0)-(keys.TD?1:0))*1.8*ks*dt));lastInput=now}else P.kTurn=0;
       var crouchK=keys.C&&P.slide<=0,runK=!aiming&&!crouchK&&(keys.SH||(autoRun()&&(keys.F||pk.F)&&!(keys.B||pk.B))),sp=(runK?8.5:5.5)*(aiming?.6:1)*(crouchK?.5:1)*(P.perks&&P.perks.speed?1.25:1)*dt,fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw),mx=0,mz=0;
       var kF=keys.F||pk.F,kB=keys.B||pk.B,kL=keys.L||pk.L,kR=keys.R||pk.R;if(kF){mx+=fx;mz+=fz}if(kB){mx-=fx;mz-=fz}if(kL){mx+=fz;mz-=fx}if(kR){mx-=fz;mz+=fx}
       var ml=Math.hypot(mx,mz),frz=online&&round&&performance.now()-round.t0<3000,tvx=ml>0&&!frz?mx/ml*sp/dt:0,tvz=ml>0&&!frz?mz/ml*sp/dt:0,ac=Math.min(1,dt*(ml>0?14:18));P.vx=(P.vx||0)+(tvx-(P.vx||0))*ac;P.vz=(P.vz||0)+(tvz-(P.vz||0))*ac;var spd=Math.hypot(P.vx,P.vz);
@@ -1256,7 +1266,7 @@
     // zombies
     if(mode==='zombie'){if(coop&&!auth)stepZGuest(dt);else stepZombies(dt)}if(coop)coopTick(dt);
     if(mode==='br'){if(auth)stepBR(dt);else stepBRGuest(dt)}
-    stepRemotes(dt);
+    stepRemotes(dt);matesHud(dt);
     // morts : petite chute
     ents.forEach(function(e){if(!e.alive&&e.dieT>0&&e.kind==='z'&&e.fx!==undefined){e.dieT-=dt;stepDeath(e,dt);if(e.dieT<=0){scene.remove(e.m);if(e.pool)scene.remove(e.pool);e.m=null}return}if(!e.alive&&e.dieT>0){e.dieT-=dt;var tt=1.2-e.dieT;if(e.kind==='z'){if(!e.dusted&&tt>.4){e.dusted=1;dust(e.x,e.z)}e.m.rotation.x=-Math.min(Math.PI/2,tt*3.2);var pp=e.m.userData.parts;if(pp){pp.arms[0].rotation.x=-2.8+Math.sin(tt*12)*.4;pp.arms[1].rotation.x=-2.5-Math.sin(tt*12)*.4;pp.jaw.rotation.x=.6}e.m.position.y=-Math.max(0,tt-.7)*1.2}else{e.m.rotation.x=Math.min(Math.PI/2,tt*3)}e.m.position.y=e.kind==='z'?e.m.position.y:-Math.max(0,tt-.8);if(e.dieT<=0){scene.remove(e.m);e.m=null}}if(e.m&&e.hit>0){e.hit-=dt}});
     ents=ents.filter(function(e){return e.alive||e.m||(e.kind==='b'&&mode==='br')});
@@ -1592,7 +1602,7 @@
   var sendAcc=0;
   function sendState(dt){
     sendAcc-=dt;if(sendAcc>0)return;sendAcc=.045;
-    net.relay({g:'fb',ts:Math.round(performance.now()),x:+P.x.toFixed(2),z:+P.z.toFixed(2),y:+P.y.toFixed(2),yw:+P.yaw.toFixed(3),pt:+P.pitch.toFixed(2),hp:Math.ceil(P.hp),al:dead?0:(P.down?2:1),w:P.gun,c:+(P.crouch||0).toFixed(2),am:aiming?1:0,sl:P.slide>0?1:0,sk:skins.ch,em:P.emote?P.emote.id+1:0,afk:P.afk?1:0,n:net.me.name,sh:P.shotN,r:round?round.n:0});
+    net.relay({g:'fb',ts:Math.round(performance.now()),x:+P.x.toFixed(2),z:+P.z.toFixed(2),y:+P.y.toFixed(2),yw:+P.yaw.toFixed(3),pt:+P.pitch.toFixed(2),hp:Math.ceil(P.hp),al:dead?0:(P.down?2:1),w:P.gun,c:+(P.crouch||0).toFixed(2),am:aiming?1:0,sl:P.slide>0?1:0,sk:skins.ch,em:P.emote?P.emote.id+1:0,afk:P.afk?1:0,n:net.me.name,sh:P.shotN,k:kills,mh:maxHp(),r:round?round.n:0});
     if(coop&&auth){zAcc-=.045;if(zAcc<=0){zAcc=.066;net.broadcast({t:'zc-s',w:wave,wl:waveLeft,wt:+waveT.toFixed(1),z:ents.filter(function(e){return e.kind==='z'&&e.alive}).map(function(e){return [e.id,e.type,+e.x.toFixed(2),+e.z.toFixed(2),+e.yaw.toFixed(2),e.mvF?1:0,e.atk>0?1:0,e.rise<1?+e.rise.toFixed(2):1]})})}}
     if(auth&&!coop){stateAcc-=.066;if(stateAcc<=0){stateAcc=.1;net.broadcast({t:'fb-s',r:round?round.n:0,z:[+zone.x.toFixed(1),+zone.z.toFixed(1),+zone.r.toFixed(1),+zone.target.toFixed(1),+zone.t.toFixed(1)],b:ents.filter(function(e){return e.kind==='b'}).map(function(e){return [e.i,+e.x.toFixed(2),+e.z.toFixed(2),+e.yaw.toFixed(2),Math.ceil(e.hp),e.alive?1:0,e.flash>0?1:0]})})}}
   }
@@ -1621,7 +1631,7 @@
   net.on(function(m,from){
     if(!online)return;
     if(m.t==='rel'&&m.d){var d=m.d,id=m.from;
-      if(d.g==='fb'){if(round&&d.r!==round.n){if(remotes[id])remotes[id].al=0;return}var r=remote(id,d);if(!r)return;r.seen=performance.now();r.tx=d.x;r.tz=d.z;r.ty=d.y;r.tyaw=d.yw;r.buf=r.buf||[];/* v25 : horodatage de l'envoyeur (corrigé du décalage d'horloge) → mouvements réguliers même si les paquets arrivent par à-coups */var nw=performance.now(),tt=nw;if(d.ts){var off=nw-d.ts;r.off=(r.off==null||off<r.off)?off:r.off*.98+off*.02;tt=d.ts+r.off}if(r.buf.length&&tt<=r.buf[r.buf.length-1].t)tt=r.buf[r.buf.length-1].t+1;r.buf.push({t:tt,x:d.x,z:d.z,y:d.y||0,yw:d.yw,pt:d.pt||0});if(r.buf.length>30)r.buf.shift();if(!d.al&&r.al){r.dieT=1.1}r.hp=d.hp;r.al=d.al;r.cr=d.c||0;r.am=d.am;r.sl=d.sl;r.n=(d.n||'?')+(d.afk?(coop?' (absent)':' (bot)'):'');r.sk=d.sk||0;if((d.em||0)!==(r.em||0)){r.em=d.em||0;r.emT=0}if(d.sh!==r.sh){if(r.sh!==undefined){if(Math.hypot(r.x-P.x,r.z-P.z)<40)sfx.play('shoot');r.fireT=.08;remoteTracer(r)}r.sh=d.sh}r.w=d.w}
+      if(d.g==='fb'){if(round&&d.r!==round.n){if(remotes[id])remotes[id].al=0;return}var r=remote(id,d);if(!r)return;r.seen=performance.now();r.tx=d.x;r.tz=d.z;r.ty=d.y;r.tyaw=d.yw;r.buf=r.buf||[];/* v25 : horodatage de l'envoyeur (corrigé du décalage d'horloge) → mouvements réguliers même si les paquets arrivent par à-coups */var nw=performance.now(),tt=nw;if(d.ts){var off=nw-d.ts;r.off=(r.off==null||off<r.off)?off:r.off*.98+off*.02;tt=d.ts+r.off}if(r.buf.length&&tt<=r.buf[r.buf.length-1].t)tt=r.buf[r.buf.length-1].t+1;r.buf.push({t:tt,x:d.x,z:d.z,y:d.y||0,yw:d.yw,pt:d.pt||0});if(r.buf.length>30)r.buf.shift();if(!d.al&&r.al){r.dieT=1.1}r.hp=d.hp;r.al=d.al;r.kz=d.k||0;r.mh=d.mh||100;r.cr=d.c||0;r.am=d.am;r.sl=d.sl;r.n=(d.n||'?')+(d.afk?(coop?' (absent)':' (bot)'):'');r.sk=d.sk||0;if((d.em||0)!==(r.em||0)){r.em=d.em||0;r.emT=0}if(d.sh!==r.sh){if(r.sh!==undefined){if(Math.hypot(r.x-P.x,r.z-P.z)<40)sfx.play('shoot');r.fireT=.08;remoteTracer(r)}r.sh=d.sh}r.w=d.w}
       if(d.g==='fbhit'&&d.to===net.me.id&&!dead){hurt(d.d,d.by,d.x,d.z)}
       if(d.g==='fbaway'){if(remotes[id]){remotes[id].al=0;remotes[id].dieT=0}return}
       if(d.g==='fbdie'){var who=(remotes[id]&&remotes[id].n)||'?';if(remotes[id]){if(remotes[id].al)remotes[id].dieT=1.1;remotes[id].al=0}addFeed((d.by?d.by+' a éliminé ':'')+who);if(d.by===net.me.name){kills++;sfx.play('kill');hud()}}
@@ -1766,7 +1776,7 @@
   var BIND_DEF={fwd:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',jump:'Space',sprint:'ShiftLeft',slide:'KeyC',reload:'KeyR',use:'KeyE',next:'KeyX',prev:'KeyQ',map:'KeyM'};
   function B(){var b=PP.settings&&PP.settings.binds||{};return Object.assign({},BIND_DEF,b)}
   function action(e){var b=B(),c=e.code||'';for(var a in b)if(b[a]===c)return a;
-    if(c==='ArrowUp')return 'fwd';if(c==='ArrowDown')return 'back';if(c==='ArrowLeft')return 'left';if(c==='ArrowRight')return 'right';
+    /* v76 : les flèches tournent la caméra (jouable au pavé tactile sans la souris) */
     if(c==='ShiftRight'&&b.sprint==='ShiftLeft')return 'sprint';if((c==='ControlLeft'||c==='ControlRight')&&b.slide==='KeyC')return 'slide';
     if(b.map==='KeyM'&&(e.key||'').toLowerCase()==='m')return 'map';return null}
   var MV={fwd:'F',back:'B',left:'L',right:'R'};
@@ -1777,6 +1787,7 @@
     /* v73 : la souris se recapture avec n'importe quelle touche de jeu, plus besoin de tirer */if(document.pointerLockElement!==cv&&!paused&&!shopOpen&&k!=='Escape'&&(MV[ac]||ac==='jump'||ac==='sprint'))lock();
     if(shopOpen&&UI.shop&&UI.shop.hidden)shopOpen=false;
     if(shopOpen){if(ac==='use'||k==='Escape'){e.preventDefault();closeShop()}else if(k==='ArrowDown'||k==='ArrowUp'){e.preventDefault();shopMove(k==='ArrowDown'?1:-1)}else if(k==='Enter'){e.preventDefault();var bb=UI.shop.querySelector('.sh2-buy');if(bb)bb.click()}else if(k==='Tab'){e.preventDefault();shopTab={w:'e',e:'u',u:'w'}[shopTab];shopSel=null;UI.shop.innerHTML=shopHtml()}return}
+    var TK={ArrowLeft:'TL',ArrowRight:'TR',ArrowUp:'TU',ArrowDown:'TD'}[c];if(TK&&!ac){keys[TK]=true;e.preventDefault()}
     if(MV[ac]){keys[MV[ac]]=true;e.preventDefault()}
     if(ac==='sprint')keys.SH=true;if(ac==='jump'){keys.J=true;e.preventDefault()}
     if(ac==='slide'){if(!e.repeat)keys.CT=true;keys.C=true;e.preventDefault()}
@@ -1792,7 +1803,7 @@
     if(ac==='map'&&!e.repeat)bigMap=!bigMap;
     /* v64 : le chat marche aussi en Zone Morte en équipe */if(k==='Enter'&&online){e.preventDefault();openChat()}
   });
-  document.addEventListener('keyup',function(e){var ac=action(e);if(e.code==='KeyF'&&!ac&&ghost&&PP.cur()==='fps')ghostDrop();if(e.code==='KeyB'&&emoteMenu&&!ac&&performance.now()-bDownT>320&&PP.cur()==='fps')startEmote(emoSel);if(MV[ac])keys[MV[ac]]=false;if(ac==='sprint')keys.SH=false;if(ac==='slide')keys.C=false});
+  document.addEventListener('keyup',function(e){var ac=action(e);var TK={ArrowLeft:'TL',ArrowRight:'TR',ArrowUp:'TU',ArrowDown:'TD'}[e.code];if(TK)keys[TK]=false;if(e.code==='KeyF'&&!ac&&ghost&&PP.cur()==='fps')ghostDrop();if(e.code==='KeyB'&&emoteMenu&&!ac&&performance.now()-bDownT>320&&PP.cur()==='fps')startEmote(emoSel);if(MV[ac])keys[MV[ac]]=false;if(ac==='sprint')keys.SH=false;if(ac==='slide')keys.C=false});
   PP.fpsBinds={def:BIND_DEF,get:B};
   window.addEventListener('blur',function(){keys={};mouseDown=false;ghostHide()});
   cv.addEventListener('mousedown',function(e){
