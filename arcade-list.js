@@ -17,7 +17,7 @@ window.ARCADE_LIST=[
   {id:'mines',n:'Démineur',sub:'Réflexion · évite les mines',pl:'1',cat:'solo',modes:[['easy','Facile','12 × 8, 12 mines'],['mid','Moyen','16 × 10, 26 mines'],['hard','Difficile','20 × 11, 45 mines']]},
   {id:'pong',n:'Pong néon',sub:'Arcade · duel de raquettes',pl:'1–2',cat:'pc solo',modes:[['solo','Solo','Contre l\'ordinateur'],['duel','2 joueurs','Même clavier']]},
   {id:'plane',n:'Avion 3D',sub:'3D · vole dans les anneaux',pl:'1',cat:'solo 3d',modes:[['solo','Solo','Le plus loin possible']]},
-  {id:'maze',n:'Labyrinthe 3D',sub:'3D · trouve la sortie',pl:'1',cat:'solo 3d',modes:[['solo','Solo','Un nouveau labyrinthe à chaque fois']]},
+  {id:'maze',n:'Labyrinthe 3D',sub:'3D · labyrinthes au hasard, clé, fantômes, 6 niveaux',pl:'1',cat:'solo 3d',modes:[['easy','Facile','Petit, carte visible'],['mid','Moyen','Plus grand, une clé à trouver'],['hard','Difficile','Immense, sombre, avec fantômes'],['run','Aventure','6 niveaux de plus en plus durs']]},
   {id:'hoops',n:'Basket 3D',sub:'3D · paniers à 2 et 3 points',pl:'1–2',cat:'pc solo 3d',modes:[['solo','Solo','60 secondes chrono'],['duel','2 joueurs','60 s chacun']]},
   {id:'draw',n:'Dessine et devine',sub:'Party · un dessine, les autres devinent',pl:'2–12',cat:'tel',modes:[['online','En ligne','Tout le salon']]},
   {id:'pool',n:'Billard',sub:'Adresse · pleines contre rayées',pl:'1–2',cat:'pc solo',modes:[['solo','Solo','Nettoie la table'],['duel','2 joueurs','Chacun son tour']]},
@@ -34,6 +34,7 @@ window.ARCADE_LIST=[
   {id:'bj',img:'thumb-bj.svg?v=1',n:'Blackjack',sub:'Casino · approche-toi de 21, seul ou à plusieurs',pl:'1–5',cat:'pc tel solo',modes:[['solo','Solo','Contre le croupier'],['online','En ligne','Tout le salon à la table']]},
   {id:'poker',img:'thumb-poker.svg?v=1',n:'Poker',sub:'Casino · Texas Hold\'em, contre des bots ou à plusieurs',pl:'1–6',cat:'pc tel solo',modes:[['solo','Solo','Toi contre 3 bots'],['online','En ligne','2 à 6 joueurs du salon']]},
   {id:'roue',img:'thumb-roue.svg?v=1',n:'La Roue',sub:'Casino · mise et fais tourner la roue',pl:'1',cat:'pc tel solo',modes:[['solo','Solo','×1 à ×40']]},
+  {id:'rr',img:'thumb-rr.svg?v=1',n:'Roulette russe',sub:'Casino · mise tes jetons, le dernier qui en a encore rafle tout',pl:'1–6',cat:'pc tel solo',modes:[['solo','Solo','Toi contre 3 bots'],['online','En ligne','2 à 6 potes du salon']]},
   {id:'marz',img:'thumb-marz.svg?v=2',n:'Marzoukeur',sub:'Fun · attrape les burgers, enchaîne les combos',pl:'1',cat:'pc tel solo',modes:[['solo','Solo','Le plus de kilos avant la ruine']]},
   {id:'bitume',img:'thumb-bitume.svg?v=1',n:'Bitume',sub:'Action · vole des voitures, missions, police aux trousses',pl:'1',cat:'pc tel solo',modes:[['histoire','Histoire','8 missions, partie sauvegardée'],['libre','Balade libre','La ville rien que pour toi'],['chaos','Chaos','Police aux trousses, tiens bon']]}
 ];

@@ -283,3 +283,8 @@ body.room-side .rd-btn{display:none}
 body.room-side .rd-panel{width:auto;max-height:none;height:100%;box-shadow:6px 6px 0 var(--line);animation:none}
 body.room-side .rd-panel .ch-log{flex:1;max-height:none;min-height:160px}
 body.room-side .rd-games{max-height:220px;overflow:auto}
+
+/* v77 : étoile des favoris sur chaque jeu */
+.rg-fav{position:absolute;left:0;bottom:10px;width:34px;height:30px;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;color:var(--mute);cursor:pointer;z-index:2;transition:transform .15s,color .15s}
+.rg-fav:hover{transform:scale(1.25);color:#f3c623}.rg-fav.on{color:#f3c623;text-shadow:0 0 0 #141210,1px 1px 0 #141210}
+.row-game:hover .rg-fav:not(.on){color:var(--bg)}

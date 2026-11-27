@@ -15,17 +15,18 @@
   /* manettes pour les jeux arcade qui se jouaient au clavier */
   var VP={
     tanks:[['u','KeyW','▲'],['l','KeyA','◀'],['d','KeyS','▼'],['r','KeyD','▶'],['x','Space','TIR']],
-    maze:[['u','ArrowUp','▲'],['l','ArrowLeft','◀'],['d','ArrowDown','▼'],['r','ArrowRight','▶']],
+    maze:[['u','ArrowUp','▲'],['l','ArrowLeft','◀'],['d','ArrowDown','▼'],['r','ArrowRight','▶'],['x','KeyM','CARTE']],
     saut:[['l','ArrowLeft','◀'],['r','ArrowRight','▶'],['u','ArrowUp','▲'],['d','ArrowDown','▼'],['x','Space','SAUT'],['x','KeyF','FEU']],
     hoops:[['u','KeyW','▲'],['l','KeyA','◀'],['d','KeyS','▼'],['r','KeyD','▶'],['x','Space','TIR']],
     /* v66 : casino — gros boutons sous le jeu quand le téléphone est en hauteur */
     bj:[['x','Digit2','+25'],['x','Digit4','+100'],['x','Space','OK'],['x','KeyH','CARTE'],['x','KeyS','RESTER'],['x','KeyD','×2']],
     poker:[['x','KeyF','COUCHER'],['x','KeyC','SUIVRE'],['x','KeyR','RELANCE'],['x','KeyA','TAPIS'],['x','Space','SUITE']],
     roue:[['x','Space','LANCER']],
+    rr:[['x','Digit2','+25'],['x','Digit4','+100'],['x','Space','OK<br>TIRER'],['x','KeyR','BARILLET'],['x','KeyP','PASSER']],
     /* v69 : Bitume — joystick pour marcher ou conduire, monter dans une voiture, frapper ou freiner */
     bitume:[['u','ArrowUp','▲'],['l','ArrowLeft','◀'],['d','ArrowDown','▼'],['r','ArrowRight','▶'],['x','KeyE','VOITURE'],['x','Space','COUP<br>FREIN']]
   };
-  var CAS={bj:1,poker:1,roue:1};
+  var CAS={bj:1,poker:1,roue:1,rr:1};
   var KEY={KeyW:'z',KeyA:'q',KeyS:'s',KeyD:'d',Space:' ',ArrowUp:'ArrowUp',ArrowDown:'ArrowDown',ArrowLeft:'ArrowLeft',ArrowRight:'ArrowRight'};
   function fire(type,code){try{document.dispatchEvent(new KeyboardEvent(type,{code:code,key:KEY[code]||code,bubbles:true}))}catch(e){}}
   Object.keys(VP).forEach(function(id){

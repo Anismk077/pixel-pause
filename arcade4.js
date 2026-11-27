@@ -39,39 +39,95 @@
       draw:function(C){C.R.render(C.scene,C.cam)}});
   })();
 
-  /* ================= LABYRINTHE 3D ================= */
+  /* ================= LABYRINTHE 3D (v77) =================
+     Nouveau labyrinthe à chaque partie : départ, sortie, clé et pièces placés au hasard.
+     4 modes : Facile, Moyen (clé à trouver), Difficile (clé + fantômes) et Aventure (6 niveaux de plus en plus durs). */
   (function(){
-    var S,N=11;
-    function gen(){var g=[],i,j;for(i=0;i<N*2+1;i++){g.push([]);for(j=0;j<N*2+1;j++)g[i].push(1)}var st=[[0,0]],seen={'0,0':1};g[1][1]=0;while(st.length){var c=st[st.length-1],nb=[[1,0],[-1,0],[0,1],[0,-1]].map(function(d){return [c[0]+d[0],c[1]+d[1],d]}).filter(function(q){return q[0]>=0&&q[1]>=0&&q[0]<N&&q[1]<N&&!seen[q[0]+','+q[1]]});if(!nb.length){st.pop();continue}var n=nb[Math.random()*nb.length|0];seen[n[0]+','+n[1]]=1;g[c[0]*2+1+n[2][0]][c[1]*2+1+n[2][1]]=0;g[n[0]*2+1][n[1]*2+1]=0;st.push([n[0],n[1]])}return g}
-    function wallTex(){var c=document.createElement('canvas');c.width=c.height=128;var g=c.getContext('2d');g.fillStyle='#7a6a58';g.fillRect(0,0,128,128);for(var y=0;y<8;y++)for(var x=0;x<4;x++){var v=Math.random()*30|0;g.fillStyle='rgb('+(140+v)+','+(118+v)+','+(96+v)+')';g.fillRect((x*32+(y%2)*16)%128,y*16+1,30,14)}var t=new THREE.CanvasTexture(c);return t}
+    var S,DIFF={
+      easy:{n:'Facile',N:8,loop:.14,key:false,gh:0,map:'all',coins:5,fog:30,light:.95},
+      mid:{n:'Moyen',N:12,loop:.07,key:true,gh:0,map:'seen',coins:8,fog:24,light:.75},
+      hard:{n:'Difficile',N:16,loop:.04,key:true,gh:2,map:'seen',coins:10,fog:15,light:.5}};
+    function runCfg(L){return {n:'Niveau '+L,N:6+L*2,loop:Math.max(.03,.15-L*.02),key:L>=2,gh:L>=4?L-3:0,map:L>=3?'seen':'all',coins:4+L,fog:Math.max(14,32-L*3),light:Math.max(.5,1-L*.08)}}
+    var LEVELS=6;
+    function gen(N,loop){var M=N*2+1,g=[],i,j;for(i=0;i<M;i++){g.push([]);for(j=0;j<M;j++)g[i].push(1)}
+      var sx=Math.random()*N|0,sy=Math.random()*N|0,st=[[sx,sy]],seen={};seen[sx+','+sy]=1;g[sx*2+1][sy*2+1]=0;
+      while(st.length){var c=st[st.length-1],nb=[[1,0],[-1,0],[0,1],[0,-1]].map(function(d){return [c[0]+d[0],c[1]+d[1],d]}).filter(function(q){return q[0]>=0&&q[1]>=0&&q[0]<N&&q[1]<N&&!seen[q[0]+','+q[1]]});
+        if(!nb.length){st.pop();continue}var n=nb[Math.random()*nb.length|0];seen[n[0]+','+n[1]]=1;g[c[0]*2+1+n[2][0]][c[1]*2+1+n[2][1]]=0;g[n[0]*2+1][n[1]*2+1]=0;st.push([n[0],n[1]])}
+      /* quelques murs en moins : des boucles, pour ne pas avoir qu'un seul chemin */
+      for(i=1;i<M-1;i++)for(j=1;j<M-1;j++)if(g[i][j]&&(i+j)%2===1&&Math.random()<loop){if((i%2===1&&g[i][j-1]===0&&g[i][j+1]===0)||(j%2===1&&g[i-1][j]===0&&g[i+1][j]===0))g[i][j]=0}
+      return g}
+    /* distances (en cases) depuis une case, en suivant les couloirs */
+    function bfs(g,N,a,b){var D={},q=[[a,b]];D[a+','+b]=0;while(q.length){var c=q.shift(),d0=D[c[0]+','+c[1]];[[1,0],[-1,0],[0,1],[0,-1]].forEach(function(d){var x=c[0]+d[0],y=c[1]+d[1];if(x<0||y<0||x>=N||y>=N||D[x+','+y]!=null)return;if(g[c[0]*2+1+d[0]][c[1]*2+1+d[1]])return;D[x+','+y]=d0+1;q.push([x,y])})}return D}
+    function pickFar(D,min,max,avoid){var l=Object.keys(D).filter(function(k){return D[k]>=min&&D[k]<=max&&!avoid[k]});if(!l.length)l=Object.keys(D).filter(function(k){return !avoid[k]});var k=l[Math.random()*l.length|0].split(',');return [+k[0],+k[1]]}
+    function wallTex(dark){var c=document.createElement('canvas');c.width=c.height=128;var g=c.getContext('2d');g.fillStyle=dark?'#3e3a48':'#7a6a58';g.fillRect(0,0,128,128);for(var y=0;y<8;y++)for(var x=0;x<5;x++){var v=Math.random()*30|0;g.fillStyle=dark?'rgb('+(70+v)+','+(66+v)+','+(84+v)+')':'rgb('+(140+v)+','+(118+v)+','+(96+v)+')';g.fillRect((x*32+(y%2)*16)%160-16,y*16+1,30,14)}
+      g.fillStyle='rgba(60,120,40,.35)';for(var m=0;m<6;m++){g.beginPath();g.arc(Math.random()*128,110+Math.random()*18,4+Math.random()*8,0,7);g.fill()}return new THREE.CanvasTexture(c)}
+    function cfg(C){return C.mode==='run'?runCfg(S&&S.L||1):DIFF[C.mode]||DIFF.easy}
+    function dispose(sc){sc.traverse(function(o){if(o.geometry)o.geometry.dispose();if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(function(m){if(m.map)m.map.dispose();m.dispose()})}})}
+    function build(C){var K=cfg(C),N=K.N,sc=C.scene;dispose(sc);clearScene(C);
+      var dark=K.gh>0,bg=dark?0x07060c:0x0c0a10;sc.background=new THREE.Color(bg);sc.fog=new THREE.Fog(bg,3,K.fog);
+      var g=gen(N,K.loop),M=g.length;S.g=g;S.N=N;S.K=K;S.coins=[];S.got=0;S.hasKey=!K.key;S.ghosts=[];S.seen={};S.t=0;S.pen=0;S.hint=0;
+      sc.add(new THREE.HemisphereLight(0xfff0dc,0x303040,K.light));S.lamp=new THREE.PointLight(0xffd8a0,2.2,dark?11:16,1.3);sc.add(S.lamp);
+      var cnt=0;g.forEach(function(r){r.forEach(function(v){if(v)cnt++})});var im=new THREE.InstancedMesh(new THREE.BoxGeometry(2,3,2),new THREE.MeshLambertMaterial({map:wallTex(dark)}),cnt),m4=new THREE.Matrix4(),k=0;
+      for(var i=0;i<M;i++)for(var j=0;j<M;j++)if(g[i][j]){m4.makeTranslation(i*2,1.5,j*2);im.setMatrixAt(k++,m4)}sc.add(im);
+      function tx(fn,rep){var c=document.createElement('canvas');c.width=c.height=128;fn(c.getContext('2d'));var t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rep,rep);return t}
+      var flT=tx(function(q){q.fillStyle='#4a4038';q.fillRect(0,0,128,128);for(var y=0;y<4;y++)for(var x=0;x<4;x++){var v=Math.random()*24|0;q.fillStyle='rgb('+(78+v)+','+(68+v)+','+(58+v)+')';q.fillRect(x*32+2,y*32+2,28,28)}},M),ceT=tx(function(q){q.fillStyle='#2a1e14';q.fillRect(0,0,128,128);for(var i2=0;i2<8;i2++){q.fillStyle=i2%2?'#3a2a1c':'#33251a';q.fillRect(0,i2*16,128,14)}},M/2);
+      var fl=new THREE.Mesh(new THREE.PlaneGeometry(M*2,M*2),new THREE.MeshLambertMaterial({map:flT}));fl.rotation.x=-Math.PI/2;fl.position.set(M-1,0,M-1);sc.add(fl);var ce=new THREE.Mesh(new THREE.PlaneGeometry(M*2,M*2),new THREE.MeshLambertMaterial({map:ceT}));ce.rotation.x=Math.PI/2;ce.position.set(M-1,3,M-1);sc.add(ce);
+      S.torches=[];var fm=new THREE.MeshBasicMaterial({color:0xffa040});for(var ti=1;ti<M-1;ti+=2)for(var tj=1;tj<M-1;tj+=2){if(Math.random()>(dark?.1:.18))continue;var side=[[1,0],[-1,0],[0,1],[0,-1]].filter(function(d){return g[ti+d[0]]&&g[ti+d[0]][tj+d[1]]})[0];if(!side)continue;var gx=ti*2+side[0]*.92,gz=tj*2+side[1]*.92;var stk=new THREE.Mesh(new THREE.CylinderGeometry(.04,.05,.35,6),lam(0x3a2414));stk.position.set(gx,1.9,gz);sc.add(stk);var f3=new THREE.Mesh(new THREE.ConeGeometry(.09,.25,7),fm);f3.position.set(gx,2.18,gz);sc.add(f3);S.torches.push(f3)}
+      /* départ au hasard, sortie loin du départ, clé à mi-chemin, pièces partout */
+      var s0=[Math.random()*N|0,Math.random()*N|0],D=bfs(g,N,s0[0],s0[1]),mx=0;Object.keys(D).forEach(function(q){if(D[q]>mx)mx=D[q]});
+      var used={};used[s0.join(',')]=1;var ex=pickFar(D,Math.round(mx*.72),mx,used);used[ex.join(',')]=1;S.s0=s0;S.exC=ex;
+      S.ex=[ex[0]*4+2,ex[1]*4+2];S.door=new THREE.Mesh(new THREE.BoxGeometry(1.4,2.4,1.4),new THREE.MeshBasicMaterial({color:S.hasKey?0x3fe09a:0xe2361b,transparent:true,opacity:.72}));S.door.position.set(S.ex[0],1.2,S.ex[1]);sc.add(S.door);
+      S.dl=new THREE.PointLight(S.hasKey?0x3fe09a:0xe2361b,2,8);S.dl.position.set(S.ex[0],2,S.ex[1]);sc.add(S.dl);
+      if(K.key){var DE=bfs(g,N,ex[0],ex[1]),cand=Object.keys(D).filter(function(q){return D[q]>=mx*.35&&DE[q]>=mx*.35&&!used[q]}),kc=(cand.length?cand[Math.random()*cand.length|0]:Object.keys(D).filter(function(q){return !used[q]})[0]).split(',');used[kc.join(',')]=1;
+        S.keyC=[+kc[0],+kc[1]];var kg=new THREE.Group();var km=new THREE.MeshLambertMaterial({color:0xf3c623,emissive:0x8a6a00});var ring=new THREE.Mesh(new THREE.TorusGeometry(.18,.06,8,16),km);ring.position.y=.25;kg.add(ring);var shaft=new THREE.Mesh(new THREE.BoxGeometry(.07,.45,.07),km);shaft.position.y=-.08;kg.add(shaft);var t1=new THREE.Mesh(new THREE.BoxGeometry(.16,.06,.07),km);t1.position.set(.08,-.22,0);kg.add(t1);var t2=t1.clone();t2.position.y=-.12;kg.add(t2);
+        kg.position.set(S.keyC[0]*4+2,1.2,S.keyC[1]*4+2);sc.add(kg);S.key=kg;var kl=new THREE.PointLight(0xf3c623,1.4,6);kl.position.set(S.keyC[0]*4+2,1.6,S.keyC[1]*4+2);sc.add(kl);S.kl=kl}
+      for(var q=0;q<K.coins;q++){var cc=pickFar(D,2,mx,used);used[cc.join(',')]=1;var co=new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,.06,16),new THREE.MeshLambertMaterial({color:0xf3c623,emissive:0x6a4a00}));co.rotation.x=Math.PI/2;co.position.set(cc[0]*4+2,1.1,cc[1]*4+2);sc.add(co);S.coins.push({m:co,x:cc[0]*4+2,z:cc[1]*4+2,got:false})}
+      for(var gi=0;gi<K.gh;gi++){var gc=pickFar(D,Math.max(4,Math.round(mx*.5)),mx,used);var gm=new THREE.Group(),body=new THREE.Mesh(new THREE.SphereGeometry(.42,16,12),new THREE.MeshBasicMaterial({color:0xb8c8ff,transparent:true,opacity:.75}));gm.add(body);var eye=new THREE.MeshBasicMaterial({color:0x141210});[-.14,.14].forEach(function(ex2){var e=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),eye);e.position.set(ex2,.08,.36);gm.add(e)});var gl=new THREE.PointLight(0x8aa0ff,1.2,5);gm.add(gl);gm.position.set(gc[0]*4+2,1.3,gc[1]*4+2);sc.add(gm);
+        S.ghosts.push({m:gm,c:gc.slice(),to:gc.slice(),k:1,home:gc.slice()})}
+      S.x=s0[0]*4+2;S.z=s0[1]*4+2;var open=[[0,-1,0],[1,0,-Math.PI/2],[0,1,Math.PI],[-1,0,Math.PI/2]].filter(function(d){return g[s0[0]*2+1+d[0]][s0[1]*2+1+d[1]]===0})[0]||[0,0,0];S.yaw=open[2];S.pitch=0;C.cam.position.set(S.x,1.5,S.z);C.cam.rotation.set(0,S.yaw,0,'YXZ')}
+    function cellOf(x,z){return [Math.round((x-2)/4),Math.round((z-2)/4)]}
+    function ghostStep(C,G,dt){var spd=(C.mode==='hard'?1.9:1.6)+(S.L||0)*.08,dx=G.to[0]*4+2-G.m.position.x,dz=G.to[1]*4+2-G.m.position.z,d=Math.hypot(dx,dz),mv=spd*dt;
+      if(d>mv){G.m.position.x+=dx/d*mv;G.m.position.z+=dz/d*mv}else{G.m.position.x=G.to[0]*4+2;G.m.position.z=G.to[1]*4+2;G.c=G.to.slice();
+        var pc=cellOf(S.x,S.z),D=bfs(S.g,S.N,pc[0],pc[1]),here=D[G.c[0]+','+G.c[1]],opts=[[1,0],[-1,0],[0,1],[0,-1]].filter(function(q){return !S.g[G.c[0]*2+1+q[0]][G.c[1]*2+1+q[1]]}).map(function(q){return [G.c[0]+q[0],G.c[1]+q[1]]});
+        if(here!=null&&here<=7){opts.sort(function(a,b){return D[a[0]+','+a[1]]-D[b[0]+','+b[1]]});G.to=opts[0]}
+        else{var back=G.prev,fw=opts.filter(function(o){return !back||o[0]!==back[0]||o[1]!==back[1]});G.to=(fw.length?fw:opts)[Math.random()*(fw.length||opts.length)|0]}G.prev=G.c.slice()}
+      G.m.position.y=1.3+Math.sin(S.t*3+G.home[0])*.12;G.m.lookAt(S.x,1.3,S.z);
+      if(Math.hypot(G.m.position.x-S.x,G.m.position.z-S.z)<.8&&S.inv<=0){S.x=S.s0[0]*4+2;S.z=S.s0[1]*4+2;S.pen+=10;S.inv=2;sfx.play('hurt');C.shake(10);C.pop('Attrapé ! +10 s','#b8c8ff','46px');
+        S.ghosts.forEach(function(o){var h=o.home;o.m.position.set(h[0]*4+2,1.3,h[1]*4+2);o.c=h.slice();o.to=h.slice();o.prev=null})}}
+    function mini(C){if(!S.mini)return;var mg=S.mini.getContext('2d'),M2=S.g.length,cs=170/M2,all=S.K.map==='all';mg.clearRect(0,0,170,170);mg.fillStyle='rgba(20,18,16,.78)';mg.fillRect(0,0,170,170);
+      for(var i2=0;i2<M2;i2++)for(var j2=0;j2<M2;j2++){if(!all&&!S.seen[i2+','+j2])continue;mg.fillStyle=S.g[i2][j2]?'#8a7a64':'#2a2420';mg.fillRect(i2*cs,j2*cs,cs+.5,cs+.5)}
+      function dot(x,z,col,r){var gi=x/2,gj=z/2;if(!all&&!S.seen[Math.round(gi)+','+Math.round(gj)])return;mg.fillStyle=col;mg.beginPath();mg.arc(gi*cs+cs/2,gj*cs+cs/2,r,0,7);mg.fill()}
+      dot(S.ex[0],S.ex[1],S.hasKey?'#3fe09a':'#e2361b',Math.max(3,cs*.9));if(S.key&&!S.hasKey)dot(S.keyC[0]*4+2,S.keyC[1]*4+2,'#f3c623',Math.max(3,cs*.8));
+      S.ghosts.forEach(function(G){dot(G.m.position.x,G.m.position.z,'#b8c8ff',Math.max(2.5,cs*.7))});
+      mg.save();mg.translate(S.x/2*cs+cs/2,S.z/2*cs+cs/2);mg.rotate(-S.yaw);mg.fillStyle='#e2361b';mg.beginPath();mg.moveTo(0,-6);mg.lineTo(4,4);mg.lineTo(-4,4);mg.fill();mg.restore()}
+    function intro(C){var K=cfg(C),run=C.mode==='run',best=run?C.best('lvl'):C.best('t-'+C.mode),
+        rules=(K.key?'Trouve d\'abord la <b>clé dorée</b> : la porte de sortie reste rouge et fermée sans elle. ':'Trouve la <b>porte verte</b>. ')+(K.gh?'Attention aux <b>fantômes</b> : s\'ils te touchent, retour au départ et +10 s. ':'')+'Chaque pièce enlève 3 s. Labyrinthe, départ et sortie changent à chaque partie.';
+      C.over(run?'Aventure · niveau '+S.L+' / '+LEVELS:'Labyrinthe '+K.n.toLowerCase(),rules+'<br>Record : <b>'+(best?(run?'niveau '+best:best+' s'):'—')+'</b>',run&&S.L>1?'Niveau '+S.L:'Entrer')}
     PP.arcade({id:'maze',three:true,
-      setup:function(C){ag.three(C,0x0c0a10);clearScene(C);var sc=C.scene;sc.fog=new THREE.Fog(0x0c0a10,4,26);S={g:gen(),coins:[],got:0};sc.add(new THREE.HemisphereLight(0xfff0dc,0x303040,.75));S.lamp=new THREE.PointLight(0xffd8a0,2.2,16,1.3);sc.add(S.lamp);
-        var wt=wallTex(),geo=new THREE.BoxGeometry(2,3,2),mat=new THREE.MeshLambertMaterial({map:wt}),M=S.g.length,cnt=0;S.g.forEach(function(r){r.forEach(function(v){if(v)cnt++})});var im=new THREE.InstancedMesh(geo,mat,cnt),m4=new THREE.Matrix4(),k=0;
-        for(var i=0;i<M;i++)for(var j=0;j<M;j++)if(S.g[i][j]){m4.makeTranslation(i*2,1.5,j*2);im.setMatrixAt(k++,m4)}sc.add(im);
-        function tx(fn,rep){var c=document.createElement('canvas');c.width=c.height=128;fn(c.getContext('2d'));var t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rep,rep);return t}
-        var flT=tx(function(g){g.fillStyle='#4a4038';g.fillRect(0,0,128,128);for(var y=0;y<4;y++)for(var x=0;x<4;x++){var v=Math.random()*24|0;g.fillStyle='rgb('+(78+v)+','+(68+v)+','+(58+v)+')';g.fillRect(x*32+2,y*32+2,28,28)}},M),ceT=tx(function(g){g.fillStyle='#2a1e14';g.fillRect(0,0,128,128);for(var i=0;i<8;i++){g.fillStyle=i%2?'#3a2a1c':'#33251a';g.fillRect(0,i*16,128,14)}},M/2);
-        var fl=new THREE.Mesh(new THREE.PlaneGeometry(M*2,M*2),new THREE.MeshLambertMaterial({map:flT}));fl.rotation.x=-Math.PI/2;fl.position.set(M-1,0,M-1);sc.add(fl);var ce=new THREE.Mesh(new THREE.PlaneGeometry(M*2,M*2),new THREE.MeshLambertMaterial({map:ceT}));ce.rotation.x=Math.PI/2;ce.position.set(M-1,3,M-1);sc.add(ce);
-        /* torches murales (flammes lumineuses) le long des couloirs */
-        S.torches=[];var fm=new THREE.MeshBasicMaterial({color:0xffa040});for(var ti=1;ti<M-1;ti+=2)for(var tj=1;tj<M-1;tj+=2){if(Math.random()>.18)continue;var side=[[1,0],[-1,0],[0,1],[0,-1]].filter(function(d){return S.g[ti+d[0]]&&S.g[ti+d[0]][tj+d[1]]})[0];if(!side)continue;var gx=ti*2+side[0]*.92,gz=tj*2+side[1]*.92;var st=new THREE.Mesh(new THREE.CylinderGeometry(.04,.05,.35,6),lam(0x3a2414));st.position.set(gx,1.9,gz);sc.add(st);var fl3=new THREE.Mesh(new THREE.ConeGeometry(.09,.25,7),fm);fl3.position.set(gx,2.18,gz);sc.add(fl3);S.torches.push(fl3)}
-        S.seen={};var mini=document.createElement('canvas');mini.width=mini.height=170;mini.className='maze-mini';C.cv.parentNode.appendChild(mini);document.querySelectorAll('#v-maze .maze-mini').forEach(function(x){if(x!==mini)x.remove()});S.mini=mini;
-        S.ex=[(N*2-1)*2,(N*2-1)*2];var door=new THREE.Mesh(new THREE.BoxGeometry(1.4,2.4,1.4),new THREE.MeshBasicMaterial({color:0x3fe09a,transparent:true,opacity:.7}));door.position.set(S.ex[0],1.2,S.ex[1]);sc.add(door);S.door=door;var dl=new THREE.PointLight(0x3fe09a,2,8);dl.position.set(S.ex[0],2,S.ex[1]);sc.add(dl);
-        for(var q=0;q<8;q++){var ci,cj;do{ci=(Math.random()*N|0)*2+1;cj=(Math.random()*N|0)*2+1}while(ci+cj<6);var co=new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,.06,16),new THREE.MeshLambertMaterial({color:0xf3c623,emissive:0x6a4a00}));co.rotation.x=Math.PI/2;co.position.set(ci*2,1.1,cj*2);sc.add(co);S.coins.push({m:co,x:ci*2,z:cj*2,got:false})}
-        S.x=2;S.z=2;S.yaw=S.g[2][1]===0?-Math.PI/2:Math.PI;S.pitch=0;S.t=0;C.cam.position.set(S.x,1.5,S.z);
-        C.keysText('<kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> ou flèches · clique dans l\'image pour tourner avec la souris · trouve la porte verte (et les pièces)');
-        C.over('Labyrinthe 3D','Trouve la sortie verte le plus vite possible. Ramasse les pièces au passage (−3 s chacune).<br>Record : <b>'+(C.best('t')?C.best('t')+' s':'—')+'</b>','Entrer');
-        if(!S.bound){S.bound=1}},
-      start:function(C){if(S.t){this.setup(C);C.hide()}},
-      mouse:function(C,t){if(t==='down'&&C.running&&C.cv.requestPointerLock&&document.pointerLockElement!==C.cv)try{C.cv.requestPointerLock()}catch(e){}},
-      step:function(C,dt){S.t+=dt;var k=C.keys,f=(k.KeyW||k.KeyZ||k.ArrowUp?1:0)-(k.KeyS||k.ArrowDown?1:0),s=(k.KeyD?1:0)-(k.KeyA||k.KeyQ?1:0),tr=(k.ArrowLeft?1:0)-(k.ArrowRight?1:0);S.yaw+=tr*2.2*dt;
+      setup:function(C){ag.three(C,0x0c0a10);C.hud('');S={L:1,tot:0,inv:0,done:false};build(C);
+        var mn=document.createElement('canvas');mn.width=mn.height=170;mn.className='maze-mini';C.cv.parentNode.appendChild(mn);document.querySelectorAll('#v-maze .maze-mini').forEach(function(x){if(x!==mn)x.remove()});S.mini=mn;
+        C.keysText('<kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> ou flèches · clique dans l\'image pour tourner avec la souris · <kbd>M</kbd> grande carte (−5 s de pénalité) · trouve la sortie');
+        intro(C)},
+      start:function(C){if(S.done){var L=S.L,tot=S.tot,mn=S.mini;if(C.mode==='run'&&S.next){S={L:L+1,tot:tot,inv:0,done:false,mini:mn}}else{S={L:1,tot:0,inv:0,done:false,mini:mn}}build(C)}S.done=false},
+      mouse:function(C,t){if(t==='down'&&C.running&&C.cv.requestPointerLock&&document.pointerLockElement!==C.cv&&matchMedia('(hover:hover)').matches)try{var r=C.cv.requestPointerLock();if(r&&r.catch)r.catch(function(){})}catch(e){}},
+      key:function(C,k,d){if(d&&k==='KeyM'&&C.running&&S.K.map!=='all'){S.hint=4;S.pen+=5;C.pop('Carte : +5 s',YEL,'40px')}},
+      step:function(C,dt){S.t+=dt;if(S.inv>0)S.inv-=dt;if(S.hint>0)S.hint-=dt;var k=C.keys,f=(k.KeyW||k.KeyZ||k.ArrowUp?1:0)-(k.KeyS||k.ArrowDown?1:0),s=(k.KeyD?1:0)-(k.KeyA||k.KeyQ?1:0),tr=(k.ArrowLeft?1:0)-(k.ArrowRight?1:0);S.yaw+=tr*2.2*dt;
         var sp=4.2*dt,dx=(-Math.sin(S.yaw)*f+Math.cos(S.yaw)*s)*sp,dz=(-Math.cos(S.yaw)*f-Math.sin(S.yaw)*s)*sp;function free(x,z){var r=.45;for(var a=-1;a<=1;a+=2)for(var b=-1;b<=1;b+=2){var i=Math.round((x+a*r)/2),j=Math.round((z+b*r)/2);if(S.g[i]&&S.g[i][j])return false}return true}
         if(free(S.x+dx,S.z))S.x+=dx;if(free(S.x,S.z+dz))S.z+=dz;C.cam.position.set(S.x,1.5+(f||s?Math.sin(S.t*9)*.04:0),S.z);C.cam.rotation.set(S.pitch,S.yaw,0,'YXZ');S.lamp.position.set(S.x,2.2,S.z);
-        S.torches.forEach(function(f,i){f.scale.y=1+Math.sin(S.t*14+i)*.2});
-        var ci2=Math.round(S.x/2),cj2=Math.round(S.z/2);for(var a2=-1;a2<=1;a2++)for(var b2=-1;b2<=1;b2++)S.seen[(ci2+a2)+','+(cj2+b2)]=1;
-        if(S.mini){var mg=S.mini.getContext('2d'),M2=S.g.length,cs=170/M2;mg.clearRect(0,0,170,170);mg.fillStyle='rgba(20,18,16,.75)';mg.fillRect(0,0,170,170);for(var i2=0;i2<M2;i2++)for(var j2=0;j2<M2;j2++){if(!S.seen[i2+','+j2])continue;mg.fillStyle=S.g[i2][j2]?'#8a7a64':'#2a2420';mg.fillRect(i2*cs,j2*cs,cs+.5,cs+.5)}
-          mg.fillStyle='#3fe09a';if(S.seen[Math.round(S.ex[0]/2)+','+Math.round(S.ex[1]/2)])mg.fillRect(S.ex[0]/2*cs-2,S.ex[1]/2*cs-2,cs+4,cs+4);mg.save();mg.translate(S.x/2*cs+cs/2,S.z/2*cs+cs/2);mg.rotate(-S.yaw);mg.fillStyle='#e2361b';mg.beginPath();mg.moveTo(0,-6);mg.lineTo(4,4);mg.lineTo(-4,4);mg.fill();mg.restore()}
-        S.coins.forEach(function(c){c.m.rotation.z+=dt*3;if(!c.got&&Math.hypot(c.x-S.x,c.z-S.z)<.7){c.got=true;c.m.visible=false;S.got++;sfx.play('win');C.pop('−3 s','#f3c623','44px')}});S.door.rotation.y+=dt;
-        var tt=Math.max(0,S.t-S.got*3);if(Math.hypot(S.ex[0]-S.x,S.ex[1]-S.z)<1){C.stop();if(document.exitPointerLock)document.exitPointerLock();var sec=Math.round(tt),nb=C.best('t',sec,true);C.win();sfx.play('win');C.over('Sorti !','En <b>'+sec+' s</b> ('+S.got+' pièce'+(S.got>1?'s':'')+')'+(nb?' · nouveau record !':''),'Nouveau labyrinthe')}
-        C.hud('<span>Temps <b>'+Math.round(tt)+' s</b></span><span>Pièces <b>'+S.got+' / 8</b></span>')},
+        S.torches.forEach(function(q,i){q.scale.y=1+Math.sin(S.t*14+i)*.2});
+        var ci=Math.round(S.x/2),cj=Math.round(S.z/2);for(var a2=-1;a2<=1;a2++)for(var b2=-1;b2<=1;b2++)S.seen[(ci+a2)+','+(cj+b2)]=1;
+        if(S.hint>0){var sv=S.K.map;S.K.map='all';mini(C);S.K.map=sv}else mini(C);
+        S.coins.forEach(function(c){c.m.rotation.z+=dt*3;if(!c.got&&Math.hypot(c.x-S.x,c.z-S.z)<.7){c.got=true;c.m.visible=false;S.got++;sfx.play('pickup');C.pop('−3 s',YEL,'44px')}});
+        if(S.key&&!S.hasKey){S.key.rotation.y+=dt*2.5;S.key.position.y=1.2+Math.sin(S.t*3)*.1;if(Math.hypot(S.keyC[0]*4+2-S.x,S.keyC[1]*4+2-S.z)<.8){S.hasKey=true;S.key.visible=false;S.kl.intensity=0;S.door.material.color.setHex(0x3fe09a);S.dl.color.setHex(0x3fe09a);sfx.play('win');C.pop('CLÉ ! La porte est ouverte',YEL,'40px')}}
+        S.ghosts.forEach(function(G){ghostStep(C,G,dt)});
+        S.door.rotation.y+=dt;var tt=Math.max(0,S.t+S.pen-S.got*3),near=Math.hypot(S.ex[0]-S.x,S.ex[1]-S.z)<1;
+        if(near&&!S.hasKey){if(!S.lockT||S.t-S.lockT>2){S.lockT=S.t;sfx.play('lose');C.pop('Fermé : trouve la clé !',RED,'40px')}}
+        if(near&&S.hasKey){C.stop();S.done=true;if(document.exitPointerLock&&document.pointerLockElement)document.exitPointerLock();var sec=Math.round(tt);sfx.play('win');
+          if(C.mode==='run'){S.tot+=sec;var last=S.L>=LEVELS;S.next=!last;C.best('lvl',S.L);
+            if(last){var nb2=C.best('t-run',S.tot,true);C.win();C.over('Aventure terminée !','Les '+LEVELS+' niveaux en <b>'+S.tot+' s</b>'+(nb2?' · nouveau record !':''),'Rejouer')}
+            else C.over('Niveau '+S.L+' réussi !','En <b>'+sec+' s</b> ('+S.got+' pièce'+(S.got>1?'s':'')+') · total '+S.tot+' s.<br>Niveau '+(S.L+1)+' : '+(runCfg(S.L+1).gh>runCfg(S.L).gh?'un fantôme de plus…':runCfg(S.L+1).key&&!runCfg(S.L).key?'il faudra trouver une clé.':runCfg(S.L+1).map!==runCfg(S.L).map?'la carte ne montre plus que ce que tu as vu.':'plus grand.'),'Niveau '+(S.L+1))}
+          else{var nb=C.best('t-'+C.mode,sec,true);C.win();C.over('Sorti !','En <b>'+sec+' s</b> ('+S.got+' pièce'+(S.got>1?'s':'')+')'+(nb?' · nouveau record !':''),'Nouveau labyrinthe')}return}
+        C.hud('<span>'+S.K.n+'</span><span>Temps <b>'+Math.round(tt)+' s</b></span>'+(S.K.key?'<span>Clé <b>'+(S.hasKey?'✓':'à trouver')+'</b></span>':'')+'<span>Pièces <b>'+S.got+' / '+S.coins.length+'</b></span>'+(C.mode==='run'?'<span>Niveau <b>'+S.L+' / '+LEVELS+'</b></span>':''))},
       draw:function(C){C.R.render(C.scene,C.cam)},close:function(){if(S&&S.mini){S.mini.remove();S.mini=null}}});
     document.addEventListener('mousemove',function(e){if(PP.cur()==='maze'&&S&&document.pointerLockElement===document.getElementById('maze-cv')){var s=.0025*(PP.settings?PP.settings.sens/100:1);S.yaw-=e.movementX*s;S.pitch=Math.max(-.8,Math.min(.8,S.pitch-e.movementY*s))}});
   })();

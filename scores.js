@@ -11,7 +11,7 @@
     stack:[['ag-stack-h','Hauteur',0,'']],reflex:[['ag-reflex-ms','Réflexes',1,' ms']],bricks:[['ag-bricks-pts','Score',0,' pts']],bowl:[['ag-bowl-pts','Score',0,' pts']],
     golf:[['ag-golf-coups9','Coups',1,' coups']],arch:[['ag-arch-pts','Score',0,' pts']],typing:[['ag-typing-wpm','Vitesse',0,' mots/min']],quiz:[['ag-quiz-pts','Score',0,' pts']],
     memory:[['ag-memory-coups','Coups',1,' coups']],mines:[['ag-mines-easy','Facile',1,' s'],['ag-mines-mid','Moyen',1,' s'],['ag-mines-hard','Difficile',1,' s']],
-    plane:[['ag-plane-pts','Score',0,' pts']],maze:[['ag-maze-t','Temps',1,' s']],hoops:[['ag-hoops-pts','Points',0,' pts']],pool:[['ag-pool-coups','Coups',1,' coups']],
+    plane:[['ag-plane-pts','Score',0,' pts']],maze:[['ag-maze-t-easy','Facile',1,' s'],['ag-maze-t-mid','Moyen',1,' s'],['ag-maze-t-hard','Difficile',1,' s'],['ag-maze-lvl','Aventure',0,'niv']],hoops:[['ag-hoops-pts','Points',0,' pts']],pool:[['ag-pool-coups','Coups',1,' coups']],
     marz:[['ag-marz-kg','Poids',0,' kg']],flap:[['ag-flap-pts','Cheminées',0,'']],snakeio:[['ag-snakeio-m','Taille',0,'']],
     potion:[['ag-potion-lvl-easy','Facile',0,'niv'],['ag-potion-lvl-mid','Moyen',0,'niv'],['ag-potion-lvl-hard','Difficile',0,'niv'],['ag-potion-lvl-exp','Expert',0,'niv']],
     wire:[['ag-wire-pts','Panneaux',0,'']],

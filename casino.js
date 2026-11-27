@@ -1,4 +1,4 @@
-/* Pixel Pause — Casino : Blackjack, Poker (Texas Hold'em contre 3 bots) et la Roue.
+/* Pixel Pause — Casino : Blackjack, Poker (Texas Hold'em contre 3 bots), la Roue et la Roulette russe.
    Jetons virtuels uniquement (aucun argent réel). Les trois jeux partagent la même réserve de jetons. */
 (function(){
   'use strict';
@@ -429,5 +429,218 @@
         else if(S.phase==='done'){button(U,g,660,460,220,54,'Nouvelle mise',function(){S.phase='bet';S.bets={};S.res=-1;S.msg=''},{key:['Space','Enter'],sub:'Espace'})}
         else mono(g,'La roue tourne…',760,480,16,CR)
       }});
+  })();
+  /* =====================================================================
+     ROULETTE RUSSE (v77) — contre 3 bots ou avec tout le salon (6 max).
+     Chacun mise la somme qu'il veut. À chaque manche tout le monde paie la « mise de manche » dans le pot,
+     puis le revolver (1 balle sur 6) passe de main en main : TIRER, TOURNER le barillet (−1 mise) ou PASSER (−2 mises).
+     Celui qui prend la balle paie une amende et les autres se partagent le pot. Le dernier qui a encore des jetons rafle tout.
+     Le chef (ou ton navigateur en solo) tient le barillet ; chacun débite et crédite sa propre réserve de jetons.
+     Jetons virtuels uniquement, revolver de dessin animé.
+     ===================================================================== */
+  (function(){
+    var G=null,U=UI(),CC=null,SOLO=true,BUL=0,MYBET=100,LED={gid:'',paid:false,got:false},
+      A={ev:-1,k:'',who:-1,t:9,ang:-Math.PI/2,flash:0,beat:0,cyl:0,tv:-1,ts:0};
+    var BOTN=['Le Baron','Mamie Colt','Tonton Flingue','Lucky Lu','La Comtesse','Big Mike','Doc Pépin','Rosa'];
+    var SC=['#e2361b','#3fa9ff','#3fe09a','#f3c623','#c06be0','#ff8a3d'];
+    function host(C){return SOLO||C.net.isHost}
+    function myId(C){return SOLO?'me':C.net.me.id}
+    function mySeat(){if(!G||!CC)return null;var id=myId(CC);for(var i=0;i<G.seats.length;i++)if(G.seats[i].id===id)return G.seats[i];return null}
+    function live(){return G.seats.filter(function(s){return s.live})}
+    function nextLive(i){var n=G.seats.length;for(var k=1;k<=n;k++){var j=((i+k)%n+n)%n;if(G.seats[j].live)return j}return i}
+    function ev(k,who,x){G.ev={id:(G.ev?G.ev.id:0)+1,k:k,who:who,x:x||0}}
+    function seat(id,n,col,bot,buy){return {id:id,n:n,col:col,bot:!!bot,buy:buy||0,rdy:!!bot,st:0,in:false,out:false,live:false,gone:false}}
+
+    /* ---------- le chef : règles ---------- */
+    function roomSeats(C){var old=G?G.seats:[];return C.net.players.slice(0,6).map(function(p,i){var o=old.filter(function(s){return s.id===p.id})[0],s=seat(p.id,p.name||'?',i);if(o){s.buy=o.buy;s.rdy=o.rdy}return s})}
+    function newGame(C){var keep=G&&G.seats||[];G={gid:Math.random().toString(36).slice(2,9),ph:'lobby',seats:[],pot:0,ante:0,base:10,m:0,cur:-1,first:-1,p:0,sub:'',t:0,tt:0,nx:'',split:0,fine:0,win:-1,ev:{id:(G&&G.ev?G.ev.id:0)+1,k:'lobby',who:-1},v:(G?G.v:0)};
+      if(SOLO)G.seats=[seat('me',PP.myName?PP.myName()||'Toi':'Toi',0,false,MYBET)];
+      else{G.seats=roomSeats(C);G.seats.forEach(function(s){var o=keep.filter(function(k){return k.id===s.id})[0];if(o)s.buy=o.buy;s.rdy=false})}}
+    function sync(C){G.v++;if(!SOLO)C.net.broadcast({t:'rr-s',g:G});view(C)}
+    function launch(C){
+      if(SOLO){var me=G.seats[0];me.buy=MYBET;me.rdy=true;var names=BOTN.slice().sort(function(){return Math.random()-.5});
+        for(var b=0;b<3;b++){var bb=Math.max(20,Math.round(MYBET*(.6+Math.random()*.8)/10)*10);G.seats.push(seat('bot'+b,names[b],b+1,true,bb))}}
+      var ps=G.seats.filter(function(s){return s.rdy&&s.buy>=10});if(ps.length<2)return;
+      G.seats=ps;var tot=0;ps.forEach(function(s,i){s.col=i;s.in=true;s.st=s.buy;tot+=s.buy});
+      G.base=Math.max(5,Math.round(tot/ps.length/12/5)*5);G.ph='play';G.m=0;G.pot=0;G.first=Math.random()*ps.length|0;G.first=(G.first-1+ps.length)%ps.length;
+      manche(C)}
+    function anteOf(m){var a=G.base*Math.pow(1.35,m-1);return a<50?Math.max(5,Math.round(a)):Math.round(a/5)*5}
+    function manche(C){G.seats.forEach(function(s){if(s.in&&!s.out&&s.st<=0)s.out=true});
+      var al=G.seats.filter(function(s){return s.in&&!s.out});if(al.length<=1){finish(C,al[0]);return}
+      G.m++;G.ante=anteOf(G.m);G.split=0;G.fine=0;
+      al.forEach(function(s){var a=Math.min(G.ante,s.st);s.st-=a;G.pot+=a});
+      G.seats.forEach(function(s){s.live=s.in&&!s.out});
+      BUL=Math.random()*6|0;G.p=0;G.first=nextLive(G.first);G.cur=G.first;G.sub='intro';G.t=1.4;ev('manche',-1);sync(C)}
+    function startTurn(C){var s=G.seats[G.cur];G.sub='turn';G.t=s.bot?.5+Math.random()*.7:(SOLO?0:25);G.tt=G.t;sync(C)}
+    function act(C,from,a){if(!G||G.ph!=='play'||G.sub!=='turn')return;var s=G.seats[G.cur];if(!s||s.id!==from)return;
+      if(a==='spin'){if(s.st<G.ante)return;s.st-=G.ante;G.pot+=G.ante;BUL=Math.random()*6|0;G.p=0;G.sub='spin';G.t=1.2;ev('spin',G.cur,G.ante);sync(C);return}
+      if(a==='pass'){if(s.st<G.ante*2)return;s.st-=G.ante*2;G.pot+=G.ante*2;G.sub='res';G.nx='next';G.t=1.2;ev('pass',G.cur,G.ante*2);sync(C);return}
+      if(a==='shoot')pull(C)}
+    function pull(C){G.sub='pull';G.t=1.25;ev('pull',G.cur);sync(C)}
+    function resolve(C){var s=G.seats[G.cur];
+      if(G.p===BUL){var f=Math.min(s.st,G.ante*2);s.st-=f;G.pot+=f;s.live=false;G.fine=f;
+        var sv=live(),sh=Math.floor(G.pot/sv.length),rest=G.pot-sh*sv.length;sv.forEach(function(x,i){x.st+=sh+(i<rest?1:0)});G.split=sh;G.pot=0;
+        if(s.st<=0)s.out=true;G.sub='res';G.nx='manche';G.t=2.8;ev('bang',G.cur,f)}
+      else{G.p++;G.sub='res';G.nx='next';G.t=.8;ev('click',G.cur)}
+      sync(C)}
+    function finish(C,w){G.ph='end';G.sub='';G.win=-1;if(w){w.st+=G.pot;G.pot=0;G.win=G.seats.indexOf(w)}ev('end',G.win);sync(C)}
+    function botMove(s){var left=6-G.p;
+      if(left<=1)return s.st>=G.ante?'spin':s.st>=G.ante*2?'pass':'shoot';
+      if(left<=3&&s.st>=G.ante*3&&Math.random()<(left===2?.75:.4))return Math.random()<.7?'spin':'pass';
+      return 'shoot'}
+    function hstep(C,dt){if(!G||G.ph!=='play')return;var s=G.seats[G.cur];
+      if(G.sub==='turn'){if(!s)return;if(s.bot||!SOLO){G.t-=dt;if(G.t<=0)act(C,s.id,s.bot?botMove(s):'shoot')}return}
+      G.t-=dt;if(G.t>0)return;
+      if(G.sub==='intro')startTurn(C);
+      else if(G.sub==='spin')pull(C);
+      else if(G.sub==='pull')resolve(C);
+      else if(G.sub==='res'){if(G.nx==='next'){G.cur=nextLive(G.cur);startTurn(C)}else manche(C)}}
+    /* quelqu'un quitte le salon : en partie, ses jetons restent dans le pot */
+    function gone(C,ids){if(!G)return;var ch=false;
+      G.seats.slice().forEach(function(s){if(s.bot||s.gone||ids.indexOf(s.id)>=0)return;ch=true;
+        if(G.ph==='lobby'){G.seats.splice(G.seats.indexOf(s),1);return}
+        s.gone=true;if(G.ph!=='play'||s.out)return;var i=G.seats.indexOf(s),wasCur=i===G.cur&&/turn|spin|pull/.test(G.sub);G.pot+=s.st;s.st=0;s.out=true;s.live=false;
+        if(live().length<=1){G.sub='res';G.nx='manche';G.t=1}else if(wasCur){G.cur=nextLive(G.cur);startTurn(C)}});
+      if(ch)sync(C)}
+    function msgIn(C,m,from){if(!G)return;
+      if(m.t==='rr-hello'){if(G.ph==='lobby'){var ns=roomSeats(C);G.seats=ns}sync(C);return}
+      var s=G.seats.filter(function(x){return x.id===from})[0];
+      if(m.t==='rr-bet'&&G.ph==='lobby'&&s){s.buy=Math.max(0,Math.min(1e6,Math.round(+m.v||0)));s.rdy=!!m.rdy&&s.buy>=10;sync(C);
+        if(G.seats.length>=2&&G.seats.every(function(x){return x.rdy}))launch(C);return}
+      if(m.t==='rr-act')act(C,from,m.a)}
+
+    /* ---------- chaque joueur : affichage, sons et jetons ---------- */
+    function view(C,g){if(g)G=g;if(!G)return;var me=mySeat();
+      if(G.gid!==LED.gid)LED={gid:G.gid,paid:false,got:false};
+      if(me&&me.in&&G.ph!=='lobby'&&!LED.paid){LED.paid=true;BANK.add(-me.buy)}
+      if(me&&me.in&&G.ph==='end'&&!LED.got){LED.got=true;BANK.add(me.st);record(C)}
+      if(G.ev&&G.ev.id!==A.ev){A.ev=G.ev.id;fx(C,G.ev)}}
+    function fx(C,e){A.k=e.k;A.who=e.who;A.t=0;var me=mySeat(),mine=me&&G.seats[e.who]===me,who=G.seats[e.who];
+      if(e.k==='bang'){A.flash=1;C.shake(14);sfx.play('shoot');setTimeout(function(){sfx.play(mine?'lose':'hit')},140);C.pop('PAN !',RED,'130px')}
+      else if(e.k==='click'){sfx.play('tick');C.pop('clic',CR,'56px')}
+      else if(e.k==='spin'){sfx.play('ui')}
+      else if(e.k==='pass'){sfx.play('ui')}
+      else if(e.k==='manche'){sfx.play('go');C.pop('MANCHE '+G.m,YEL,'64px')}
+      else if(e.k==='end'){var w=G.seats[G.win];if(w&&w===me){C.pop('TU RAFLES TOUT !',YEL,'64px');sfx.play('win');C.win()}else if(me&&me.in)sfx.play('lose')}
+      if(e.k==='pull'&&mine)A.beat=0}
+    function send(C,m){if(host(C))msgIn(C,m,myId(C));else C.net.send(m)}
+
+    /* ---------- dessin ---------- */
+    function pos(i){var n=G.seats.length,me=mySeat(),mi=me?G.seats.indexOf(me):0,a=Math.PI/2+(i-mi)*2*Math.PI/n;return {a:a,x:480+Math.cos(a)*372,y:236+Math.sin(a)*164}}
+    function felt(g){var bg=g.createRadialGradient(480,260,80,480,270,640);bg.addColorStop(0,'#3a1216');bg.addColorStop(1,'#120708');g.fillStyle=bg;g.fillRect(0,0,W,H);
+      g.globalAlpha=.06;for(var i=0;i<W;i+=24){g.fillStyle=i%48?'#000':'#fff';g.fillRect(i,0,12,H)}g.globalAlpha=1;
+      g.fillStyle='#3b2412';g.beginPath();g.ellipse(480,240,330,150,0,0,7);g.fill();
+      var gr=g.createRadialGradient(480,220,30,480,240,330);gr.addColorStop(0,'#2a7a52');gr.addColorStop(1,'#123b27');g.fillStyle=gr;g.beginPath();g.ellipse(480,240,314,136,0,0,7);g.fill();
+      g.strokeStyle='rgba(243,198,35,.35)';g.lineWidth=2;g.beginPath();g.ellipse(480,240,296,120,0,0,7);g.stroke()}
+    function revolver(g,x,y,ang,sc,kick,cyl,shake){g.save();g.translate(x+(shake?(Math.random()-.5)*shake:0),y+(shake?(Math.random()-.5)*shake:0));g.rotate(ang);if(Math.cos(ang)<0)g.scale(1,-1);g.scale(sc,sc);g.translate(-kick*16,0);
+      var D='#1b1d21';g.lineJoin='round';
+      g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(14,40,110,14,0,0,7);g.fill();
+      var wd=g.createLinearGradient(-80,0,-30,64);wd.addColorStop(0,'#a35a2a');wd.addColorStop(1,'#552a12');g.fillStyle=wd;
+      g.beginPath();g.moveTo(-28,-2);g.lineTo(-60,0);g.quadraticCurveTo(-88,32,-80,64);g.lineTo(-52,68);g.quadraticCurveTo(-50,34,-20,16);g.closePath();g.fill();g.strokeStyle='#2a140a';g.lineWidth=2.5;g.stroke();
+      g.strokeStyle='rgba(0,0,0,.25)';g.lineWidth=1.5;for(var k=0;k<5;k++){g.beginPath();g.moveTo(-66+k*3,14+k*10);g.lineTo(-46+k*2,10+k*10);g.stroke()}
+      var mt=g.createLinearGradient(0,-26,0,18);mt.addColorStop(0,'#e3e7ec');mt.addColorStop(.45,'#8d949c');mt.addColorStop(1,'#3d434a');
+      g.fillStyle=D;g.beginPath();g.moveTo(-56,-20);g.lineTo(-74,-34);g.lineTo(-64,-38);g.lineTo(-44,-22);g.closePath();g.fill();
+      g.fillStyle=mt;g.strokeStyle=D;g.lineWidth=2.5;
+      g.beginPath();g.moveTo(-62,-16);g.lineTo(-22,-20);g.lineTo(44,-20);g.lineTo(44,8);g.lineTo(-18,12);g.lineTo(-32,16);g.lineTo(-62,2);g.closePath();g.fill();g.stroke();
+      rr(g,42,-19,100,17,3);g.fill();g.stroke();rr(g,44,-1,66,9,4);g.fill();g.stroke();g.fillStyle=D;g.fillRect(132,-25,7,7);
+      g.strokeStyle=D;g.lineWidth=5;g.beginPath();g.moveTo(-34,14);g.quadraticCurveTo(-30,42,-2,30);g.lineTo(2,10);g.stroke();
+      g.lineWidth=3.5;g.beginPath();g.moveTo(-16,13);g.quadraticCurveTo(-22,26,-14,32);g.stroke();
+      var cg=g.createLinearGradient(0,-26,0,16);cg.addColorStop(0,'#c9ced4');cg.addColorStop(.5,'#6c737b');cg.addColorStop(1,'#2e3338');g.fillStyle=cg;g.lineWidth=2.5;rr(g,-18,-26,56,40,9);g.fill();g.stroke();
+      g.save();rr(g,-18,-26,56,40,9);g.clip();g.fillStyle='rgba(0,0,0,.4)';var off=((cyl||0)%1)*18;for(k=-1;k<4;k++)rr(g,-14+k*18+off,-21,9,30,4),g.fill();g.restore();
+      g.fillStyle='rgba(255,255,255,.35)';g.fillRect(46,-17,90,3);
+      g.restore()}
+    function flash(g,x,y,ang,a){if(a<=0)return;g.save();g.translate(x,y);g.rotate(ang);g.translate(150,Math.cos(ang)<0?10:-10);g.globalAlpha=Math.min(1,a*1.4);
+      for(var r=0;r<2;r++){g.fillStyle=r?'#fff6c0':'#ff9a2a';g.beginPath();for(var i=0;i<16;i++){var rad=(i%2?18:58)*(r?.55:1)*(0.8+a*.4),q=i/16*Math.PI*2;g.lineTo(Math.cos(q)*rad,Math.sin(q)*rad)}g.closePath();g.fill()}g.restore()}
+    function cylinder(g,x,y){var left=6-G.p;g.fillStyle='rgba(20,18,16,.85)';g.beginPath();g.arc(x,y,30,0,7);g.fill();g.strokeStyle='#8d949c';g.lineWidth=3;g.stroke();
+      for(var i=0;i<6;i++){var q=-Math.PI/2+i*Math.PI/3+A.cyl,used=i<G.p;g.fillStyle=used?'#3a3632':'#c9ced4';g.beginPath();g.arc(x+Math.cos(q)*18,y+Math.sin(q)*18,6,0,7);g.fill();if(!used){g.fillStyle='#141210';g.beginPath();g.arc(x+Math.cos(q)*18,y+Math.sin(q)*18,3,0,7);g.fill()}}
+      mono(g,'RISQUE',x,y+44,11,'rgba(241,236,226,.6)');txt(g,'1 sur '+left,x,y+64,22,left<=2?RED:left<=3?YEL:CR)}
+    function seatCard(g,s,i){var P=pos(i),w=158,h=58,x=P.x-w/2,y=P.y-h/2,cur=G.ph==='play'&&G.cur===i&&G.sub!=='intro',me=s===mySeat(),hit=A.k==='bang'&&A.who===i&&G.sub==='res',win=G.ph==='end'&&G.win===i;
+      g.save();if(s.out&&!win)g.globalAlpha=.42;
+      if(cur||win){g.shadowColor=win?YEL:RED;g.shadowBlur=26}
+      g.fillStyle=hit?'#6a1410':me?'#1d3a66':'rgba(20,18,16,.92)';rr(g,x,y,w,h,12);g.fill();g.shadowBlur=0;
+      g.strokeStyle=cur||win?YEL:SC[s.col%6];g.lineWidth=cur||win?3:2;rr(g,x,y,w,h,12);g.stroke();
+      g.fillStyle=SC[s.col%6];g.beginPath();g.arc(x+24,y+h/2,15,0,7);g.fill();txt(g,(s.bot?'🤖':String(s.n||'?').charAt(0).toUpperCase()),x+24,y+h/2+1,s.bot?15:17,INK);
+      mono(g,String(s.n||'?').slice(0,14),x+46,y+19,11,CR,'left');
+      var st=G.ph==='lobby'?(s.rdy?'prêt · '+s.buy:'choisit sa mise…'):s.out?(s.gone?'parti':'RUINÉ'):s.st+' jetons';
+      mono(g,st,x+46,y+40,13,s.out?RED:G.ph==='lobby'&&!s.rdy?'rgba(241,236,226,.6)':YEL,'left');
+      if(G.ph==='play'&&s.in&&!s.out&&!s.live)mono(g,'touché',x+w-8,y+12,10,RED,'right');
+      g.restore();
+      if(G.ph==='play'&&G.sub==='res'&&A.k==='bang'&&A.t<3){var up=Math.min(1,A.t)*22;
+        if(s.live&&G.split){g.globalAlpha=Math.max(0,1-A.t/3);mono(g,'+'+G.split,P.x,y-10-up,17,GRN);g.globalAlpha=1}
+        if(hit&&G.fine){g.globalAlpha=Math.max(0,1-A.t/3);mono(g,'−'+G.fine,P.x,y-10-up,17,RED);g.globalAlpha=1}}
+      if(G.ph==='play'&&A.t<1.4&&A.who===i&&(A.k==='spin'||A.k==='pass')){g.globalAlpha=Math.max(0,1-A.t/1.4);mono(g,'−'+(A.k==='spin'?G.ante:G.ante*2),P.x,y-12-A.t*18,16,RED);g.globalAlpha=1}}
+    function status(){var s=G.seats[G.cur],n=s?s.n:'?';
+      if(G.sub==='intro')return ['Manche '+G.m+' : chacun met '+G.ante+' dans le pot',YEL];
+      if(G.sub==='turn')return [n+' a le revolver…',CR];
+      if(G.sub==='spin')return [n+' fait tourner le barillet (−'+G.ante+')',CR];
+      if(G.sub==='pull')return [n+' appuie sur la détente…',CR];
+      if(G.sub==='res'){if(A.k==='bang')return ['PAN ! '+n+' paie '+G.fine+(G.split?' · les autres gagnent '+G.split+' chacun':''),RED];if(A.k==='pass')return [n+' passe (−'+G.ante*2+')',CR];return ['Clic… '+n+' s\'en sort',GRN]}
+      return ['',CR]}
+    function pill(g,s,col,y){g.font='700 15px "IBM Plex Mono", monospace';var w=g.measureText(s).width+34;g.fillStyle='rgba(20,18,16,.9)';rr(g,480-w/2,y-18,w,36,12);g.fill();mono(g,s,480,y,15,col)}
+    function lobbyBar(g,C,me){
+      if(refillOk()&&(!me||!me.rdy)&&MYBET<10){button(U,g,355,458,250,56,'Recharger 1000 jetons',function(){refill(C);MYBET=100},{col:'#7b3fd1',key:['Space','Enter'],sub:'jetons gratuits'});return}
+      var rdy=me&&me.rdy&&!SOLO;
+      if(!rdy){[10,25,50,100,500].forEach(function(v,k){var x=24+k*54;chip(g,x+22,486,v,21);U.btns.push({x:x,y:462,w:44,h:48,fn:function(){if(MYBET+v<=BANK.get()){MYBET+=v;sfx.play('ui')}else{MYBET=BANK.get();PP.toast('Pas assez de jetons','warn')}},key:'Digit'+(k+1)})});
+        button(U,g,296,462,62,48,'Tapis',function(){MYBET=BANK.get();sfx.play('ui')},{col:'#3a3632',hcol:'#4a4642',size:13,key:'KeyT'});
+        mono(g,'MISE',405,474,11,'rgba(241,236,226,.6)');txt(g,String(MYBET),405,498,26,YEL);
+        button(U,g,450,462,70,48,'Effacer',function(){MYBET=0},{col:'#3a3632',hcol:'#4a4642',size:12,key:'Backspace'})}
+      var ok=MYBET>=10&&MYBET<=BANK.get();
+      if(SOLO)button(U,g,540,458,200,56,'Commencer',function(){if(ok)launch(C)},{off:!ok,key:['Space','Enter'],sub:'Espace · contre 3 bots'});
+      else{button(U,g,rdy?380:540,458,rdy?200:150,56,rdy?'Pas prêt':'Prêt',function(){send(C,{t:'rr-bet',v:MYBET,rdy:!rdy})},{off:!rdy&&!ok,key:['Space','Enter'],sub:'Espace',col:rdy?'#3a3632':RED});
+        if(host(C)&&!rdy)button(U,g,704,458,236,56,'Lancer la partie',function(){launch(C)},{off:G.seats.filter(function(s){return s.rdy}).length<2,col:'#7b3fd1',hcol:'#8f55e6',key:'KeyL',sub:'L · 2 joueurs prêts mini'})}
+      if(!rdy&&MYBET>BANK.get())MYBET=BANK.get()}
+    function draw(C,dt){var g=C.g;U.btns=[];dt=dt||0;A.t+=dt;if(A.flash>0)A.flash-=dt*2.2;
+      felt(g);bankBar(g,G&&G.ph!=='lobby'?'Jetons virtuels':'');
+      if(!G){mono(g,SOLO?'':'Connexion à la table du chef…',480,250,18,CR);return}
+      var me=mySeat(),i;
+      /* revolver : vise celui qui a la main */
+      var tgt=G.ph==='play'&&G.cur>=0?pos(G.cur).a:G.ph==='end'&&G.win>=0?pos(G.win).a:-Math.PI/2+Math.sin(A.t*.5)*.4,d=tgt-A.ang;d=Math.atan2(Math.sin(d),Math.cos(d));A.ang+=d*Math.min(1,dt*6);
+      if(G.ph==='play'&&G.sub==='spin')A.cyl+=dt*14;
+      var pulling=G.ph==='play'&&G.sub==='pull',kick=A.k==='bang'&&A.t<.25?1-A.t/.25:A.k==='click'&&A.t<.12?.3:0;
+      if(pulling){A.beat-=dt;if(A.beat<=0){A.beat=.42;sfx.play('tick')}}
+      if(G.ph==='lobby'){
+        txt(g,'ROULETTE RUSSE',480,128,40,CR);
+        mono(g,'Chacun mise ce qu\'il veut · 1 balle, 6 trous',480,166,13,YEL);
+        ['À chaque manche, tout le monde paie la mise de manche.','À ton tour : TIRER, TOURNER le barillet (−1 mise)','ou PASSER (−2 mises). Qui prend la balle paie une amende,','les autres se partagent le pot. Le dernier avec des jetons rafle tout.'].forEach(function(l,k){mono(g,l,480,206+k*22,12,'rgba(241,236,226,.82)')});
+        revolver(g,480,318,-0.12+Math.sin(A.t*.8)*.05,.55,0,0,0)}
+      else{
+        mono(g,G.ph==='end'?'PARTIE TERMINÉE':'MANCHE '+G.m+' · MISE '+G.ante,480,128,14,'rgba(241,236,226,.75)');
+        revolver(g,480,222,A.ang,.85,kick,A.cyl,pulling?3+A.t*2:0);flash(g,480,222,A.ang,A.k==='bang'?.9-A.t*3:0);
+        if(G.ph==='play'){cylinder(g,380,300);var pt=G.pot;if(pt){chip(g,580,296,pt>=500?500:pt>=100?100:pt>=50?50:25,20);mono(g,'POT',580,330,11,'rgba(241,236,226,.6)');txt(g,String(pt),580,350,22,YEL)}}}
+      for(i=0;i<G.seats.length;i++)seatCard(g,G.seats[i],i);
+      if(A.flash>0){g.fillStyle='rgba(255,240,220,'+Math.max(0,A.flash*.75)+')';g.fillRect(0,0,W,H)}
+      if(!C.running)return;
+      if(G.ph==='lobby'){if(SOLO&&me){me.buy=MYBET;me.rdy=MYBET>=10}if(!SOLO&&!me){pill(g,'Table pleine (6 max) : tu regardes',CR,486);return}lobbyBar(g,C,me);return}
+      if(G.ph==='end'){var w=G.seats[G.win];g.fillStyle='rgba(20,18,16,.88)';rr(g,250,262,460,70,14);g.fill();
+        txt(g,w?(w===me?'TU RAFLES TOUT !':w.n+' rafle tout'):'Personne ne gagne',480,286,28,w===me?YEL:CR);mono(g,w?w.st+' jetons':'',480,316,14,YEL);
+        if(host(C))button(U,g,360,458,240,56,'Nouvelle partie',function(){newGame(C);sync(C)},{key:['Space','Enter'],sub:'Espace'});else pill(g,'Le chef relance une partie',CR,486);return}
+      var cs=G.seats[G.cur];
+      if(me&&me.out){pill(g,'Tu es ruiné… regarde la fin'+(SOLO?'':' de la partie'),RED,474);if(SOLO)button(U,g,700,458,240,56,'Rejouer',function(){newGame(C);sync(C)},{key:['Space','Enter'],sub:'Espace',col:'#7b3fd1',hcol:'#8f55e6'});return}
+      if(G.sub==='turn'&&cs&&cs===me){
+        if(A.tv!==G.v){A.tv=G.v;A.ts=performance.now()}
+        button(U,g,180,458,200,58,'TIRER',function(){send(C,{t:'rr-act',a:'shoot'})},{key:['Space','Enter'],sub:'Espace · risque 1 sur '+(6-G.p),size:18});
+        button(U,g,396,458,190,58,'Barillet',function(){send(C,{t:'rr-act',a:'spin'})},{key:'KeyR',sub:'R · tourner · −'+G.ante,col:'#7b3fd1',hcol:'#8f55e6',off:me.st<G.ante});
+        button(U,g,602,458,180,58,'Passer',function(){send(C,{t:'rr-act',a:'pass'})},{key:'KeyP',sub:'P · −'+G.ante*2,col:'#3a3632',hcol:'#4a4642',off:me.st<G.ante*2});
+        if(!SOLO&&G.tt){var left=Math.max(0,G.tt-(performance.now()-A.ts)/1000);g.fillStyle='rgba(241,236,226,.15)';rr(g,180,524,602,6,3);g.fill();g.fillStyle=left<6?RED:YEL;rr(g,180,524,602*left/G.tt,6,3);g.fill()}
+        mono(g,'À TOI',480,440,13,YEL);return}
+      var st=status();if(st[0])pill(g,st[0],st[1],486)}
+    PP.arcade({id:'rr',
+      setup:function(C){CC=C;U=UI();SOLO=C.mode!=='online';G=null;A.ev=-1;A.k='';A.flash=0;MYBET=Math.min(100,BANK.get());
+        if(!SOLO){C.listen(function(m,from){
+            if(m.t==='rr-s'&&!C.net.isHost){view(C,m.g);return}
+            if(m.t==='migrating'||(m.t==='left'&&m.id==='host')){var me=mySeat();if(G&&G.ph==='play'&&me&&me.in&&LED.paid&&!LED.got){LED.got=true;BANK.add(me.st);C.stop();C.over('Partie arrêtée','Le chef a quitté le salon : tu récupères tes <b>'+me.st+' jetons</b>.','Rejoindre la table')}G=null;return}
+            if(!C.net.isHost)return;
+            if(m.t==='players'){gone(C,m.players.map(function(p){return p.id}));if(G&&G.ph==='lobby'){G.seats=roomSeats(C);sync(C)}return}
+            if(/^rr-/.test(m.t))msgIn(C,m,from)});
+          C.keysText('À plusieurs : choisis ta mise puis <kbd>Espace</kbd> Prêt · en jeu <kbd>Espace</kbd> tirer · <kbd>R</kbd> tourner le barillet · <kbd>P</kbd> passer · jetons virtuels, pas d\'argent réel');
+          C.over('Roulette russe','Tout le salon autour de la table (6 max). Chacun mise la somme qu\'il veut, puis le revolver passe de main en main. Le dernier qui a encore des jetons rafle tout le pot. Tu as <b>'+BANK.get()+' jetons</b> (virtuels).',C.net.isHost?'Ouvrir la table':'Rejoindre la table');return}
+        C.keysText('<kbd>1</kbd>-<kbd>5</kbd> jetons · <kbd>T</kbd> tapis · <kbd>Espace</kbd> commencer / tirer · <kbd>R</kbd> tourner le barillet · <kbd>P</kbd> passer · jetons virtuels, pas d\'argent réel');
+        C.over('Roulette russe','Toi contre 3 bots. Mise la somme que tu veux, puis le revolver passe de main en main : tire, fais tourner le barillet ou passe ton tour. Le dernier qui a encore des jetons rafle tout. Tu as <b>'+BANK.get()+' jetons</b> (virtuels).','Jouer')},
+      start:function(C){if(SOLO){newGame(C);sync(C);return}if(C.net.isHost){newGame(C);sync(C)}else C.net.send({t:'rr-hello'})},
+      step:function(C,dt){if(G&&host(C))hstep(C,dt);if(G&&G.ph==='lobby'&&!SOLO&&host(C)&&G.seats.length!==Math.min(6,C.net.players.length)){G.seats=roomSeats(C);sync(C)}},
+      mouse:function(C,t,x,y){U.mx=x;U.my=y;if(t==='down'&&C.running)clickUI(U,x,y)},
+      key:function(C,k,down){if(!down||!C.running)return;keyUI(U,k)},
+      draw:function(C,dt){draw(C,dt)},
+      close:function(C){var me=mySeat();if(SOLO&&G&&G.ph==='play'&&me&&LED.paid&&!LED.got&&!me.out){LED.got=true;BANK.add(me.st)}}});
   })();
 })();
