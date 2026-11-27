@@ -567,14 +567,25 @@
   }
   function buildStand(s){
     var x=(s.cx+.5)*S,z=(s.cy+.5)*S,g=new THREE.Group();g.position.set(x,0,z);s.x=x;s.z=z;addCol(x-S*.46,z-S*.46,x+S*.46,z+S*.46,true);
-    var counter=new THREE.Mesh(new THREE.BoxGeometry(S*.82,1.05,S*.82),lam({map:TX.shop}));counter.position.y=.525;g.add(counter);
-    var top=new THREE.Mesh(new THREE.BoxGeometry(S*.9,.1,S*.9),lam({color:0x5a3a22}));top.position.y=1.1;g.add(top);
-    s.big=s.tier===2;(s.tier===2?['minigun','ray','launcher']:s.tier===1?['sniper','lmg','rifle']:['pistol','smg','rifle']).forEach(function(t,i){var gm=buildGun(t,0x2b2b30);gm.scale.setScalar(1.5);gm.rotation.set(0,i*1.9+.4,Math.PI/2);gm.position.set(Math.cos(i*2.1)*.75,1.2,Math.sin(i*2.1)*.75);g.add(gm)});
+    var counter=new THREE.Mesh(new THREE.BoxGeometry(S*.82,1.05,S*.82),lam({map:TX.shop}));counter.position.y=.525;g.add(counter);s.counter=counter;
+    var top=new THREE.Mesh(new THREE.BoxGeometry(S*.9,.1,S*.9),lam({color:0x5a3a22}));top.position.y=1.1;g.add(top);s.top=top;
     var pole=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,2.1,8),lam({color:0x26282c}));pole.position.y=2.1;g.add(pole);
     var sign=label([STN[s.tier].toUpperCase(),'E · ACHETER'],['#e2361b','#a46cf0','#e8b531'][s.tier]);sign.position.y=3.25;sign.scale.set(2.6,1.02,1);g.add(sign);s.sign=sign;
-    var pl=new THREE.PointLight(0xffb070,1.4,11);pl.position.y=2.6;g.add(pl);
-    scene.add(g);solidMeshes.push(counter);s.g=g;
+    var pl=new THREE.PointLight(0xffb070,1.4,11);pl.position.y=2.6;g.add(pl);s.pl=pl;
+    scene.add(g);solidMeshes.push(counter);s.g=g;styleStand(s);s.pulse=0;
   }
+  /* v100 : une armurerie améliorée change de look, comme les armes : violette (niveau 2) puis dorée (niveau 3),
+     comptoir et plateau teintés, bandeau lumineux, anneau qui tourne, étoiles au-dessus et armes exposées à la couleur du niveau */
+  var STC=[0xffb070,0xa46cf0,0xe8b531];
+  function styleStand(s){var t=s.tier||0,g=s.g;if(!g)return;if(s.deco){g.remove(s.deco);s.deco.traverse(function(o){if(o.geometry)o.geometry.dispose()})}var d=new THREE.Group();g.add(d);s.deco=d;s.big=t===2;s.ring=s.glow=null;
+    s.counter.material.color.setHex([0xffffff,0xd2c0ff,0xffe6a0][t]);s.top.material.color.setHex([0x5a3a22,0x4a2f7a,0xb08a2a][t]);if(s.pl){s.pl.color.setHex(STC[t]);s.pl.intensity=1.4+t*.5}
+    (t===2?['minigun','ray','launcher']:t===1?['sniper','lmg','rifle']:['pistol','smg','rifle']).forEach(function(ty,i){var gm=buildGun(ty,t?UP_COL[t+1]:0x2b2b30);gm.scale.setScalar(1.5);gm.rotation.set(0,i*1.9+.4,Math.PI/2);gm.position.set(Math.cos(i*2.1)*.75,1.2,Math.sin(i*2.1)*.75);d.add(gm)});
+    s.pulse=1;if(!t)return;var col=UP_COL[t+1],em=new THREE.MeshBasicMaterial({color:col});
+    [[0,.08,S*.42,S*.84,.06,.06],[0,.08,-S*.42,S*.84,.06,.06],[S*.42,.08,0,.06,.06,S*.84],[-S*.42,.08,0,.06,.06,S*.84],[0,1.06,S*.42,S*.84,.05,.05],[0,1.06,-S*.42,S*.84,.05,.05],[S*.42,1.06,0,.05,.05,S*.84],[-S*.42,1.06,0,.05,.05,S*.84]].forEach(function(b){var m=new THREE.Mesh(new THREE.BoxGeometry(b[3],b[4],b[5]),em);m.position.set(b[0],b[1],b[2]);d.add(m)});
+    var ring=new THREE.Mesh(new THREE.TorusGeometry(1.15,.04,8,40),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.85}));ring.rotation.x=Math.PI/2;ring.position.y=1.75;d.add(ring);s.ring=ring;
+    for(var k=0;k<t+1;k++){var st=label(['','★'],'#'+new THREE.Color(col).getHexString());st.scale.set(.9,.36,1);st.position.set((k-t/2)*.55,3.95,0);d.add(st)}
+    var glow=new THREE.Mesh(new THREE.PlaneGeometry(S*1.3,S*1.3),new THREE.MeshBasicMaterial({map:pwGlow(),color:col,transparent:true,opacity:.5,depthWrite:false,blending:THREE.AdditiveBlending}));glow.rotation.x=-Math.PI/2;glow.position.y=.04;d.add(glow);s.glow=glow;
+    d.traverse(function(o){o.raycast=function(){}})}
   /* v29 : distributeur de boisson (5000) */
   /* v84 : les boissons sont dans un distributeur collé contre un mur, aux couleurs du pouvoir */
   function perkSpot(taken){var cand=[];OPEN.forEach(function(c){var x=c[0],z=c[1];if(!G[z]||G[z][x]!=='.')return;var zn=zoneOf((x+.5)*S,(z+.5)*S);if(taken[zn])return;
@@ -1488,13 +1499,13 @@
     drawMiniBase();hud();
   }
   function stepDoors(dt){
-    perkSigns();PERKS.forEach(function(p,i){if(p.glow)p.glow.material.opacity=.35+Math.sin(performance.now()/350+i)*.15});
+    STANDS.forEach(function(s2,i){if(s2.ring){s2.ring.rotation.z+=dt*1.2;s2.ring.position.y=1.75+Math.sin(performance.now()/500+i)*.08}if(s2.glow)s2.glow.material.opacity=.4+Math.sin(performance.now()/400+i)*.12;if(s2.pulse>0&&s2.g){s2.pulse=Math.max(0,s2.pulse-dt*1.5);var ps=1+Math.sin(s2.pulse*Math.PI)*.12;s2.g.scale.set(ps,ps,ps)}});perkSigns();PERKS.forEach(function(p,i){if(p.glow)p.glow.material.opacity=.35+Math.sin(performance.now()/350+i)*.15});
     var tn=performance.now()/1000;DOORS.forEach(function(d,i){if(d.open||!d.lbls)return;var nearD=P&&Math.hypot(d.cx-P.x,d.cz-P.z)<9,ok=P&&P.pts>=cost(d.cost);d.lbls.forEach(function(l){l.position.y=l.userData.base+Math.sin(tn*2+i)*.07;var s=nearD&&ok?1+Math.sin(tn*5)*.04:1;l.scale.set(2.3*s,1.15*s,1);l.material.opacity=ok?1:.82})});
     openingDoors.forEach(function(d){d.anim+=dt;var k=Math.min(1,d.anim/.9);d.m.position.y=WH/2+k*k*WH;if(k>=1){d.done=1;d.m.visible=false}});openingDoors=openingDoors.filter(function(d){return !d.done})}
   var SHOP_EXTRA=[{id:'ammo',n:'Munitions',d:'Remplit les réserves de toutes tes armes',p:400},{id:'vest1',n:'Gilet léger',d:'+50 d\'armure',p:350},{id:'vest2',n:'Gilet lourd',d:'Armure remplie à 100',p:750},{id:'heal',n:'Trousse de soin',d:'Vie au maximum',p:300},{id:'fast',n:'Mains rapides',d:'Recharges 40 % plus rapides',p:1500},
     {id:'turret',n:'Tourelle',d:'Double canon, tire seule 60 s · F pour la poser, V pour choisir',p:2000},{id:'wire',n:'Barbelés',d:'Ralentit et blesse les zombies · F pour poser, V pour choisir',p:800},{id:'mine',n:'Mine',d:'Explose quand un zombie passe · F pour poser, V pour choisir',p:600}];
   var shopStand=null,STAND_UP=[3000,6000];
-  function setStandTier(s,t){if(!s||(s.tier||0)>=t)return;s.tier=t;if(s.g){if(s.sign)s.g.remove(s.sign);var sign=label([STN[t].toUpperCase(),'E · ACHETER'],['#e2361b','#a46cf0','#e8b531'][t]);sign.position.y=3.25;sign.scale.set(2.6,1.02,1);s.g.add(sign);s.sign=sign}try{drawMiniBase()}catch(e){}}
+  function setStandTier(s,t){if(!s||(s.tier||0)>=t)return;s.tier=t;if(s.g){styleStand(s);if(s.sign)s.g.remove(s.sign);var sign=label([STN[t].toUpperCase(),'E · ACHETER'],['#e2361b','#a46cf0','#e8b531'][t]);sign.position.y=3.25;sign.scale.set(2.6,1.02,1);s.g.add(sign);s.sign=sign}try{drawMiniBase()}catch(e){}}
   /* v32 : défenses à poser (achetées à l'armurerie) : tourelle (5), barbelés (6), mine (7) */
   function zDmg(e,dmg){if(!e||!e.alive)return;if(coop&&!auth)net.send({t:'zc-hit',id:e.id,d:dmg,h:0});else damageEnt(e,dmg,net.me.name||'Toi',true,false)}
   /* v75 : tourelle refaite : socle hexagonal avec anneau lumineux, tête blindée arrondie, double canon avec ailettes, viseur lumineux */
@@ -2109,7 +2120,7 @@
     zombie:function(t){if(!TX.blob)TX.blob=tex(64,64,function(g,w,h){var gr=g.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2);gr.addColorStop(0,'rgba(0,0,0,.55)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(0,0,w,h)});return zombieModel(t)},
     anim:function(e,dt,mv){zAnim(e,dt,mv)}};
   PP._fps=function(){return {reload:reload,fire:fire,P:P,ents:ents,zone:zone,items:items,remotes:remotes,round:round,online:online,setMode:function(m){mode=m},doors:DOORS,stands:STANDS,perks:function(){return PERKS},buyPerk:function(p){buyPerk(p)},addZ:function(t){addZombie(t,1)},use:use,interact:interact,give:giveGun,keys:keys,explode:explode,addZombie:addZombie,mapId:mapId,unl:UNL,setAim:function(v){aiming=v},paused:function(){return paused},dbg:function(){return {waveT:waveT,wave:wave,waveLeft:waveLeft,mode:mode,cdT:cdT,shopOpen:shopOpen,running:running}}}};
-  PP._fps=function(){return {P:P,ents:ents,explode:explode,addItem:addItem,wave:function(n){wave=n;nextWave()},pw:PW,deps:function(){return DEPS},ghost:function(){return ghost},add:addZombie,cam:cam,shop:openShop,stands:STANDS,spawnPerk:spawnPerk,perks:function(){return PERKS},buyPerk:buyPerk}};
+  PP._fps=function(){return {P:P,ents:ents,explode:explode,addItem:addItem,wave:function(n){wave=n;nextWave()},pw:PW,deps:function(){return DEPS},ghost:function(){return ghost},add:addZombie,cam:cam,shop:openShop,stands:STANDS,spawnPerk:spawnPerk,perks:function(){return PERKS},buyPerk:buyPerk,standTier:setStandTier}};
   PP.games.fps={
     restart:function(){return quick()},
     open:function(){if(!init())return;buildTouch();$('fps-lockhint').hidden=true;$('fps-skins').hidden=true;
