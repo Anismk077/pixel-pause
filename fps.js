@@ -1369,7 +1369,7 @@
     // zombies
     if(mode==='zombie'){if(coop&&!auth)stepZGuest(dt);else stepZombies(dt)}if(coop)coopTick(dt);
     if(mode==='br'){if(auth)stepBR(dt);else stepBRGuest(dt)}
-    stepRemotes(dt);matesHud(dt);pwStep(dt);
+    stepRemotes(dt);matesHud(dt);pwStep(dt);freeLookStep(dt);
     // morts : petite chute
     ents.forEach(function(e){if(!e.alive&&e.dieT>0&&e.kind==='z'&&e.fx!==undefined){e.dieT-=dt;stepDeath(e,dt);if(e.dieT<=0){scene.remove(e.m);if(e.pool)scene.remove(e.pool);e.m=null}return}if(!e.alive&&e.dieT>0){e.dieT-=dt;var tt=1.2-e.dieT;if(e.kind==='z'){if(!e.dusted&&tt>.4){e.dusted=1;dust(e.x,e.z)}e.m.rotation.x=-Math.min(Math.PI/2,tt*3.2);var pp=e.m.userData.parts;if(pp){pp.arms[0].rotation.x=-2.8+Math.sin(tt*12)*.4;pp.arms[1].rotation.x=-2.5-Math.sin(tt*12)*.4;pp.jaw.rotation.x=.6}e.m.position.y=-Math.max(0,tt-.7)*1.2}else{e.m.rotation.x=Math.min(Math.PI/2,tt*3)}e.m.position.y=e.kind==='z'?e.m.position.y:-Math.max(0,tt-.8);if(e.dieT<=0){scene.remove(e.m);e.m=null}}if(e.m&&e.hit>0){e.hit-=dt}});
     ents=ents.filter(function(e){return e.alive||e.m||(e.kind==='b'&&mode==='br')});
@@ -1860,7 +1860,7 @@
   function mobFull(on){if(!touchUI)return;var st=cv.parentNode;if(st.classList.contains('ft-full')!==!!on){st.classList.toggle('ft-full',!!on);document.body.classList.toggle('ft-lock',!!on);setTimeout(function(){fitRes(true)},80)}}
   function loop(t){var raw=last?Math.min(.3,(t-last)/1000):0,dt=Math.min(.05,raw);last=t;if(running){mobFull(true);if(++resN%90===0)fitRes();
       /* à la souris, le jeu ne tourne que si la souris est bien capturée : sinon il attend un clic dans l'image (la souris ne peut plus « sortir » en pleine partie) */
-      var hold=DESK&&!window.PP_NOHOLD&&!online&&!shopOpen&&!chatOpen&&!dead&&document.pointerLockElement!==cv;if(hold!==lastHold){lastHold=hold;$('fps-lockhint').hidden=!hold||paused;if(hold){keys={};mouseDown=false}}
+      var hold=DESK&&!window.PP_NOHOLD&&!online&&!shopOpen&&!chatOpen&&!dead&&document.pointerLockElement!==cv&&!FL.inn;if(hold!==lastHold){lastHold=hold;$('fps-lockhint').hidden=!hold||paused;if(hold){keys={};mouseDown=false}}
       if(cdT>0){if(!hold&&!paused)stepCountdown(raw)}
       else if((!paused||online)&&!shopOpen&&!hold){/* v64 : PC lent : on fait plusieurs petits pas au lieu de ralentir tout le jeu */var rem=Math.min(.2,raw),n=0;if(!(rem>1e-4))step(dt);else while(rem>1e-4&&n<4&&running){var st=Math.min(.05,rem);step(st);rem-=st;n++}}if(running)render();raf=requestAnimationFrame(loop)}}
 
@@ -1890,7 +1890,7 @@
     if(PP.cur()!=='fps')return;/* v75 : un chat resté ouvert sans le curseur dedans bloquait tous les déplacements */if(chatOpen){if(document.activeElement===UI.in)return;closeChat()}if(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName))return;
     var k=e.key.length===1?e.key.toLowerCase():e.key,c=e.code||'',ac=action(e);lastInput=performance.now();
     if(!running)return;
-    /* v73 : la souris se recapture avec n'importe quelle touche de jeu, plus besoin de tirer */if(document.pointerLockElement!==cv&&!paused&&!shopOpen&&k!=='Escape'&&(MV[ac]||ac==='jump'||ac==='sprint'))lock();
+    /* v73 : la souris se recapture avec n'importe quelle touche de jeu, plus besoin de tirer */if(document.pointerLockElement!==cv&&!paused&&!shopOpen&&!emoteMenu&&k!=='Escape')lock();
     if(shopOpen&&UI.shop&&UI.shop.hidden)shopOpen=false;
     if(shopOpen){if(ac==='use'||k==='Escape'){e.preventDefault();closeShop()}else if(k==='ArrowDown'||k==='ArrowUp'){e.preventDefault();shopMove(k==='ArrowDown'?1:-1)}else if(k==='Enter'){e.preventDefault();var bb=UI.shop.querySelector('.sh2-buy');if(bb)bb.click()}else if(k==='Tab'){e.preventDefault();shopTab={w:'e',e:'u',u:'w'}[shopTab];shopSel=null;UI.shop.innerHTML=shopHtml()}return}
     var TK={ArrowLeft:'TL',ArrowRight:'TR',ArrowUp:'TU',ArrowDown:'TD'}[c];if(TK&&!ac){keys[TK]=true;e.preventDefault()}
@@ -1921,7 +1921,7 @@
   document.addEventListener('mouseup',function(e){if(e.button===0)mouseDown=false;if(e.button===2)aiming=false});
   cv.addEventListener('contextmenu',function(e){e.preventDefault()});
   cv.addEventListener('wheel',function(e){if(!running)return;e.preventDefault();cycle(e.deltaY>0?1:-1)},{passive:false});
-  document.addEventListener('mousemove',function(e){if(document.pointerLockElement!==cv||!P||dead)return;if(emoteMenu){emoMove(e.movementX,e.movementY);return}mouseDX+=e.movementX;mouseDY+=e.movementY;lastInput=performance.now();var s=(aiming?(cam.fov/75)*.0026:.0026)*PP.settings.sens/100;P.yaw-=e.movementX*s;P.pitch=Math.max(-1.45,Math.min(1.45,P.pitch-e.movementY*s*(PP.settings.invY?-1:1)))});
+  document.addEventListener('mousemove',function(e){var lk=document.pointerLockElement===cv;if(!lk){if(!freeLook(e))return}else if(!P||dead)return;if(emoteMenu){emoMove(e.movementX,e.movementY);return}mouseDX+=e.movementX;mouseDY+=e.movementY;lastInput=performance.now();var s=(aiming?(cam.fov/75)*.0026:.0026)*PP.settings.sens/100;P.yaw-=e.movementX*s;P.pitch=Math.max(-1.45,Math.min(1.45,P.pitch-e.movementY*s*(PP.settings.invY?-1:1)))});
   document.addEventListener('pointerlockchange',function(){if(PP.cur()!=='fps'||!running)return;var l=document.pointerLockElement===cv;$('fps-lockhint').hidden=l||chatOpen;if(!l&&!online&&!chatOpen&&!shopOpen){paused=true;PP.pause(true)}if(l)paused=false;if(shopOpen)$('fps-lockhint').hidden=true});
   document.addEventListener('pointerlockerror',function(){lastHold=null});
   document.addEventListener('pp-resume',function(){if(PP.cur()!=='fps'||!running)return;lock();paused=false;lastHold=null});
@@ -1939,6 +1939,13 @@
   /* un clic n'importe où sur l'image (même sur le message « clique pour reprendre ») recapture la souris */
   cv.parentNode.addEventListener('mousedown',function(e){if(PP.cur()!=='fps'||!running||shopOpen||chatOpen||e.target===cv)return;if(e.target.closest('button,input,.fx-shop'))return;if(document.pointerLockElement!==cv){e.preventDefault();lock();paused=false}});
   function unlock(){if(document.pointerLockElement===cv&&document.exitPointerLock)document.exitPointerLock()}
+  /* v82 : pavé tactile : si le navigateur perd le verrouillage de la souris, la caméra suit quand même le curseur
+     au-dessus de l'image (et tourne toute seule quand le curseur touche le bord) ; le moindre clic ou touche reverrouille */
+  var FL={x:null,y:null,edge:0,inn:false};document.addEventListener('mouseleave',function(){FL.inn=false;FL.edge=0});
+  function freeLook(e){if(PP.cur()!=='fps'||!running||!P||dead||paused||shopOpen||chatOpen||emoteMenu||!DESK)return false;var r=cv.getBoundingClientRect();
+    if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom){FL.edge=0;FL.inn=false;return false}FL.inn=true;
+    var ex=(e.clientX-r.left)/r.width;FL.edge=ex<.06?1:ex>.94?-1:0;return true}
+  function freeLookStep(dt){if(!FL.edge||document.pointerLockElement===cv||!P||dead||paused||shopOpen||chatOpen)return;P.yaw+=FL.edge*2.4*dt*(PP.settings.sens||100)/100}
   // tactile : joystick à gauche, on vise en glissant à droite, gros bouton TIR + 3 petits boutons
   var touchUI=null,joy=null,look=null;
   function buildTouch(){
