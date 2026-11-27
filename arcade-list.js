@@ -31,6 +31,9 @@ window.ARCADE_LIST=[
   {id:'term',img:'thumb-term.svg?v=1',n:'Terminal',sub:'Apprends les commandes Linux · faux terminal, vraies commandes',pl:'1',cat:'pc solo',modes:[['story','Histoire','16 missions pour tout apprendre'],['chrono','Chrono','60 secondes, un max de commandes']]},
   {id:'blocs',img:'thumb-blocs.svg?v=1',n:'Blocs',sub:'Réflexion · des pièces tombent, remplis des lignes',pl:'1',cat:'pc solo',modes:[['marathon','Marathon','Ça accélère sans fin'],['sprint','Sprint','30 lignes, chrono'],['chrono','2 minutes','Un max de points']]},
   {id:'saut',img:'thumb-saut.svg?v=1',n:'Saute-Pixel',sub:'Plateformes · 4 mondes, des boss, à 1 ou 2',pl:'1-2',cat:'pc solo',modes:[['run','Aventure','4 mondes, 5 vies'],['duo','2 joueurs','Même clavier'],['hard','Expert','Une seule vie']]},
+  {id:'bj',img:'thumb-bj.svg?v=1',n:'Blackjack',sub:'Casino · approche-toi de 21, jetons virtuels',pl:'1',cat:'pc tel solo',modes:[['solo','Solo','Contre le croupier']]},
+  {id:'poker',img:'thumb-poker.svg?v=1',n:'Poker',sub:'Casino · Texas Hold\'em contre 3 bots',pl:'1',cat:'pc tel solo',modes:[['solo','Solo','Toi contre 3 bots']]},
+  {id:'roue',img:'thumb-roue.svg?v=1',n:'La Roue',sub:'Casino · mise et fais tourner la roue',pl:'1',cat:'pc tel solo',modes:[['solo','Solo','×1 à ×40']]},
   {id:'marz',img:'thumb-marz.svg?v=2',n:'Marzoukeur',sub:'Fun · attrape les burgers, enchaîne les combos',pl:'1',cat:'pc tel solo',modes:[['solo','Solo','Le plus de kilos avant la ruine']]}
 ];
 (function(){
