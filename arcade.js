@@ -7,6 +7,8 @@
     (window.ARCADE_LIST||[]).forEach(function(L){var d=DEF[L.id];if(!d)return;
       var view=$('v-'+L.id),cv=$(L.id+'-cv'),ov=$(L.id+'-ov'),C={id:L.id,L:L,d:d,cv:cv,mode:L.modes[0][0],keys:{},running:false,raf:0,last:0,W:960,H:540,net:net,subs:[]};
       C.g=d.three?null:cv.getContext('2d');
+      /* v64 : chaque setup repart d'écouteurs réseau propres (sinon, après 2 clics sur un mode, chaque coup reçu était traité 2 fois) */
+      if(d.setup&&!d.setup._pp){var setup0=d.setup;d.setup=function(c){(c||C).subs.forEach(function(u){try{u()}catch(e){}});(c||C).subs=[];return setup0.apply(this,arguments)};d.setup._pp=1}
       C.over=function(title,msg,btn,cb){unlock();$(L.id+'-title').textContent=title;$(L.id+'-msg').innerHTML=msg||'';var b=$(L.id+'-start');b.textContent=btn||'Jouer';b.hidden=btn===false;ov.hidden=false;C.onBtn=cb||null};
       C.hide=function(){ov.hidden=true};
       C.hud=function(h){$(L.id+'-hud').innerHTML=h};
@@ -27,7 +29,7 @@
       C.go=function(){C.hide();var tk=++cdTok;badge();if(!CDG){begin();return}
         C.running=false;C.loop();['3','2','1'].forEach(function(n,i){setTimeout(function(){if(tk!==cdTok||PP.cur()!==L.id)return;C.pop(n,null,'110px');sfx.play('tick')},i*550)});
         setTimeout(function(){if(tk!==cdTok||PP.cur()!==L.id)return;C.pop('GO !','#e2361b','110px');sfx.play('go');begin()},1650)};
-      function loop(t){var dt=C.last?Math.min(.05,(t-C.last)/1000):0;C.last=t;if(PP.cur()!==L.id)return;if(C.running&&d.step)d.step(C,dt);if(d.draw)d.draw(C,dt);C.raf=requestAnimationFrame(loop)}
+      function loop(t){var dt=C.last?Math.min(.05,(t-C.last)/1000):0;C.last=t;if(PP.cur()!==L.id)return;curTick();if(C.running&&d.step)d.step(C,dt);if(d.draw)d.draw(C,dt);C.raf=requestAnimationFrame(loop)}
       C.loop=function(){cancelAnimationFrame(C.raf);C.last=0;C.raf=requestAnimationFrame(loop)};
       $(L.id+'-start').addEventListener('click',function(){if(C.onBtn)C.onBtn();else{d.start(C);C.go()}});
       view.querySelectorAll('.ag-modes .mode').forEach(function(b){b.addEventListener('click',function(){
@@ -50,13 +52,17 @@
       var cur=document.createElement('div');cur.className='ag-cur '+CUR;cur.hidden=true;cv.parentNode.appendChild(cur);
       function curShow(e){if(CUR==='none'||!C.running){cur.hidden=true;return}cur.hidden=false;if(CUR==='center'){cur.style.left='50%';cur.style.top='50%';return}if(locked()){cur.style.left=(vp[0]/C.W*100)+'%';cur.style.top=(vp[1]/C.H*100)+'%';return}var r=cv.getBoundingClientRect();cur.style.left=((e.clientX-r.left)/r.width*100)+'%';cur.style.top=((e.clientY-r.top)/r.height*100)+'%'}
       cv.addEventListener('pointermove',curShow);cv.addEventListener('pointerenter',curShow);cv.addEventListener('pointerleave',function(){if(CUR!=='center')cur.hidden=true});
-      setInterval(function(){if(!C.running)cur.hidden=true;else if(CUR==='center'&&PP.cur()===L.id){cur.hidden=false;cur.style.left='50%';cur.style.top='50%'}},250);
+      /* v64 : vérifié à chaque image du jeu ouvert, au lieu d'un minuteur par jeu qui tournait même quand on n'y jouait pas */
+      function curTick(){if(!C.running){if(!cur.hidden)cur.hidden=true}else if(CUR==='center'&&cur.hidden){cur.hidden=false;cur.style.left='50%';cur.style.top='50%'}}
       cv.addEventListener('pointerdown',function(e){if(C.running&&!locked())grab();if(d.mouse){var p=pt(e);d.mouse(C,'down',p[0],p[1],e)}});
       /* le mouvement est suivi sur toute la fenêtre : sortir du cadre ne bloque plus le jeu */
       window.addEventListener('pointermove',function(e){if(d.mouse&&PP.cur()===L.id&&(e.target===cv||C.running)){var p=pt(e);d.mouse(C,'move',p[0],p[1],e)}});
       window.addEventListener('pointerup',function(e){if(d.mouse&&PP.cur()===L.id){var p=pt(e);d.mouse(C,'up',p[0],p[1],e)}});
       document.addEventListener('keydown',function(e){if(PP.cur()!==L.id||/INPUT|TEXTAREA/.test(e.target.tagName))return;C.keys[e.code]=true;if(C.running&&/^(Arrow|Space)/.test(e.code))e.preventDefault();if(d.key&&!e.repeat)d.key(C,e.code,true,e)});
       document.addEventListener('keyup',function(e){if(PP.cur()!==L.id)return;C.keys[e.code]=false;if(d.key)d.key(C,e.code,false,e)});
+      /* v64 : Alt+Tab ou onglet caché : on relâche toutes les touches tenues (sinon le perso court tout seul au retour) */
+      function release(){var k=C.keys;C.keys={};Object.keys(k).forEach(function(code){if(k[code]&&d.key)try{d.key(C,code,false,{code:code,key:'',repeat:false,preventDefault:function(){},stopPropagation:function(){}})}catch(e){}})}
+      window.addEventListener('blur',release);document.addEventListener('visibilitychange',function(){if(document.hidden)release()});
       PP.games[L.id]={open:function(){var on=net.inRoom()&&L.modes.some(function(m){return m[0]==='online'});if(on){C.mode='online';view.querySelectorAll('.ag-modes .mode').forEach(function(x){x.classList.toggle('on',x.dataset.m==='online')})}d.setup(C);C.loop()},
         close:function(){cdTok++;var wb=cv.parentNode.querySelector('.ag-who');if(wb)wb.hidden=true;unlock();hint.hidden=true;C.running=false;cancelAnimationFrame(C.raf);C.subs.forEach(function(u){u()});C.subs=[];C.keys={};if(d.close)d.close(C)}};
     });

@@ -1392,7 +1392,7 @@ SEED=seed;makeIslands();terrains=[];vlights=[];houseList=[];cullT=0;boats=[];hdo
     if(gs&&gs.seed===m.seed){inv=Object.assign(freshInv(),gs.inv);st=gs.st;goalI=gs.goal||0;P={x:gs.p.x,z:gs.p.z,y:0,vy:0,yaw:0,pitch:0,hp:Math.max(30,gs.p.hp),food:gs.p.food,water:gs.p.water,stam:100,bob:0,spawn:gs.p.spawn}}
     else{inv=freshInv();st={bois:0,fer:0,deer:0,kills:0};var a=Math.random()*6.28;P={x:m.hx+Math.cos(a)*3,z:m.hz+Math.sin(a)*3,y:0,vy:0,yaw:0,pitch:0,hp:100,food:80,water:80,stam:100,bob:0,spawn:null}}
     P.y=height(P.x,P.z);applyWorld(m);
-    viewModel();hudInv();$('sv-ov').hidden=true;$('sv-build').hidden=true;$('sv-craft').hidden=true;$('sv-invp').hidden=true;buildMode=null;running=true;paused=false;last=0;raf=requestAnimationFrame(loop);lock();sfx.play('go');
+    viewModel();hudInv();$('sv-ov').hidden=true;$('sv-build').hidden=true;$('sv-craft').hidden=true;$('sv-invp').hidden=true;buildMode=null;running=true;paused=false;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);lock();sfx.play('go');
     msg('Tu as rejoint l\'île de l\'hôte');joinedCode=net.code;clearInterval(helloT);
   }
   net.on(function(m,from){
@@ -1555,7 +1555,9 @@ SEED=seed;makeIslands();terrains=[];vlights=[];houseList=[];cullT=0;boats=[];hdo
     }
     drawMap();
   }
-  function loop(t){var dt=last?Math.min(.05,(t-last)/1000):0;last=t;if(running){if(!paused||online)step(dt);if(running){render();if(dt>0)autoQ(dt)}raf=requestAnimationFrame(loop)}}
+  /* v64 : en pause (solo), on dessine une seule image puis on ne calcule plus rien jusqu'à la reprise */
+  var pauseDrawn=false;
+  function loop(t){var dt=last?Math.min(.05,(t-last)/1000):0;last=t;if(running){var idle=paused&&!online;if(!idle){pauseDrawn=false;step(dt)}if(running&&!(idle&&pauseDrawn)){render();if(idle)pauseDrawn=true;else if(dt>0)autoQ(dt)}raf=requestAnimationFrame(loop)}}
 
   /* ---------- Interface ---------- */
   function hudBars(){
@@ -1798,7 +1800,7 @@ SEED=seed;makeIslands();terrains=[];vlights=[];houseList=[];cullT=0;boats=[];hdo
   PP._sv=function(){return {houses:function(){return houseList},fog:function(){return fog},MV:MV,scene:function(){return scene},R3:function(){return R3},isl:function(){return ISL},boats:function(){return boats},boardBoat:boardBoat,height:height,traps:traps,castles:castles,goDown:goDown,chestPanel:chestPanel,remotes:remotes,online:function(){return online},trees:trees,drops:drops,invPanel:invPanel,P:P,inv:inv,st:st,zombies:zombies,animals:animals,structs:structs,chests:chests,setT:function(t){dayT=t},attack:attack,interact:interact,build:build,setTool:setTool,craft:craft,goal:function(){return goalI},render:render}};
   PP.games.surv={
     open:function(){$('sv-lockhint').hidden=true;
-      if(net.inRoom()){/* on ne reprend une île que si c'est bien celle de ce salon */if(online&&P&&scene&&$('sv-ov').hidden&&(net.isHost||joinedCode===net.code)){running=true;last=0;raf=requestAnimationFrame(loop);return}if(!net.isHost&&joinedCode!==net.code){running=false;cancelAnimationFrame(raf)}online=true;auth=net.isHost;$('sv-online').hidden=true;
+      if(net.inRoom()){/* on ne reprend une île que si c'est bien celle de ce salon */if(online&&P&&scene&&$('sv-ov').hidden&&(net.isHost||joinedCode===net.code)){running=true;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);return}if(!net.isHost&&joinedCode!==net.code){running=false;cancelAnimationFrame(raf)}online=true;auth=net.isHost;$('sv-online').hidden=true;
         if(auth&&svRoom!==net.code){svRoom=net.code;start(true);$('sv-lockhint').hidden=false;return}
         if(!auth){$('sv-title').textContent='Survie à plusieurs';$('sv-msg').textContent='Connexion à l\'île de l\'hôte… Si rien ne se passe, l\'hôte doit lancer sa partie.';$('sv-start').hidden=true;$('sv-cont').hidden=true;$('sv-ov').hidden=false;askWorld();return}}
       else{online=false;auth=true;$('sv-online').hidden=false}

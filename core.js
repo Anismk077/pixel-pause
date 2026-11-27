@@ -135,6 +135,8 @@ window.PP=(function(){
   }
   /* Recommencer : on ferme le jeu, on le rouvre à neuf et on relance la partie (tout est remis à zéro) */
   function restartGame(){var v=current;setPause(false);go('menu');go(v);
+    /* v64 : un jeu peut relancer exactement la même partie (ex. Zone Morte : même carte, même difficulté) */
+    try{if(games[v]&&games[v].restart&&games[v].restart())return}catch(e){console.error(e)}
     setTimeout(function(){var bs=[].slice.call(document.querySelectorAll('#v-'+v+' .overlay:not([hidden]) button.primary, #v-'+v+' .overlay:not([hidden]) button.ink'));var b=bs.filter(function(x){return !x.hidden&&x.offsetParent&&!/online|skins/.test(x.id)})[0];if(b)b.click()},90)}
   function fmtSet(k,v){return k==='vol'||k==='sens'?v+' %':k==='fov'?v+'°':''}
   function syncSettings(root){(root||document).querySelectorAll('[data-set]').forEach(function(i){var k=i.dataset.set;if(i.type==='checkbox')i.checked=!!SET[k];else i.value=SET[k]});(root||document).querySelectorAll('[data-val]').forEach(function(e){e.textContent=fmtSet(e.dataset.val,SET[e.dataset.val])})}
