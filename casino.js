@@ -75,7 +75,89 @@
     function hit(C){if(S.phase!=='play')return;S.ph.push(draw1());sfx.play('ui');var v=val(S.ph).t;if(v>21)finish(C,'bust');else if(v===21)stand(C)}
     function stand(C){if(S.phase!=='play')return;S.phase='dealer';S.hide=false;S.t=.6}
     function dbl(C){if(S.phase!=='play'||S.ph.length!==2||BANK.get()<S.stake)return;BANK.add(-S.stake);S.stake*=2;S.dbl=true;S.ph.push(draw1());sfx.play('ui');if(val(S.ph).t>21)finish(C,'bust');else stand(C)}
-    PP.arcade({id:'bj',
+    /* ---------- v69 : Blackjack à plusieurs (salon). Le chef tient le sabot et le croupier ; chacun mise ses propres jetons ---------- */
+    var Q=null,QU=UI(),LED={r:-1,sp:0,ga:0},SEEN={},MYBET=50,CIDN=1,QT=0;
+    function host(C){return C.net.isHost}
+    function meId(C){return C.net.me.id}
+    function seatsFrom(C){return C.net.players.slice(0,5).map(function(p){var o=Q&&Q.seats.filter(function(s){return s.id===p.id})[0];return {id:p.id,n:p.name||'?',bet:o?o.bet:0,rdy:false,h:[],stake:0,dbl:false,res:'',win:0,in:false,done:false}})}
+    function qNew(C){Q={r:0,ph:'bet',dh:[],hide:true,cur:-1,seats:[],v:0};Q.seats=seatsFrom(C)}
+    function dcard(){var c=draw1();c.id=CIDN++;return c}
+    function qSync(C){Q.v++;var out=JSON.parse(JSON.stringify(Q));if(out.hide&&out.dh[1])out.dh[1]={r:0,s:0,id:out.dh[1].id,x:1};C.net.broadcast({t:'bj-s',q:out});qView(C,out)}
+    function mySeat(q,C){q=q||Q;if(!q)return null;var id=meId(C);return q.seats.filter(function(s){return s.id===id})[0]||null}
+    /* jetons : chacun débite / crédite sa propre réserve d'après ce que dit le chef */
+    function qView(C,q){if(!host(C))Q=q;q.seats.forEach(function(s){s.h.forEach(fresh1)});q.dh.forEach(fresh1);
+      var s=mySeat(q,C);if(!s)return;if(q.r!==LED.r){LED={r:q.r,sp:0,ga:0}}
+      var need=s.in&&q.ph!=='bet'?s.stake:0;if(need!==LED.sp){BANK.add(-(need-LED.sp));LED.sp=need}
+      if(q.ph==='done'&&s.in&&s.win!==LED.ga){BANK.add(s.win-LED.ga);if(s.win>s.stake){C.pop(s.res==='bj'?'BLACKJACK !':'GAGNÉ !',s.res==='bj'?YEL:GRN,'70px');sfx.play('win');C.win()}else if(!s.win){sfx.play('lose')}LED.ga=s.win;record(C)}}
+    function fresh1(c){if(!c||c.id==null)return;if(!SEEN[c.id]){SEEN[c.id]=1;c.a=0}else c.a=1}
+    function qAct(C,from,m){if(!Q)return;
+      var s=Q.seats.filter(function(x){return x.id===from})[0];
+      if(m.t==='bj-hello'){if(Q.ph==='bet'){var ns=seatsFrom(C);ns.forEach(function(n){var o=Q.seats.filter(function(x){return x.id===n.id})[0];if(o){n.bet=o.bet;n.rdy=o.rdy}});Q.seats=ns}qSync(C);return}
+      if(!s)return;
+      if(m.t==='bj-bet'&&Q.ph==='bet'){s.bet=Math.max(0,Math.min(100000,Math.round(+m.v||0)));s.rdy=!!m.rdy&&s.bet>=10;qSync(C);if(Q.seats.length&&Q.seats.every(function(x){return x.rdy}))qDeal(C);return}
+      if(m.t==='bj-act'&&Q.ph==='play'&&Q.seats[Q.cur]===s){
+        if(m.a==='hit'){s.h.push(dcard());var v=val(s.h).t;if(v>=21)qNext(C);else qSync(C)}
+        else if(m.a==='stand')qNext(C);
+        else if(m.a==='dbl'&&s.h.length===2&&!s.dbl){s.dbl=true;s.stake*=2;s.h.push(dcard());qNext(C)}
+        sfx.play('ui');return}
+      if(m.t==='bj-new'&&from==='host'&&Q.ph==='done')qNewRound(C)}
+    function qDeal(C){var any=false;Q.seats.forEach(function(s){s.h=[];s.res='';s.win=0;s.dbl=false;s.done=false;s.in=s.rdy&&s.bet>=10;s.stake=s.in?s.bet:0;if(s.in)any=true});if(!any)return;
+      Q.r++;Q.dh=[];Q.hide=true;for(var k=0;k<2;k++){Q.seats.forEach(function(s){if(s.in)s.h.push(dcard())});Q.dh.push(dcard())}
+      Q.ph='play';Q.cur=-1;sfx.play('go');
+      var up=Q.dh[0].r;if((up===14||up>=10)&&bj(Q.dh)){qResolve(C);return}
+      qNext(C)}
+    function qNext(C){for(var i=Q.cur+1;i<Q.seats.length;i++){var s=Q.seats[i];if(s.in&&!bj(s.h)&&val(s.h).t<21&&!s.dbl){Q.cur=i;QT=0;qSync(C);return}}
+      Q.cur=-1;Q.ph='dealer';Q.hide=false;Q.t=.7;qSync(C)}
+    function qResolve(C){Q.hide=false;var d=val(Q.dh).t,dbj=bj(Q.dh);
+      Q.seats.forEach(function(s){if(!s.in)return;var p=val(s.h).t,pbj=bj(s.h);
+        if(pbj&&!dbj){s.res='bj';s.win=Math.floor(s.stake*2.5)}else if(p>21){s.res='bust';s.win=0}else if(dbj&&!pbj){s.res='lose';s.win=0}else if(pbj&&dbj){s.res='push';s.win=s.stake}
+        else if(d>21||p>d){s.res='win';s.win=s.stake*2}else if(p===d){s.res='push';s.win=s.stake}else{s.res='lose';s.win=0}});
+      Q.ph='done';Q.cur=-1;qSync(C)}
+    function qNewRound(C){Q.ph='bet';Q.dh=[];Q.hide=true;var ns=seatsFrom(C);ns.forEach(function(n){var o=Q.seats.filter(function(x){return x.id===n.id})[0];if(o)n.bet=o.bet});Q.seats=ns;qSync(C)}
+    function qSend(C,m){C.net.send(m)}
+    var ON={
+      setup:function(C){Q=null;SEEN={};LED={r:-1,sp:0,ga:0};MYBET=Math.min(50,BANK.get());
+        C.listen(function(m,from){if(m.t==='bj-s'&&!host(C)){qView(C,m.q);return}if(host(C)&&/^bj-/.test(m.t))qAct(C,from,m)});
+        C.keysText('À plusieurs : chacun mise ses jetons et joue contre le croupier · <kbd>H</kbd> carte · <kbd>S</kbd> rester · <kbd>D</kbd> doubler · jetons virtuels');
+        C.over('Blackjack à plusieurs','Tout le salon à la même table, chacun contre le croupier. Choisis ta mise puis clique <b>Prêt</b> : la donne part quand tout le monde est prêt (ou quand le chef lance).','Rejoindre la table')},
+      start:function(C){if(host(C)){qNew(C);qSync(C)}else qSend(C,{t:'bj-hello'})},
+      step:function(C,dt){if(!Q)return;var all=Q.dh.slice();Q.seats.forEach(function(s){all=all.concat(s.h)});animCards(all,dt);
+        if(!host(C))return;
+        if(Q.ph==='dealer'){Q.t-=dt;if(Q.t<=0){if(!Q.seats.some(function(s){return s.in&&val(s.h).t<=21})||val(Q.dh).t>=17)qResolve(C);else{Q.dh.push(dcard());Q.t=.6;qSync(C)}}}
+        if(Q.ph==='play'&&Q.cur>=0){QT+=dt;if(QT>40){QT=0;qNext(C)}}
+        if(Q.ph==='bet'&&Q.seats.length!==Math.min(5,C.net.players.length)){Q.seats=seatsFrom(C);qSync(C)}},
+      mouse:function(C,t,x,y){QU.mx=x;QU.my=y;if(t==='down'&&C.running)clickUI(QU,x,y)},
+      key:function(C,k,down){if(!down||!C.running)return;keyUI(QU,k)},
+      draw:function(C){var g=C.g;QU.btns=[];table(g,'BLACKJACK');bankBar(g,'À plusieurs · paie 3:2');
+        if(!Q){mono(g,'Connexion à la table du chef…',480,270,18,CR);return}
+        mono(g,'CROUPIER',480,62,13,'rgba(241,236,226,.6)');
+        var i;for(i=0;i<Q.dh.length;i++){var dc=Q.dh[i];card(g,dc&&!dc.x?dc:null,480-Q.dh.length*34+i*68,78,!dc||dc.x||(i===1&&Q.hide),.85)}
+        if(Q.dh.length){var dv=val(Q.hide?[Q.dh[0]]:Q.dh.filter(function(c){return c&&!c.x})).t;g.fillStyle=INK;rr(g,480+Q.dh.length*34+8,104,48,30,8);g.fill();mono(g,String(dv),480+Q.dh.length*34+32,119,16,CR)}
+        var n=Q.seats.length,me=mySeat(null,C);
+        Q.seats.forEach(function(s,k){var cx=480+(k-(n-1)/2)*186,mine=me===s,turn=Q.ph==='play'&&Q.cur===k,y=230;
+          for(var j=0;j<s.h.length;j++)card(g,s.h[j],cx-50+j*24,y,false,.62);
+          if(s.h.length){var v=val(s.h).t;g.fillStyle=v>21?RED:INK;rr(g,cx+56,y-4,40,26,7);g.fill();mono(g,String(v),cx+76,y+9,14,CR)}
+          g.fillStyle=turn?YEL:mine?'#2f6fbf':'rgba(20,18,16,.85)';rr(g,cx-80,330,160,42,10);g.fill();
+          mono(g,String(s.n).slice(0,12)+(mine?' (toi)':''),cx,344,13,turn?INK:CR);
+          var st=Q.ph==='bet'?(s.rdy?'prêt · '+s.bet:'mise '+s.bet+'…'):s.in?'mise '+s.stake+(s.dbl?' ×2':''):'ne joue pas';mono(g,st,cx,361,12,turn?INK:YEL);
+          if(Q.ph==='done'&&s.in){var lab={bj:'BLACKJACK +'+(s.win-s.stake),win:'GAGNÉ +'+s.stake,push:'ÉGALITÉ',lose:'PERDU',bust:'DÉPASSÉ'}[s.res]||'';var col=s.res==='bj'||s.res==='win'?GRN:s.res==='push'?CR:RED;g.fillStyle='rgba(20,18,16,.85)';rr(g,cx-72,388,144,26,8);g.fill();mono(g,lab,cx,401,13,col)}});
+        if(!C.running)return;
+        if(!me){mono(g,'Tu regardes la partie (5 joueurs max à la table)',480,470,14,CR);return}
+        if(Q.ph==='bet'){
+          if(refillOk()&&!me.rdy&&MYBET<10){button(QU,g,355,455,250,58,'Recharger 1000 jetons',function(){refill(C);MYBET=50},{col:'#7b3fd1'});return}
+          if(!me.rdy){[10,25,50,100,500].forEach(function(v,k){var x=40+k*58;chip(g,x+22,484,v,21);QU.btns.push({x:x,y:460,w:44,h:48,fn:function(){if(MYBET+v<=BANK.get()){MYBET+=v;sfx.play('ui')}else PP.toast('Pas assez de jetons','warn')},key:'Digit'+(k+1)})});
+            mono(g,'MISE',345,470,12,'rgba(241,236,226,.6)');txt(g,String(MYBET),345,496,28,YEL);button(QU,g,395,458,100,52,'Effacer',function(){MYBET=0},{col:'#3a3632',hcol:'#4a4642'})}
+          button(QU,g,510,458,150,52,me.rdy?'Pas prêt':'Prêt',function(){qSend(C,{t:'bj-bet',v:MYBET,rdy:!me.rdy})},{off:!me.rdy&&(MYBET<10||MYBET>BANK.get()),key:['Space','Enter'],sub:'Espace',col:me.rdy?'#3a3632':RED});
+          if(host(C))button(QU,g,675,458,170,52,'Distribuer',function(){qDeal(C)},{off:!Q.seats.some(function(s){return s.rdy}),col:'#7b3fd1',hcol:'#8f55e6',key:'KeyD',sub:'D · joueurs prêts'})}
+        else if(Q.ph==='play'){if(Q.seats[Q.cur]===me){
+            button(QU,g,250,455,140,58,'Carte',function(){qSend(C,{t:'bj-act',a:'hit'})},{key:'KeyH',sub:'H'});
+            button(QU,g,410,455,140,58,'Rester',function(){qSend(C,{t:'bj-act',a:'stand'})},{key:'KeyS',sub:'S',col:'#3a3632',hcol:'#4a4642'});
+            button(QU,g,570,455,140,58,'Doubler',function(){if(BANK.get()>=me.stake)qSend(C,{t:'bj-act',a:'dbl'})},{key:'KeyD',sub:'D',col:'#7b3fd1',hcol:'#8f55e6',off:me.h.length!==2||BANK.get()<me.stake})}
+          else mono(g,(Q.seats[Q.cur]?Q.seats[Q.cur].n:'?')+' joue…',480,480,16,CR)}
+        else if(Q.ph==='dealer')mono(g,'Le croupier tire…',480,480,16,CR);
+        else if(Q.ph==='done'){if(host(C))button(QU,g,380,455,200,58,'Nouvelle main',function(){qNewRound(C)},{key:['Space','Enter'],sub:'Espace'});else mono(g,'Le chef lance la main suivante',480,480,15,CR)}
+      }};
+    var SO={
       setup:function(C){S=fresh();U=UI();C.keysText('Clique les boutons · <kbd>1</kbd>-<kbd>5</kbd> jetons · <kbd>Espace</kbd> distribuer · <kbd>H</kbd> carte · <kbd>S</kbd> rester · <kbd>D</kbd> doubler · jetons virtuels, pas d\'argent réel');
         C.over('Blackjack','Approche-toi de 21 sans dépasser et bats le croupier. Le blackjack paie 3 contre 2, le croupier tire jusqu\'à 17. Tu as <b>'+BANK.get()+' jetons</b> (virtuels).','Jouer')},
       start:function(C){S=fresh()},
@@ -105,7 +187,9 @@
           button(U,g,250,455,140,58,'Carte',function(){hit(C)},{key:'KeyH',sub:'H'});
           button(U,g,410,455,140,58,'Rester',function(){stand(C)},{key:'KeyS',sub:'S',col:'#3a3632',hcol:'#4a4642'});
           button(U,g,570,455,140,58,'Doubler',function(){dbl(C)},{key:'KeyD',sub:'D',col:'#7b3fd1',hcol:'#8f55e6',off:S.ph.length!==2||BANK.get()<S.stake})}
-      }});
+      }};
+    function pick(C){return C.mode==='online'?ON:SO}
+    PP.arcade({id:'bj',setup:function(C){pick(C).setup(C)},start:function(C){pick(C).start(C)},step:function(C,dt){pick(C).step(C,dt)},mouse:function(C,t,x,y,e){pick(C).mouse(C,t,x,y,e)},key:function(C,k,d,e){pick(C).key(C,k,d,e)},draw:function(C,dt){pick(C).draw(C,dt)}});
   })();
 
   /* =====================================================================
@@ -131,45 +215,60 @@
   function catOf(v){return Math.floor(v/759375)}
   PP._evalH=evalH;
   (function(){
-    var S,U,SB=10,BB=20,NAMES=['Toi','Léa','Momo','Zed'],SEAT=[[480,440],[120,250],[480,78],[840,250]];
-    function newTable(){var me=BANK.get();return {pl:NAMES.map(function(n,i){return {n:n,st:i?1000:me,bot:i>0,cards:[],fold:false,allin:false,bet:0,tot:0,acted:false,out:false,last:''}}),dealer:Math.random()*4|0,board:[],phase:'idle',cur:-1,max:0,minR:BB,t:0,msg:'',hand:0,wins:null}}
+    /* v69 : la même table sert en solo (toi contre 3 bots) et en salon (jusqu'à 6 joueurs, des bots complètent jusqu'à 4).
+       En salon, le chef fait tourner la partie et envoie à chacun ce qu'il a le droit de voir (pas les cartes des autres). */
+    var S,U,SB=10,BB=20,BOTN=['Léa','Momo','Zed','Nina','Rex'],CC=null,SITS={},LASTV=-1,SEENC={},POPR=-1,TT=0;
+    function online(C){return C.mode==='online'}
+    function isHost(C){return !online(C)||C.net.isHost}
+    function N(){return S.pl.length}
+    function newTable(list){return {pl:list.map(function(o){return {id:o.id,n:o.n,st:o.st,bot:!!o.bot,sat:o.sat!==false,cards:[],fold:false,allin:false,bet:0,tot:0,acted:false,out:false,last:'',show:false}}),dealer:Math.random()*list.length|0,board:[],phase:'idle',cur:-1,max:0,minR:BB,t:0,msg:'',hand:0,wins:null,v:0,me:0}}
+    function soloTable(){return newTable([{id:'me',n:'Toi',st:BANK.get()}].concat(BOTN.slice(0,3).map(function(n,i){return {id:'b'+i,n:n,st:1000,bot:true}})))}
+    function roomTable(C){var hs=C.net.players.slice(0,6).map(function(p){return {id:p.id,n:p.name||'?',st:p.id===C.net.me.id?BANK.get():(SITS[p.id]||1000),sat:p.id===C.net.me.id||SITS[p.id]!=null}});var k=0;while(hs.length<4)hs.push({id:'b'+k,n:BOTN[k++]+' (bot)',st:1000,bot:true});return newTable(hs)}
+    function meIdx(C){if(!online(C))return 0;var id=C.net.me.id;for(var i=0;i<N();i++)if(S.pl[i].id===id)return i;return -1}
     function active(){return S.pl.filter(function(p){return !p.out&&!p.fold})}
     function pot(){return S.pl.reduce(function(a,p){return a+p.tot},0)}
-    function nextIdx(i,f){for(var k=1;k<=4;k++){var j=(i+k)%4;if(f(S.pl[j]))return j}return -1}
-    function syncMe(){BANK.set(S.pl[0].st)}
+    function nextIdx(i,f){for(var k=1;k<=N();k++){var j=(i+k)%N();if(f(S.pl[j]))return j}return -1}
+    function syncMe(C){var m=meIdx(C);if(m>=0&&S.pl[m].sat!==false)BANK.set(S.pl[m].st)}
+    function bump(){S.v++}
     function put(p,a){a=Math.min(a,p.st);p.st-=a;p.bet+=a;p.tot+=a;if(p.st===0)p.allin=true;return a}
+    function canAct(p){return !p.out&&!p.fold&&!p.allin}
     function newHand(C){
-      S.pl.forEach(function(p,i){if(i&&p.st<=0)p.out=true});
-      if(S.pl[0].st<=0){S.phase='broke';return}
-      if(S.pl.every(function(p,i){return !i||p.out})){S.msg='Tu as ruiné les 3 bots ! Ils reviennent avec 1000 jetons.';C.pop('TABLE GAGNÉE !',YEL,'70px');C.win();sfx.play('win');S.pl.forEach(function(p,i){if(i){p.st=1000;p.out=false}})}
+      if(online(C)){/* nouveaux arrivants à la place d'un bot ou d'un siège vide ; les partis sont retirés */
+        var ids=C.net.players.map(function(p){return p.id});S.pl=S.pl.filter(function(p){return p.bot||ids.indexOf(p.id)>=0});
+        C.net.players.slice(0,6).forEach(function(p){if(!S.pl.some(function(q){return q.id===p.id})){var bi=-1;S.pl.forEach(function(q,i){if(q.bot&&bi<0)bi=i});var np={id:p.id,n:p.name||'?',st:SITS[p.id]||1000,sat:SITS[p.id]!=null,bot:false,cards:[],out:false};if(bi>=0)S.pl[bi]=np;else if(S.pl.length<6)S.pl.push(np)}});
+        if(S.dealer>=N())S.dealer=0}
+      S.pl.forEach(function(p){if(!p.bot&&!p.sat&&SITS[p.id]!=null){p.st=SITS[p.id];p.sat=true}if(p.st<=0&&p.bot)p.out=true});
+      var mi=meIdx(C);if(!online(C)&&S.pl[0].st<=0){S.phase='broke';bump();return}
+      if(!online(C)&&S.pl.every(function(p,i){return !i||p.out})){S.msg='Tu as ruiné les 3 bots ! Ils reviennent avec 1000 jetons.';C.pop('TABLE GAGNÉE !',YEL,'70px');C.win();sfx.play('win');S.pl.forEach(function(p,i){if(i){p.st=1000;p.out=false}})}
+      S.pl.forEach(function(p){if(!p.bot)p.out=p.st<=0});
+      if(S.pl.filter(function(p){return !p.out}).length<2){S.phase='end';S.msg='Pas assez de joueurs avec des jetons.';bump();return}
       S.hand++;S.board=[];S.deck=deck(1);S.wins=null;S.max=0;S.minR=BB;
       S.pl.forEach(function(p){p.cards=[];p.fold=p.out;p.allin=false;p.bet=0;p.tot=0;p.acted=false;p.last='';p.show=false});
       S.dealer=nextIdx(S.dealer,function(p){return !p.out});
       var live=S.pl.filter(function(p){return !p.out}).length,sb=live===2?S.dealer:nextIdx(S.dealer,function(p){return !p.out}),bb=nextIdx(sb,function(p){return !p.out});
       put(S.pl[sb],SB);S.pl[sb].last='Petite blinde';put(S.pl[bb],BB);S.pl[bb].last='Grosse blinde';S.max=BB;
       for(var r=0;r<2;r++)S.pl.forEach(function(p){if(!p.out){var c=S.deck.pop();c.a=-.15*r;p.cards.push(c)}});
-      S.phase='pre';S.cur=nextIdx(bb,function(p){return !p.out&&!p.fold&&!p.allin});S.t=.8;S.msg='';sfx.play('go');syncMe();
-      if(S.cur<0)runOut(C)}
-    function canAct(p){return !p.out&&!p.fold&&!p.allin}
-    function roundDone(){var a=S.pl.filter(canAct);return a.every(function(p){return p.acted&&p.bet===S.max})}
-    function act(C,i,what,amt){var p=S.pl[i],call=S.max-p.bet;
+      S.phase='pre';S.cur=nextIdx(bb,canAct);S.t=.8;S.msg='';TT=0;sfx.play('go');syncMe(C);bump();
+      if(S.cur<0)runOut()}
+    function roundDone(){return S.pl.filter(canAct).every(function(p){return p.acted&&p.bet===S.max})}
+    function act(C,i,what,amt){var p=S.pl[i];if(!p||S.cur!==i||S.phase==='end')return;var call=S.max-p.bet;
       if(what==='fold'){p.fold=true;p.last='Se couche';sfx.play('ui')}
       else if(what==='call'){if(call>0){put(p,call);p.last=p.allin?'Tapis !':'Suit '+call;sfx.play('pickup')}else{p.last='Parole';sfx.play('tick')}}
-      else if(what==='raise'){var to=Math.min(p.bet+p.st,amt),inc=to-S.max;put(p,to-p.bet);if(inc>0){if(inc>=S.minR)S.minR=inc;S.max=p.bet;S.pl.forEach(function(q){if(q!==p)q.acted=false})}p.last=p.allin?'Tapis !':'Relance à '+p.bet;sfx.play('pickup')}
-      p.acted=true;syncMe();
+      else if(what==='raise'){var to=Math.min(p.bet+p.st,Math.max(+amt||0,S.max+1)),inc=to-S.max;put(p,to-p.bet);if(inc>0){if(inc>=S.minR)S.minR=inc;S.max=p.bet;S.pl.forEach(function(q){if(q!==p)q.acted=false})}p.last=p.allin?'Tapis !':'Relance à '+p.bet;sfx.play('pickup')}
+      else return;
+      p.acted=true;syncMe(C);bump();TT=0;
       if(active().length===1){win1(C);return}
       if(roundDone()){nextStreet(C);return}
       S.cur=nextIdx(i,canAct);S.t=.75;if(S.cur<0)nextStreet(C)}
-    function nextStreet(C){S.pl.forEach(function(p){p.bet=0;p.acted=false});S.max=0;S.minR=BB;
+    function nextStreet(C){S.pl.forEach(function(p){p.bet=0;p.acted=false});S.max=0;S.minR=BB;bump();
       if(S.board.length===5){showdown(C);return}
       var n=S.board.length?1:3;for(var k=0;k<n;k++){var c=S.deck.pop();c.a=-.12*k;S.board.push(c)}sfx.play('ui');
       S.phase=['','','','flop','turn','river'][S.board.length]||'river';
-      var who=S.pl.filter(canAct);if(who.length<2){S.cur=-1;S.t=.9;S.auto=true;return}
-      S.auto=false;S.cur=nextIdx(S.dealer,canAct);S.t=.9}
-    function runOut(C){S.auto=true;S.cur=-1;S.t=.6}
-    function win1(C){var w=active()[0],p=pot();w.st+=p;S.wins=[{i:S.pl.indexOf(w),amt:p}];S.msg=(w.bot?w.n+' remporte ':'Tu remportes ')+p+' (les autres se couchent)';if(!w.bot){C.pop('+'+p,YEL,'60px');sfx.play('win')}endHand(C)}
+      if(S.pl.filter(canAct).length<2){runOut();return}
+      S.auto=false;S.cur=nextIdx(S.dealer,canAct);S.t=.9;TT=0}
+    function runOut(){S.auto=true;S.cur=-1;S.t=.9}
+    function win1(C){var w=active()[0],p=pot();w.st+=p;S.wins=[{i:S.pl.indexOf(w),amt:p}];S.msg=(!online(C)&&w.id==='me'?'Tu remportes ':w.n+' remporte ')+p+' (les autres se couchent)';endHand(C)}
     function showdown(C){var cont=active();cont.forEach(function(p){p.show=true;p.score=evalH(p.cards.concat(S.board))});
-      /* pots : on gère le tapis (pot principal + pots annexes) */
       var levels=[],won={};S.pl.forEach(function(p){if(p.tot>0&&levels.indexOf(p.tot)<0)levels.push(p.tot)});levels.sort(function(a,b){return a-b});var prev=0;
       levels.forEach(function(L){var part=0;S.pl.forEach(function(p){part+=Math.max(0,Math.min(p.tot,L)-prev)});var el=cont.filter(function(p){return p.tot>=L});if(!el.length)el=cont;
         var best=Math.max.apply(null,el.map(function(p){return p.score})),ws=el.filter(function(p){return p.score===best}),share=Math.floor(part/ws.length),rest=part-share*ws.length;
@@ -177,64 +276,94 @@
       S.wins=Object.keys(won).map(function(i){return {i:+i,amt:won[i]}});
       var top=S.wins.slice().sort(function(a,b){return b.amt-a.amt})[0],wp=S.pl[top.i];
       S.msg=S.wins.map(function(w){return S.pl[w.i].n+' +'+w.amt}).join(' · ')+' — '+HN[catOf(wp.score)];
-      if(won[0]){C.pop(HN[catOf(S.pl[0].score)].toUpperCase()+' !',YEL,'60px');sfx.play('win');C.win()}else sfx.play('lose');
       endHand(C)}
-    function endHand(C){S.phase='end';S.cur=-1;syncMe();record(C);if(S.pl[0].st<=0){S.msg+=' · Tu n\'as plus de jetons.'}}
-    /* bots : chance de gagner estimée en simulant 200 fins de main au hasard */
-    function equity(p){var opp=active().length-1,known=p.cards.concat(S.board),win=0,N=200;
+    function endHand(C){S.phase='end';S.cur=-1;S.auto=false;syncMe(C);record(C);bump()}
+    /* effets (pop, sons) quand une main se termine, vus par chacun depuis sa place */
+    function endFx(C){if(S.phase!=='end'||POPR===S.hand+'/'+S.v)return;POPR=S.hand+'/'+S.v;var m=meIdx(C),w=S.wins&&S.wins.filter(function(x){return x.i===m})[0];if(!S.wins)return;
+      if(w){var p=S.pl[m];C.pop(p.show&&S.board.length===5?HN[catOf(evalH(p.cards.concat(S.board)))].toUpperCase()+' !':'+'+w.amt,YEL,'60px');sfx.play('win');C.win()}else sfx.play('lose')}
+    function equity(p){var opp=active().length-1,known=p.cards.concat(S.board),win=0,Nn=200;
       var rest=deck(1).filter(function(c){return !known.some(function(k){return k.r===c.r&&k.s===c.s})});
-      for(var n=0;n<N;n++){for(var i=rest.length-1;i>rest.length-1-(5-S.board.length)-opp*2-1&&i>0;i--){var j=Math.random()*(i+1)|0,t=rest[i];rest[i]=rest[j];rest[j]=t}
+      for(var n=0;n<Nn;n++){for(var i=rest.length-1;i>rest.length-1-(5-S.board.length)-opp*2-1&&i>0;i--){var j=Math.random()*(i+1)|0,t=rest[i];rest[i]=rest[j];rest[j]=t}
         var k=rest.length-1,b=S.board.slice();while(b.length<5)b.push(rest[k--]);var mine=evalH(p.cards.concat(b)),best=true,tie=false;
         for(var o=0;o<opp;o++){var os=evalH([rest[k--],rest[k--]].concat(b));if(os>mine){best=false;break}if(os===mine)tie=true}
         if(best)win+=tie?.5:1}
-      return win/N}
-    function botMove(C,i){var p=S.pl[i],call=S.max-p.bet,eq=equity(p),pt=pot(),odds=call/(pt+call||1),r=Math.random(),agg=[0,.08,.15,.04][i];
+      return win/Nn}
+    function botMove(C,i){var p=S.pl[i],call=S.max-p.bet,eq=equity(p),pt=pot(),odds=call/(pt+call||1),r=Math.random(),agg=[.08,.15,.04,.1,.06][i%5];
       if(eq>.72-agg&&r<.75||(r<.06+agg*.3&&p.st>pt)){var to=S.max+Math.max(S.minR,Math.round(Math.max(BB,pt*(eq>.85?.9:.6))/10)*10);if(eq>.9&&r<.3)to=p.bet+p.st;act(C,i,'raise',to);return}
       if(call===0){act(C,i,'call');return}
       if(eq>=odds+.04||(call<=BB&&eq>.25)||(eq>.5)){act(C,i,'call');return}
       act(C,i,'fold')}
-    function myCall(){var p=S.pl[0];return Math.min(p.st,S.max-p.bet)}
-    function myRaiseTo(){var p=S.pl[0],to=S.max+Math.max(S.minR,BB*2);return Math.min(p.bet+p.st,to)}
+    /* ce que voit chaque joueur : ses cartes, et celles des autres seulement à l'abattage */
+    function viewFor(id){var o=JSON.parse(JSON.stringify(S));delete o.deck;o.pl.forEach(function(p){if(p.id!==id&&!p.show)p.cards=p.cards.map(function(){return {r:0,s:0,x:1}})});return o}
+    function sendAll(C){if(!online(C)||!C.net.isHost||S.v===LASTV)return;LASTV=S.v;S.pl.forEach(function(p){if(!p.bot&&p.id!==C.net.me.id)C.net.to(p.id,{t:'pk-s',s:viewFor(p.id)})});
+      C.net.players.forEach(function(p){if(p.id!==C.net.me.id&&!S.pl.some(function(q){return q.id===p.id}))C.net.to(p.id,{t:'pk-s',s:viewFor(p.id)})})}
+    function recv(C,s){s.board.forEach(seen1);s.pl.forEach(function(p){p.cards.forEach(seen1)});S=s;syncMe(C);endFx(C)}
+    function seen1(c){if(!c||c.x)return;var k=c.r+'-'+c.s;if(!SEENC[k]){SEENC[k]=1;c.a=0}else c.a=1}
+    function myTurn(C){var m=meIdx(C);return m>=0&&S.cur===m&&S.phase!=='end'&&S.phase!=='broke'}
+    function doAct(C,what,amt){if(!myTurn(C))return;if(online(C)&&!C.net.isHost)C.net.send({t:'pk-act',w:what,a:amt});else act(C,meIdx(C),what,amt)}
+    function myCall(C){var p=S.pl[meIdx(C)];return Math.min(p.st,S.max-p.bet)}
+    function myRaiseTo(C){var p=S.pl[meIdx(C)],to=S.max+Math.max(S.minR,BB*2);return Math.min(p.bet+p.st,to)}
+    /* places autour de la table, toi toujours en bas */
+    function seatPos(k,n){if(k===0)return [480,440];var a=Math.PI/2+k*Math.PI*2/n;return [Math.round(480+Math.cos(a)*370),Math.round(250+Math.sin(a)*175)]}
     PP.arcade({id:'poker',
-      setup:function(C){S=newTable();U=UI();C.keysText('Clique les boutons · <kbd>F</kbd> se coucher · <kbd>C</kbd> suivre / parole · <kbd>R</kbd> relancer · <kbd>A</kbd> tapis · jetons virtuels, pas d\'argent réel');
+      setup:function(C){CC=C;U=UI();SEENC={};LASTV=-1;POPR=-1;S=online(C)?null:soloTable();
+        if(online(C)){C.listen(function(m,from){
+            if(m.t==='pk-s'&&!C.net.isHost){if(m.s.hand!==(S&&S.hand))SEENC={};recv(C,m.s);return}
+            if(!C.net.isHost)return;
+            if(m.t==='pk-sit'){SITS[from]=Math.max(20,Math.min(1e6,+m.st||1000));if(S){S.pl.forEach(function(p){if(p.id===from&&(S.phase==='idle'||S.phase==='end'||p.fold||p.out||!p.cards.length)){p.st=SITS[from];p.sat=true}});bump();LASTV=-1}return}
+            if(m.t==='pk-act'&&S){var i=-1;S.pl.forEach(function(p,k){if(p.id===from)i=k});if(i>=0)act(C,i,m.w,m.a);return}
+            if(m.t==='players'&&S){var ids=m.players.map(function(p){return p.id});S.pl.forEach(function(p,k){if(!p.bot&&ids.indexOf(p.id)<0&&!p.out){p.fold=true;p.out=true;p.last='Parti';if(S.cur===k&&S.phase!=='end'){if(active().length===1)win1(C);else{S.cur=nextIdx(k,canAct);if(S.cur<0||roundDone())nextStreet(C)}}bump()}})}});
+          C.keysText('À plusieurs : <kbd>F</kbd> se coucher · <kbd>C</kbd> suivre / parole · <kbd>R</kbd> relancer · <kbd>A</kbd> tapis · jetons virtuels, pas d\'argent réel');
+          C.over('Poker à plusieurs','Texas Hold\'em avec tout le salon (6 max). S\'il y a moins de 4 joueurs, des bots complètent la table. Chacun joue avec ses propres jetons (virtuels). Le chef distribue.',C.net.isHost?'Ouvrir la table':'Rejoindre la table');return}
+        C.keysText('Clique les boutons · <kbd>F</kbd> se coucher · <kbd>C</kbd> suivre / parole · <kbd>R</kbd> relancer · <kbd>A</kbd> tapis · jetons virtuels, pas d\'argent réel');
         C.over('Poker','Texas Hold\'em contre 3 bots. 2 cartes pour toi, 5 au milieu : fais la meilleure main de 5 cartes. Blindes 10 / 20. Tu joues avec tes <b>'+BANK.get()+' jetons</b> (virtuels).','Jouer')},
-      start:function(C){if(BANK.get()<20){BANK.set(1000);C.pop('+1000 JETONS',YEL,'54px')}S=newTable();newHand(C)},
-      close:function(){if(S&&S.pl)syncMe()},
+      start:function(C){if(BANK.get()<20){BANK.set(1000);C.pop('+1000 JETONS',YEL,'54px')}
+        if(online(C)){if(C.net.isHost){S=roomTable(C);S.phase='idle';S.msg='Le chef lance la première main.';bump()}else C.net.send({t:'pk-sit',st:BANK.get()});return}
+        S=soloTable();newHand(C)},
+      close:function(C){if(S&&S.pl&&meIdx(C)>=0)syncMe(C)},
       step:function(C,dt){if(!S||!S.pl)return;var all=S.board.slice();S.pl.forEach(function(p){all=all.concat(p.cards)});animCards(all,dt);
-        if(S.phase==='end'||S.phase==='broke'||S.phase==='idle')return;
-        S.t-=dt;if(S.t>0)return;
+        if(!isHost(C))return;
+        sendAll(C);
+        if(S.phase==='end'){endFx(C);return}
+        if(S.phase==='broke'||S.phase==='idle')return;
+        S.t-=dt;
+        /* un joueur du salon qui ne joue pas pendant 40 s : il passe (ou se couche s'il doit suivre) */
+        var cp=S.pl[S.cur];if(cp&&!cp.bot&&online(C)){TT+=dt;if(TT>40){TT=0;act(C,S.cur,S.max>cp.bet?'fold':'call')}return}
+        if(S.t>0)return;
         if(S.auto){S.pl.forEach(function(p){if(!p.fold&&!p.out)p.show=true});nextStreet(C);S.t=1;return}
-        if(S.cur>0)botMove(C,S.cur)},
+        if(cp&&cp.bot)botMove(C,S.cur)},
       mouse:function(C,t,x,y){U.mx=x;U.my=y;if(t==='down'&&C.running)clickUI(U,x,y)},
       key:function(C,k,down){if(!down||!C.running)return;keyUI(U,k)},
-      draw:function(C){var g=C.g;U.btns=[];table(g,'POKER');bankBar(g,'Main n°'+(S.hand||0)+' · blindes 10/20');
-        /* tapis central */
+      draw:function(C){var g=C.g;U.btns=[];table(g,'POKER');
+        if(!S){bankBar(g,'À plusieurs');mono(g,'Connexion à la table du chef…',480,270,18,CR);return}
+        bankBar(g,'Main n°'+(S.hand||0)+' · blindes 10/20'+(online(C)?' · salon':''));
         for(var b=0;b<5;b++){var bx=480-5*40+b*80+5;if(S.board[b])card(g,S.board[b],bx,200,false,.9);else{g.strokeStyle='rgba(241,236,226,.15)';g.lineWidth=2;rr(g,bx,200,63,90,8);g.stroke()}}
         var pt=pot();if(pt&&S.phase!=='end'){chip(g,430,306,pt>=500?500:pt>=100?100:25,15);mono(g,'POT '+pt,452,306,16,YEL,'left')}
-        S.pl.forEach(function(p,i){var s=SEAT[i],x=s[0],y=s[1],me=i===0,turn=S.cur===i&&S.phase!=='end',win=S.wins&&S.wins.some(function(w){return w.i===i});
+        var mi=meIdx(C),n=N(),base=mi<0?0:mi;
+        S.pl.forEach(function(p,i){var k=(i-base+n)%n,s=seatPos(k,n),x=s[0],y=s[1],me=i===mi,turn=S.cur===i&&S.phase!=='end',win=S.wins&&S.wins.some(function(w){return w.i===i}),top=!me&&y<150;
           if(p.out){g.globalAlpha=.35}
-          /* cartes */
-          var sc=me?1:.72,cw=CW*sc;for(var k=0;k<p.cards.length;k++){var cx=x-cw-4+k*(cw+8),cy=me?y-112:y-36;card(g,p.cards[k],cx,cy,!me&&!p.show,sc)}
-          if(p.fold&&!p.out&&p.cards.length){g.fillStyle='rgba(31,90,60,.7)';g.fillRect(x-cw-6,me?y-114:y-38,cw*2+14,(me?CHh:CHh*.72)+6)}
-          /* plaque du joueur */
-          var px=x-80,py=me?y-2:y+42;g.fillStyle=turn?YEL:win?GRN:'rgba(20,18,16,.85)';rr(g,px,py,160,44,10);g.fill();
-          mono(g,p.n+(i===S.dealer?'  Ⓓ':''),x,py+14,14,turn||win?INK:CR);mono(g,p.out?'éliminé':p.st+' jetons',x,py+31,13,turn||win?INK:YEL);
-          if(p.bet>0){var bx2=me?x+170:i===2?x:x+(i===1?140:-140),by2=me?y+20:i===2?y+120:y;chip(g,bx2,by2,p.bet>=100?100:p.bet>=50?50:p.bet>=25?25:10,15);mono(g,String(p.bet),bx2,by2+24,12,CR)}
-          if(p.last&&!p.out){var lx=me?x-190:x,ly=me?y+20:y+100;if(i===2){lx=x+150;ly=y+64}g.fillStyle='rgba(20,18,16,.7)';var tw=Math.max(80,p.last.length*8+16);rr(g,lx-tw/2,ly-12,tw,24,8);g.fill();mono(g,p.last,lx,ly,12,p.last==='Se couche'?'#b0a898':CR)}
-          if(p.show&&!p.fold&&S.board.length>=3&&S.phase==='end'){mono(g,HN[catOf(evalH(p.cards.concat(S.board)))],me?x-150:x,me?y-60:y-48,13,YEL)}
+          var sc=me?1:.66,cw=CW*sc;for(var c=0;c<p.cards.length;c++){var cx=x-cw-4+c*(cw+8),cy=me?y-112:y-34;var cd=p.cards[c];card(g,cd&&!cd.x?cd:null,cx,cy,!cd||cd.x||(!me&&!p.show),sc)}
+          if(p.fold&&!p.out&&p.cards.length){g.fillStyle='rgba(31,90,60,.7)';g.fillRect(x-cw-6,me?y-114:y-36,cw*2+14,(me?CHh:CHh*sc)+6)}
+          var px=x-74,py=me?y-2:y+36;g.fillStyle=turn?YEL:win?GRN:me&&online(C)?'#2f6fbf':'rgba(20,18,16,.85)';rr(g,px,py,148,40,10);g.fill();
+          mono(g,String(p.n).slice(0,13)+(i===S.dealer?' Ⓓ':''),x,py+13,13,turn||win?INK:CR);mono(g,p.out?(p.last==='Parti'?'parti':'éliminé'):p.st+' jetons',x,py+29,12,turn||win?INK:YEL);
+          if(p.bet>0){var bx2=me?x+165:top?x:x+(x<480?120:-120),by2=me?y+20:top?y+100:y;chip(g,bx2,by2,p.bet>=100?100:p.bet>=50?50:p.bet>=25?25:10,14);mono(g,String(p.bet),bx2,by2+22,11,CR)}
+          if(p.last&&!p.out){var lx=me?x-185:top?x+140:x,ly=me?y+20:top?y+58:y+92;g.fillStyle='rgba(20,18,16,.7)';var tw=Math.max(76,p.last.length*8+14);rr(g,lx-tw/2,ly-11,tw,22,8);g.fill();mono(g,p.last,lx,ly,11,p.last==='Se couche'?'#b0a898':CR)}
+          if(p.show&&!p.fold&&S.board.length>=3&&S.phase==='end'&&p.cards[0]&&!p.cards[0].x)mono(g,HN[catOf(evalH(p.cards.concat(S.board)))],me?x-150:x,me?y-60:y-46,12,YEL);
           g.globalAlpha=1});
         if(S.msg){g.font='700 15px "IBM Plex Mono", monospace';var mw=Math.min(900,g.measureText(S.msg).width+40);g.fillStyle='rgba(20,18,16,.88)';rr(g,480-mw/2,296,mw,30,10);g.fill();mono(g,S.msg,480,311,15,CR)}
         if(!C.running)return;
-        var me=S.pl[0];
-        if(S.phase==='end'||S.phase==='broke'){
-          if(me.st<=0){button(U,g,355,486,250,46,'Recharger 1000 jetons',function(){me.st=1000;BANK.set(1000);sfx.play('pickup');S.msg='';newHand(C)},{col:'#7b3fd1',key:['Space','Enter']})}
-          else button(U,g,620,486,190,46,'Main suivante',function(){newHand(C)},{key:['Space','Enter'],sub:'Espace'});return}
-        if(S.cur===0){var call=myCall(),rt=myRaiseTo();
-          button(U,g,590,436,110,44,'Coucher',function(){act(C,0,'fold')},{key:'KeyF',col:'#3a3632',hcol:'#4a4642',sub:'F'});
-          button(U,g,710,436,120,44,call?'Suivre '+call:'Parole',function(){act(C,0,'call')},{key:'KeyC',sub:'C'});
-          button(U,g,840,436,110,44,'Relance',function(){act(C,0,'raise',rt)},{key:'KeyR',col:'#7b3fd1',hcol:'#8f55e6',sub:'à '+rt,off:me.st<=call});
-          button(U,g,840,488,110,40,'Tapis',function(){act(C,0,'raise',me.bet+me.st)},{key:'KeyA',col:'#a0200f',hcol:'#c02a17',size:14})}
-        else if(S.cur>0)mono(g,S.pl[S.cur].n+' réfléchit…',760,470,14,'rgba(241,236,226,.75)')
+        if(mi<0){mono(g,'La table est pleine : tu regardes (tu joueras à la main suivante s\'il y a une place)',480,500,13,CR);return}
+        var me=S.pl[mi];
+        if(S.phase==='end'||S.phase==='broke'||S.phase==='idle'){
+          if(me.st<=0){button(U,g,355,486,250,46,'Recharger 1000 jetons',function(){BANK.set(1000);sfx.play('pickup');if(online(C)){if(C.net.isHost){me.st=1000;bump()}else C.net.send({t:'pk-sit',st:1000})}else{me.st=1000;S.msg='';newHand(C)}},{col:'#7b3fd1',key:['Space','Enter']})}
+          else if(isHost(C))button(U,g,620,486,190,46,S.phase==='idle'?'Distribuer':'Main suivante',function(){newHand(C)},{key:['Space','Enter'],sub:'Espace'});
+          else mono(g,'Le chef lance la main suivante',720,505,13,'rgba(241,236,226,.75)');return}
+        if(myTurn(C)){var call=myCall(C),rt=myRaiseTo(C);
+          button(U,g,590,436,110,44,'Coucher',function(){doAct(C,'fold')},{key:'KeyF',col:'#3a3632',hcol:'#4a4642',sub:'F'});
+          button(U,g,710,436,120,44,call?'Suivre '+call:'Parole',function(){doAct(C,'call')},{key:'KeyC',sub:'C'});
+          button(U,g,840,436,110,44,'Relance',function(){doAct(C,'raise',rt)},{key:'KeyR',col:'#7b3fd1',hcol:'#8f55e6',sub:'à '+rt,off:me.st<=call});
+          button(U,g,840,488,110,40,'Tapis',function(){doAct(C,'raise',me.bet+me.st)},{key:'KeyA',col:'#a0200f',hcol:'#c02a17',size:14})}
+        else if(S.cur>=0&&S.pl[S.cur])mono(g,S.pl[S.cur].n+(S.pl[S.cur].bot?' réfléchit…':' joue…'),760,470,14,'rgba(241,236,226,.75)')
       }});
   })();
 
