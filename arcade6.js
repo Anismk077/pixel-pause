@@ -99,6 +99,13 @@
      selon le niveau, sans tricher. En salon : chacun joue chez soi, on voit les fioles de l'autre en petit. ---------- */
   var DS=[0,0],OPP=null,BOTIV=[0,4200,2900,1900],BOTN=['','Facile','Moyen','Difficile'];
   function duel(C){return C.mode==='bot'||C.mode==='online'}
+  /* v67 : la partie est sauvegardée (niveau en cours et fioles, pour chaque difficulté) et reprend à la prochaine visite */
+  function pKey(C){return 'pot-save-'+C.mode}
+  function pSaved(C){if(duel(C))return null;try{var o=JSON.parse(PP.text(pKey(C))||'null');return o&&o.lv>=1?o:null}catch(e){return null}}
+  function pSave(C){if(!P||duel(C)||P.anim)return;var o=P.won?{lv:P.level+1,nw:1}:{lv:P.level,tb:P.tubes,st:P.start,mv:P.moves,ex:P.extra?1:0},j=JSON.stringify(o);if(j!==P._sv){P._sv=j;PP.text(pKey(C),j)}}
+  function pLoad(C){var o=pSaved(C);if(!o)return false;pReset(C,false);P.level=o.lv;
+    if(!o.nw&&Array.isArray(o.tb)&&o.tb.length>=P.tubes.length-1){P.tubes=o.tb;P.start=o.st||JSON.stringify(o.tb);P.moves=o.mv||0;P.extra=!!o.ex;pLay()}P._sv=JSON.stringify(o);return true}
+  document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-pot-r1]');if(!b||!CP)return;e.preventDefault();e.stopPropagation();PP.text(pKey(CP),'');sfx.play('ui');pReset(CP,false);var st=document.getElementById('potion-start');if(st)st.click()},true);
   function botLv(){var v=PP.store('pot-lv');return v>=1&&v<=3?v:2}
   function solve(tubes){var t=tubes.map(function(x){return x.slice()}),seen={},path=[],nodes=0;
     function fullT(x){return x.length===4&&x[0]===x[1]&&x[1]===x[2]&&x[2]===x[3]}
@@ -142,7 +149,7 @@
     var mine=P.tubes.filter(full).length,his=OPP.tubes.filter(full).length,bx=x0+44,bw=cw-78;
     function bar(y,lbl,v,col){mono(g,lbl,x0+10,y,9,INK,'left');g.fillStyle='rgba(20,18,16,.14)';rr(g,bx,y-4,bw,8,4);g.fill();if(v>0){g.fillStyle=col;rr(g,bx,y-4,Math.max(8,bw*v/P.nc),8,4);g.fill()}mono(g,v+'/'+P.nc,x0+cw-10,y,9,INK,'right')}
     bar(y0+95,'LUI',his,RED);bar(y0+109,'TOI',mine,'#3fbf6a')}  PP._pot=function(){return {opp:OPP,p:P,solve:solve,bot:function(){botStep(CP)}}};
-  function pWin(C){if(duel(C)){duelEnd(C,true);return}P.won=true;P.sel=-1;C.stop();sfx.play('win');var key=C.mode,nb=C.best('lvl-'+key,P.level),st=stars();C.pop('BRAVO !',RED,'70px');if(P.level>=5)C.win();
+  function pWin(C){if(duel(C)){duelEnd(C,true);return}P.won=true;pSave(C);P.sel=-1;C.stop();sfx.play('win');var key=C.mode,nb=C.best('lvl-'+key,P.level),st=stars();C.pop('BRAVO !',RED,'70px');if(P.level>=5)C.win();
     setTimeout(function(){C.over('Niveau '+P.level+' réussi','<span style="font-size:30px;letter-spacing:6px;color:#f3c623">'+'★★★'.slice(0,st)+'<span style="opacity:.3">'+'★★★'.slice(st)+'</span></span><br>En '+P.moves+' coups.'+(nb?'<br><b>Record de niveaux !</b>':''),'Niveau suivant',function(){var lv=P.level+1;pReset(C,true);P.level=lv;C.go()})},450)}
   function pSelect(C,hit){if(P.won||P.stuck)return;if(P.anim)pFinish(C);if(P.won||P.stuck)return;P.hint=null;
     if(hit<0){P.sel=-1;return}
@@ -185,8 +192,10 @@
         if(d.t==='pd-win'&&P&&!P.won&&OPP)duelEnd(C,false,oppName(C,m.from))});
       if(duel(C)){C.keysText('Duel au clavier ou à la souris : <kbd>←</kbd><kbd>→</kbd> choisissent une fiole, <kbd>Espace</kbd> prend puis verse · ou <kbd>1</kbd>…<kbd>9</kbd> <kbd>0</kbd> · <kbd>Z</kbd> annule · <kbd>H</kbd> indice');duelIntro(C);return}
       C.keysText('Souris : clique une fiole puis une autre · Clavier : <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> choisissent une fiole, <kbd>Espace</kbd> prend puis verse (ou <kbd>1</kbd>…<kbd>9</kbd> <kbd>0</kbd>) · <kbd>Z</kbd> annule · <kbd>R</kbd> recommence · <kbd>T</kbd> +1 tube · <kbd>H</kbd> indice');
-      C.over('Potions','Range les couleurs : chaque fiole doit finir remplie d\'une seule couleur.<br>On ne verse que sur la même couleur ou dans une fiole vide. Moins tu fais de coups, plus tu gagnes d\'étoiles.','Jouer')},
-    start:function(C){if(C.mode==='bot'){duelStart(C,genSolvable(C));return}pReset(C,false)},
+      var sv=pSaved(C);
+      C.over('Potions','Range les couleurs : chaque fiole doit finir remplie d\'une seule couleur.<br>On ne verse que sur la même couleur ou dans une fiole vide. Moins tu fais de coups, plus tu gagnes d\'étoiles.'+(sv&&sv.lv>1||sv&&!sv.nw&&sv.mv?'<br><b>Partie sauvegardée : tu reprends au niveau '+sv.lv+'.</b><br><button type="button" class="ghost" data-pot-r1>Repartir du niveau 1</button>':''),sv?'Continuer':'Jouer')},
+    start:function(C){if(C.mode==='bot'){duelStart(C,genSolvable(C));return}if(!pLoad(C))pReset(C,false)},
+    close:function(C){if(P&&C.running)pSave(C)},
     mouse:function(C,t,x,y){if(P&&t!=='up')P.kb=0;if(t==='down'&&C.running)pClick(C,x,y);pHover(C,x,y)},
     key:function(C,code,down){if(!down||!C.running||!P||P.won)return;
       /* v41 : tout au clavier. Flèches = déplacer le curseur de fiole en fiole, Espace ou Entrée = prendre / verser */
@@ -201,7 +210,7 @@
       P.lift=P.lift.map(function(l,i){var tg=i===P.sel?1:(i===P.hov&&!P.anim&&P.sel<0&&P.tubes[i].length&&!full(P.tubes[i]))?.22:0;return l+(tg-l)*Math.min(1,dt*30)});
       P.spark.forEach(function(s){s.t-=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;s.vy+=520*dt});P.spark=P.spark.filter(function(s){return s.t>0});
       if(P.hint){P.hint.t-=dt;if(P.hint.t<=0)P.hint=null}
-      if(P.anim){P.anim.t+=dt/POUR;if(P.anim.t>=1)pFinish(C)}
+      if(P.anim){P.anim.t+=dt/POUR;if(P.anim.t>=1)pFinish(C)}P.svT=(P.svT||0)-dt;if(P.svT<=0){P.svT=.4;pSave(C)}
       C.hud('<span>Niveau <b>'+P.level+'</b></span><span>Coups <b>'+P.moves+'</b></span><span>'+({easy:'Facile',mid:'Moyen',hard:'Difficile',exp:'Expert'}[C.mode]||'')+'</span>')},
     draw:function(C){var g=C.g;if(!P)pReset(C);
       var bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#f7f1e6');bg.addColorStop(1,'#e6d9c0');g.fillStyle=bg;g.fillRect(0,0,W,H);

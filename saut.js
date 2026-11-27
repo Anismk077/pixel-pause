@@ -70,7 +70,10 @@
       if(e.k==='b'){S.en.push({k:'b',x:e.tx*T-15,y:e.ty*T-20,x0:e.tx*T-15,y0:e.ty*T-20,w:30,h:20,vx:0,vy:0,ph:e.tx,alive:true,act:false});return}
       var dir=(e.tx*7)%2?1:-1,sp=e.k==='k'?50:e.k==='t'?60:55+lv*10;
       S.en.push({k:e.k,x:e.tx*T-15,y:e.ty*T-(e.k==='t'?26:24),w:30,h:e.k==='t'?26:24,vx:dir*sp,sp:sp,vy:0,alive:true,act:false,st:'walk'})})}
-  function fresh(C){var duo=C.mode==='duo';S={mode:C.mode||'run',duo:duo,lives:C.mode==='hard'?1:duo?8:5,score:0,gems:0,time:0,over:false,tt:0,ps:duo?[null,null]:[null]};load(0)}
+  /* v67 : le monde atteint est sauvegardé (Aventure et 2 joueurs ; pas en Expert) : on reprend là au lieu de tout refaire */
+  function svW(mode,v){if(mode==='hard')return 0;var k='saut-w-'+(mode||'run');if(v===undefined)return Math.max(0,Math.min(NW-1,PP.store(k)|0));PP.store(k,v)}
+  var SC=null;document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-saut-r1]');if(!b||!SC)return;e.preventDefault();e.stopPropagation();svW(SC.mode,0);var st=document.getElementById('saut-start');if(st)st.click()},true);
+  function fresh(C){SC=C;var duo=C.mode==='duo';S={mode:C.mode||'run',duo:duo,lives:C.mode==='hard'?1:duo?8:5,score:0,gems:0,time:0,over:false,tt:0,ps:duo?[null,null]:[null]};load(0)}
   function alive(){return S.ps.filter(function(p){return !p.dead})}
 
   /* ---------- effets ---------- */
@@ -98,7 +101,7 @@
     if(S.arena&&!S.bossDone){/* tout le monde est tombé dans l'arène : on rouvre et le boss repart à zéro */openGate();S.boss=null;S.arena=false;S.bp=[]}
     var cx=S.cp.tx>=0?S.cp.tx*T+8:2*T;p.x=cx;p.y=-10;for(var ty=0;ty<RH;ty++)if(solid(tile(Math.floor((cx+12)/T),ty))){p.y=ty*T-p.h-1;break}
     if(!S.duo||!mate||mate.dead)S.cam=Math.max(0,Math.min(S.L.w*T-W,p.x-W*.3))}
-  function finish(C,won){if(S.over)return;S.over=true;C.stop();var key=S.mode==='hard'?'hard':S.mode==='duo'?'duo':'pts',nb=C.best(key,S.score);if(won){sfx.play('win');C.win()}
+  function finish(C,won){if(S.over)return;S.over=true;if(won)svW(S.mode,0);C.stop();var key=S.mode==='hard'?'hard':S.mode==='duo'?'duo':'pts',nb=C.best(key,S.score);if(won){sfx.play('win');C.win()}
     setTimeout(function(){C.over(won?'Bravo, les 4 mondes !':'Perdu au monde '+(S.lv+1),'<b>'+S.score+'</b> points · '+S.gems+' cristaux · '+Math.round(S.time)+' s'+(nb&&S.score?'<br><b>Nouveau record !</b>':'<br>Record : '+(C.best(key)||0)),'Rejouer')},won?900:600)}
 
   /* bloc frappé par en dessous */
@@ -153,8 +156,8 @@
       C.keysText(S.duo?'Joueur 1 : <kbd>Q</kbd><kbd>D</kbd> courir · <kbd>Z</kbd> ou <kbd>Espace</kbd> sauter · <kbd>F</kbd> boule de feu &nbsp;—&nbsp; Joueur 2 : <kbd>←</kbd><kbd>→</kbd> courir · <kbd>↑</kbd> sauter · <kbd>Entrée</kbd> boule de feu'
         :'<kbd>←</kbd><kbd>→</kbd> ou <kbd>Q</kbd><kbd>D</kbd> courir · <kbd>Espace</kbd>, <kbd>↑</kbd> ou <kbd>Z</kbd> sauter (reste appuyé pour sauter plus haut) · <kbd>F</kbd> ou <kbd>Maj</kbd> boule de feu · frappe les blocs par en dessous');
       C.over('Saute-Pixel',(S.mode==='hard'?'Mode Expert : une seule vie pour les 4 mondes.':S.duo?'À deux sur le même clavier, 8 vies en commun. Si l\'un tombe, il revient à côté de l\'autre.':'4 mondes à traverser, 5 vies.')+
-        '<br>Écrase les ennemis en leur sautant dessus, frappe les blocs ✦ par en dessous pour trouver des cristaux et des bonus : la Gélule te fait grandir (tu casses les briques), la Flamme lance des boules de feu, le Prisme te rend invincible. Un boss t\'attend au bout de chaque monde.','Jouer')},
-    start:function(C){fresh(C)},
+        '<br>Écrase les ennemis en leur sautant dessus, frappe les blocs ✦ par en dessous pour trouver des cristaux et des bonus : la Gélule te fait grandir (tu casses les briques), la Flamme lance des boules de feu, le Prisme te rend invincible. Un boss t\'attend au bout de chaque monde.'+(svW(C.mode)>0?'<br><b>Partie sauvegardée : tu reprends au monde '+(svW(C.mode)+1)+'.</b><br><button type="button" class="ghost" data-saut-r1>Repartir du monde 1</button>':''),svW(C.mode)>0?'Continuer':'Jouer')},
+    start:function(C){fresh(C);var w=svW(C.mode);if(w>0)load(w)},
     key:function(C,k,d){if(!C.running||S.over||!d)return;
       if(!S.duo){if(JS.indexOf(k)>=0)S.ps[0].jb=.13;if(FS.indexOf(k)>=0)shoot(S.ps[0]);return}
       if(J1.indexOf(k)>=0)S.ps[0].jb=.13;if(J2.indexOf(k)>=0)S.ps[1].jb=.13;if(F1.indexOf(k)>=0)shoot(S.ps[0]);if(F2.indexOf(k)>=0)shoot(S.ps[1])},
@@ -190,7 +193,7 @@
           else if(ch==='S'){if(p.vy>=0&&p.y+p.h>ty*T+16){p.vy=-1180;p.spr=true;p.g=false;sfx.play('go');S.sprT=.25;S.sprX=tx}}
           else if(ch==='c'){if(S.cp.tx!==tx){S.cp={tx:tx};sfx.play('tick');C.pop('POINT DE RETOUR',YEL,'26px')}}
           else if(ch==='F'){var bonus=Math.max(0,Math.round((150-S.lt)*5));S.score+=300+bonus;sfx.play('win');burst(p.x,p.y,YEL,24);
-            if(S.lv>=NW-1){finish(C,true);return}C.pop('MONDE '+(S.lv+2),YEL,'54px');load(S.lv+1,true);return}}
+            if(S.lv>=NW-1){finish(C,true);return}C.pop('MONDE '+(S.lv+2),YEL,'54px');load(S.lv+1,true);svW(S.mode,S.lv);return}}
         if(p.y>RH*T+60)die(C,p)});
       if(S.over||S.L!==L)return;
       /* arène : la porte se ferme derrière toi et le boss arrive */
