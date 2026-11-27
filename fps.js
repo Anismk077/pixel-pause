@@ -1678,14 +1678,14 @@
     try{zLod()}catch(e){}
     if(flickMat){var fk=performance.now()%2600;flickMat.color.setScalar(fk<120||(fk>300&&fk<360)||Math.random()<.02?.12:1)}
     var aT=P.aimT||0,bob=Math.sin(P.bob)*.05*(1-aT*.7),fov=PP.settings.fov+(GUNS[P.gun].zoom-PP.settings.fov)*aT+(P.slide>0?8:0);
-    cam.fov+=(fov-cam.fov)*.25;cam.updateProjectionMatrix();
+    cam.fov+=(pfov(fov)-cam.fov)*.25;cam.updateProjectionMatrix();
     P.landT=Math.max(0,(P.landT||0)-.016*5);P.roll=(P.roll||0)+(((P.slide>0)?-.07:0)-(P.roll||0))*.15;
     shakeT=Math.max(0,shakeT-.016);var sk=shakeT*.25;cam.position.set(P.x+(Math.random()-.5)*sk,EYE-(P.crouch||0)*.75+P.y+(dead||P.down?-1.15:bob)-P.landT*.08+(Math.random()-.5)*sk,P.z);cam.rotation.set(P.pitch+P.kick*.5,P.yaw,(dead?.4:0)+P.roll+(Math.random()-.5)*sk*.3);
     if(dead&&online){var mate=null;Object.keys(remotes).forEach(function(k){var r=remotes[k];if(!mate&&r.al===1&&r.m&&(coop||teamOf(k)===myTeam()))mate=r});if(mate){cam.position.set(mate.x+Math.sin(mate.yaw)*3.2,2.9,mate.z+Math.cos(mate.yaw)*3.2);cam.lookAt(mate.x,1.6,mate.z);UI.top.textContent='TU REGARDES '+String(mate.n).toUpperCase()+(coop?' · TU REVIENS À LA PROCHAINE VAGUE':' · ROUGE '+TSC[0]+' – '+TSC[1]+' BLEU')}}
     if(P.emote&&!dead){if(!selfM){try{selfM=PP.perso.build(PP.perso.get())}catch(e){selfM=human(CH_SKINS[skins.ch].c,0xe0b48f,{gun:false})}}if(selfM.parent!==scene)scene.add(selfM);selfM.visible=true;selfM.position.set(P.x,P.y,P.z);selfM.rotation.set(0,P.yaw,0);emotePose(selfM.userData.parts,P.emote.id,P.emote.t);var oa=P.yaw+Math.sin(P.emote.t*.45)*.7,od=3.6-Math.min(.5,P.emote.t*.1);for(var cd=.6;cd<=od;cd+=.2){if(solid(P.x-Math.sin(oa)*cd,P.z-Math.cos(oa)*cd)){od=Math.max(.9,cd-.45);break}}cam.position.set(P.x-Math.sin(oa)*od,1.75+P.y,P.z-Math.cos(oa)*od);cam.lookAt(P.x,1.1+P.y,P.z)}else if(selfM)selfM.visible=false;
     drawZone();
     R3.clear();R3.render(scene,cam);
-    var sc=P.gun==='sniper'&&aT>.85&&cam.fov<30;UI.scope.classList.toggle('on',!!sc);UI.cross.style.opacity=dead?0:Math.max(0,1-aT*2.2);if(!UI.ads&&UI.cross.parentNode){UI.ads=document.createElement('div');UI.ads.className='fps-adsdot';UI.cross.parentNode.appendChild(UI.ads)}if(UI.ads)UI.ads.style.opacity=(aT>.7&&!sc&&!dead)?1:0;
+    var sc=P.gun==='sniper'&&aT>.85&&fov<30;UI.scope.classList.toggle('on',!!sc);UI.cross.style.opacity=dead?0:Math.max(0,1-aT*2.2);if(!UI.ads&&UI.cross.parentNode){UI.ads=document.createElement('div');UI.ads.className='fps-adsdot';UI.cross.parentNode.appendChild(UI.ads)}if(UI.ads)UI.ads.style.opacity=(aT>.7&&!sc&&!dead)?1:0;
     if(viewGun&&!sc&&!dead&&!P.emote){
       /* visée : l'arme glisse au centre, le viseur pile sur la ligne de tir */
       var GDv=GUNS[P.gun],hx=.15,hy=-.115,hz=-.36,adY=-GDv.sight*VS-.036,ax=hx+(0-hx)*aT,ay=hy+(adY-hy)*aT,az=hz+(-.47-hz)*aT,mvA=1-aT*.85;
@@ -1725,7 +1725,7 @@
     muzzle&&(muzzle.material.opacity*=.5);muzzleL.intensity*=.5;
     drawMini();
   }
-  function mobFull(on){if(!touchUI)return;var st=cv.parentNode;if(st.classList.contains('ft-full')!==!!on){st.classList.toggle('ft-full',!!on);document.body.classList.toggle('ft-lock',!!on)}}
+  function mobFull(on){if(!touchUI)return;var st=cv.parentNode;if(st.classList.contains('ft-full')!==!!on){st.classList.toggle('ft-full',!!on);document.body.classList.toggle('ft-lock',!!on);setTimeout(function(){fitRes(true)},80)}}
   function loop(t){var raw=last?Math.min(.3,(t-last)/1000):0,dt=Math.min(.05,raw);last=t;if(running){mobFull(true);if(++resN%90===0)fitRes();
       /* à la souris, le jeu ne tourne que si la souris est bien capturée : sinon il attend un clic dans l'image (la souris ne peut plus « sortir » en pleine partie) */
       var hold=DESK&&!window.PP_NOHOLD&&!online&&!shopOpen&&!chatOpen&&!dead&&document.pointerLockElement!==cv;if(hold!==lastHold){lastHold=hold;$('fps-lockhint').hidden=!hold||paused;if(hold){keys={};mouseDown=false}}
@@ -1790,7 +1790,12 @@
   document.addEventListener('pointerlockerror',function(){lastHold=null});
   document.addEventListener('pp-resume',function(){if(PP.cur()!=='fps'||!running)return;lock();paused=false;lastHold=null});
   /* image nette : le rendu suit la vraie taille de l'écran (plein écran compris) au lieu d'être étiré depuis 960 × 540 */
-  function fitRes(force){if(!R3)return;var w=cv.clientWidth||960,q=PP.settings.q,dpr=window.devicePixelRatio||1,pr=q==='haute'?Math.min(2,dpr):q==='basse'?.75:Math.min(1.5,dpr),W2=Math.min(2560,Math.max(480,Math.round(w*pr))),H2=Math.round(W2*9/16);if(!force&&Math.abs(R3.getSize(new THREE.Vector2()).x-W2)<8)return;cv.width=W2;cv.height=H2;R3.setPixelRatio(1);R3.setSize(W2,H2,false)}
+  function fitRes(force){if(!R3)return;var w=cv.clientWidth||960,q=PP.settings.q,dpr=window.devicePixelRatio||1,pr=q==='haute'?Math.min(2,dpr):q==='basse'?.75:Math.min(1.5,dpr),W2=Math.min(2560,Math.max(480,Math.round(w*pr))),
+    /* v66 : téléphone en hauteur : l'image 3D prend tout l'écran en vertical (avant : bande 16:9 au milieu) */
+    port=touchUI&&cv.parentNode.classList.contains('ft-full')&&innerHeight>innerWidth*1.1,asp=port?innerWidth/innerHeight:16/9,H2=Math.round(W2/asp);
+    var cur=R3.getSize(new THREE.Vector2());if(!force&&Math.abs(cur.x-W2)<8&&Math.abs(cur.y-H2)<8)return;cv.width=W2;cv.height=H2;R3.setPixelRatio(1);R3.setSize(W2,H2,false);
+    PORTK=port?Math.min(16/9/asp,1.55):1;if(cam){cam.aspect=W2/H2;cam.updateProjectionMatrix()}if(vcam){vcam.aspect=W2/H2;vcam.fov=pfov(60);vcam.updateProjectionMatrix()}}
+  var PORTK=1;function pfov(f){return PORTK===1?f:2*Math.atan(Math.tan(f*Math.PI/360)*PORTK)*180/Math.PI}
   document.addEventListener('pp-settings',function(){fitRes(true)});window.addEventListener('resize',function(){setTimeout(fitRes,60)});document.addEventListener('pp-fs',function(){setTimeout(fitRes,120)});
   var resN=0,DESK=matchMedia('(hover:hover) and (pointer:fine)').matches,lastHold=null;
   function lock(){if(!cv.requestPointerLock||!DESK||document.pointerLockElement===cv)return;

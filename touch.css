@@ -57,3 +57,17 @@
 .pp-touch .stage.fs-on .fs-tools{left:auto!important;right:max(8px,env(safe-area-inset-right,0px));transform:none!important;gap:6px}.pp-touch .stage.fs-on .fs-tools button{font-size:0!important;width:40px;height:40px;padding:0!important;border-radius:50%;background:rgba(20,18,16,.6)!important}.pp-touch .stage.fs-on .fs-tools [data-pause]::before{content:"II";font:800 14px var(--mono)}.pp-touch .stage.fs-on .fs-tools [data-pause].on::before{content:"▶"}.pp-touch .stage.fs-on .fs-tools [data-fsx]::before{content:"✕";font:700 16px var(--mono)}.pp-touch.fs-mode .room-dock{right:110px}
 #v-fps .stage:has(#fps-ov:not([hidden])) .fps-touch>*:not(.ft-quit){display:none!important}#v-fps .stage.ft-full #fps-ov{z-index:8}@media (max-height:420px){#v-fps .stage.ft-full .fps-diff{gap:6px}#v-fps .stage.ft-full .fps-diff .mode{padding:8px 10px}#v-fps .stage.ft-full .fps-diff .mode span{font-size:11px}}
 .pp-touch .lockhint{display:none!important}.pp-touch .stage.fs-on .sv-map{top:58px!important;transform:scale(.8);transform-origin:right top}
+
+/* v66 : format vertical (téléphone en hauteur) : le jeu se cale en haut, la manette prend le bas de l'écran */
+@media (orientation:portrait){
+  .pp-touch .stage.fs-on{top:calc(env(safe-area-inset-top,0px) + 64px);left:0;transform:none;width:100vw}
+  .pp-touch .stage.fs-on.rot-hint::after,.ft-full .ft-rot{display:none!important}
+  .pp-touch .stage.fs-on .fs-tools{position:fixed!important;top:calc(env(safe-area-inset-top,0px) + 10px)!important}
+  .pad.pad-ov .pd-joy{width:clamp(130px,40vw,190px)}
+  .pad.pad-ov .pd-acts button{width:clamp(70px,22vw,100px);height:clamp(70px,22vw,100px)}
+  .pp-touch.fs-mode .view.on .pad.pad-ov{padding-bottom:calc(28px + env(safe-area-inset-bottom,0px))}
+  .pp-touch.fs-mode .view.on .pad.vpad.cas.pad-ov{display:flex!important;flex-wrap:wrap;justify-content:center;gap:10px}
+  .pad.vpad.cas.pad-ov .pd-acts{display:contents}
+  .pad.vpad.cas.pad-ov button{width:28vw!important;height:64px!important;border-radius:14px!important;font:800 14px var(--mono)!important}
+}
+@media (orientation:landscape){.pp-touch .vpad.cas,.pp-touch.fs-mode .view.on .pad.vpad.cas.pad-ov{display:none!important}}

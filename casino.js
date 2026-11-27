@@ -76,7 +76,7 @@
     function stand(C){if(S.phase!=='play')return;S.phase='dealer';S.hide=false;S.t=.6}
     function dbl(C){if(S.phase!=='play'||S.ph.length!==2||BANK.get()<S.stake)return;BANK.add(-S.stake);S.stake*=2;S.dbl=true;S.ph.push(draw1());sfx.play('ui');if(val(S.ph).t>21)finish(C,'bust');else stand(C)}
     PP.arcade({id:'bj',
-      setup:function(C){S=fresh();U=UI();C.keysText('Clique les boutons · <kbd>Espace</kbd> distribuer · <kbd>H</kbd> carte · <kbd>S</kbd> rester · <kbd>D</kbd> doubler · jetons virtuels, pas d\'argent réel');
+      setup:function(C){S=fresh();U=UI();C.keysText('Clique les boutons · <kbd>1</kbd>-<kbd>5</kbd> jetons · <kbd>Espace</kbd> distribuer · <kbd>H</kbd> carte · <kbd>S</kbd> rester · <kbd>D</kbd> doubler · jetons virtuels, pas d\'argent réel');
         C.over('Blackjack','Approche-toi de 21 sans dépasser et bats le croupier. Le blackjack paie 3 contre 2, le croupier tire jusqu\'à 17. Tu as <b>'+BANK.get()+' jetons</b> (virtuels).','Jouer')},
       start:function(C){S=fresh()},
       step:function(C,dt){animCards(S.ph.concat(S.dh),dt);
@@ -96,7 +96,7 @@
         if(S.phase==='bet'||S.phase==='done'){
           if(refillOk()&&S.bet<10){button(U,g,355,455,250,58,'Recharger 1000 jetons',function(){refill(C);S.bet=50},{col:'#7b3fd1',key:'Space',sub:'jetons gratuits'});return}
           if(S.phase==='done'){button(U,g,380,455,200,58,'Nouvelle main',function(){S.phase='bet';S.ph=[];S.dh=[];S.msg='';S.stake=0;if(S.bet>BANK.get())S.bet=BANK.get()},{key:['Space','Enter']});return}
-          [10,25,50,100,500].forEach(function(v,k){var x=60+k*62;chip(g,x+22,484,v,22);U.btns.push({x:x,y:460,w:46,h:48,fn:function(){addBet(v)}})});
+          [10,25,50,100,500].forEach(function(v,k){var x=60+k*62;chip(g,x+22,484,v,22);U.btns.push({x:x,y:460,w:46,h:48,fn:function(){addBet(v)},key:'Digit'+(k+1)})});
           mono(g,'MISE',420,470,12,'rgba(241,236,226,.6)');txt(g,String(S.bet),420,496,30,YEL);
           button(U,g,480,458,110,52,'Effacer',function(){S.bet=0;sfx.play('ui')},{col:'#3a3632',hcol:'#4a4642'});
           button(U,g,605,458,170,52,'Distribuer',function(){deal(C)},{off:S.bet<10||S.bet>BANK.get(),key:['Space','Enter'],sub:'Espace'});

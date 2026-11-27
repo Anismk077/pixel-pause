@@ -17,13 +17,18 @@
     tanks:[['u','KeyW','▲'],['l','KeyA','◀'],['d','KeyS','▼'],['r','KeyD','▶'],['x','Space','TIR']],
     maze:[['u','ArrowUp','▲'],['l','ArrowLeft','◀'],['d','ArrowDown','▼'],['r','ArrowRight','▶']],
     saut:[['l','ArrowLeft','◀'],['r','ArrowRight','▶'],['u','ArrowUp','▲'],['d','ArrowDown','▼'],['x','Space','SAUT'],['x','KeyF','FEU']],
-    hoops:[['u','KeyW','▲'],['l','KeyA','◀'],['d','KeyS','▼'],['r','KeyD','▶'],['x','Space','TIR']]
+    hoops:[['u','KeyW','▲'],['l','KeyA','◀'],['d','KeyS','▼'],['r','KeyD','▶'],['x','Space','TIR']],
+    /* v66 : casino — gros boutons sous le jeu quand le téléphone est en hauteur */
+    bj:[['x','Digit2','+25'],['x','Digit4','+100'],['x','Space','OK'],['x','KeyH','CARTE'],['x','KeyS','RESTER'],['x','KeyD','×2']],
+    poker:[['x','KeyF','COUCHER'],['x','KeyC','SUIVRE'],['x','KeyR','RELANCE'],['x','KeyA','TAPIS'],['x','Space','SUITE']],
+    roue:[['x','Space','LANCER']]
   };
+  var CAS={bj:1,poker:1,roue:1};
   var KEY={KeyW:'z',KeyA:'q',KeyS:'s',KeyD:'d',Space:' ',ArrowUp:'ArrowUp',ArrowDown:'ArrowDown',ArrowLeft:'ArrowLeft',ArrowRight:'ArrowRight'};
   function fire(type,code){try{document.dispatchEvent(new KeyboardEvent(type,{code:code,key:KEY[code]||code,bubbles:true}))}catch(e){}}
   Object.keys(VP).forEach(function(id){
     var v=document.getElementById('v-'+id),st=v&&v.querySelector('.stage.wide');if(!st)return;
-    var p=document.createElement('div');p.className='pad vpad';
+    var p=document.createElement('div');p.className='pad vpad'+(CAS[id]?' cas':'');
     p.innerHTML=VP[id].map(function(b){return '<button type="button" data-code="'+b[1]+'" data-dir="'+b[0]+'"'+(b[0]==='x'?' class="fire"':'')+'>'+b[2]+'</button>'}).join('');
     var bar=st.nextElementSibling&&st.nextElementSibling.classList.contains('stage-bar')?st.nextElementSibling:st;bar.parentNode.insertBefore(p,bar.nextSibling);
     p.querySelectorAll('button').forEach(function(b){var on=false;
@@ -59,8 +64,7 @@
     var st=e.detail;document.querySelectorAll('.pad.pad-ov').forEach(function(p){p.classList.remove('pad-ov')});
     if(!st){unlock();return}
     var v=st.closest('.view'),pad=v&&v.querySelector('.pad');if(pad){arrange(pad);pad.classList.add('pad-ov')}
-    lockLand();
-    st.classList.remove('rot-hint');void st.offsetWidth;st.classList.add('rot-hint');
+    /* v66 : format vertical : on ne force plus le paysage, le jeu se cale en haut et les commandes en dessous */
   });
 
   /* une partie qui démarre passe en plein écran (sauf Zone Morte, qui a déjà son mode téléphone) */
