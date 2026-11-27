@@ -112,6 +112,8 @@
   function pSave(C){if(!P||duel(C)||P.anim)return;var o=P.won?{lv:P.level+1,nw:1}:{lv:P.level,tb:P.tubes,st:P.start,mv:P.moves,ex:P.extra?1:0,hd:P.hid,mk:P.mask,x0:P.startX},j=JSON.stringify(o);if(j!==P._sv){P._sv=j;PP.text(pKey(C),j)}}
   function pLoad(C){var o=pSaved(C);if(!o)return false;pReset(C,false);P.level=o.lv;
     if(!o.nw&&Array.isArray(o.tb)&&o.tb.length>=P.tubes.length-1){P.tubes=o.tb;P.start=o.st||JSON.stringify(o.tb);P.moves=o.mv||0;P.extra=!!o.ex;P.hid=o.hd||null;P.mask=o.mk||null;P.startX=o.x0||null;pLay()}else pMech(C);P._sv=JSON.stringify(o);return true}
+  /* v72 : Échap avec une fiole prise = on la repose (au lieu de mettre en pause) */
+  window.addEventListener('keydown',function(e){if(e.key==='Escape'&&PP.cur()==='potion'&&P&&CP&&CP.running&&P.sel>=0){P.sel=-1;e.preventDefault();e.stopImmediatePropagation()}},true);
   document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-pot-r1]');if(!b||!CP)return;e.preventDefault();e.stopPropagation();PP.text(pKey(CP),'');sfx.play('ui');pReset(CP,false);var st=document.getElementById('potion-start');if(st)st.click()},true);
   function botLv(){var v=PP.store('pot-lv');return v>=1&&v<=3?v:2}
   function solve(tubes){return solveG(tubes,null,-1)}
@@ -221,8 +223,9 @@
     start:function(C){if(C.mode==='bot'){duelStart(C,genSolvable(C));return}if(!pLoad(C)){pReset(C,false);pMech(C)}},
     close:function(C){if(P&&C.running)pSave(C)},
     mouse:function(C,t,x,y){/* v70 : un petit mouvement de souris ne cache plus le curseur du clavier */if(P){if(t==='down')P.kb=0;else if(t==='move'){if(P.kx==null){P.kx=x;P.ky=y}if(Math.abs(x-P.kx)+Math.abs(y-P.ky)>40){P.kb=0;P.kx=x;P.ky=y}}}if(t==='down'&&C.running)pClick(C,x,y);pHover(C,x,y)},
-    key:function(C,code,down){if(!down||!C.running||!P||P.won)return;
+    key:function(C,code,down,e){if(!down||!C.running||!P||P.won)return;
       P.kx=null;
+      /* v72 : AZERTY et QWERTY : les lettres suivent ce qui est écrit sur la touche */var lk=e&&e.key&&e.key.length===1?e.key.toLowerCase():'';if(lk==='z')code='KeyZ';else if(lk==='r')code='KeyR';else if(lk==='h')code='KeyH';else if(lk==='t')code='KeyT';else if(/^Key[ZRHTW]$/.test(code)&&/^[a-z]$/.test(lk))code='';
       /* v41 : tout au clavier. Flèches = déplacer le curseur de fiole en fiole, Espace ou Entrée = prendre / verser */
       var nT=P.tubes.length,per=nT>8?Math.ceil(nT/2):nT;if(P.cur==null||P.cur>=nT)P.cur=0;
       if(code==='ArrowRight'){P.cur=(P.cur+1)%nT;P.kb=1;sfx.play('tick');return}
