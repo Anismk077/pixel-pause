@@ -11,6 +11,8 @@ Site de mini-jeux dans le navigateur, solo ou entre potes. Aucun compte, aucun s
 - **Foot 2v2 (3D, three.js)** : bleus contre rouges, 2 minutes, 1 à 4 joueurs sur un clavier, bots pour compléter.
 - **Paquet Snake** : solo, duel sur le même clavier (flèches contre ZQSD), ou 2 à 4 serpents en ligne.
 
+- **DEFEND MONTREUIL** : tower defense à invocations. Deux territoires de 4 × 8 cases entourés d'un chemin où tournent des slimes. Invoque des gardiens au hasard (commune, rare, épique, légendaire, mythique), fusionne-en 3 identiques pour monter de rareté. 80 vagues, un boss toutes les 10 vagues, perdu à 100 slimes. Solo avec un allié ordi ou à 2 en salon.
+
 **En solo**
 - **Bunker 3D** : FPS en raycasting sur une grande carte générée. 3 modes : deathmatch (3 min), zombies (vagues) et battle royale (zone qui rétrécit, dernier debout). Visée souris haut/bas/côtés, ou au doigt sur téléphone.
 - **Pixel Kart** : course en vue arrière, boosts, flaques d'huile, 3 tours. Solo contre 5 karts, ou à 2 en écran partagé (J1 ZQSD, J2 flèches).

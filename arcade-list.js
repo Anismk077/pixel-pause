@@ -39,6 +39,7 @@ window.ARCADE_LIST=[
   {id:'tennis',img:'thumb-tennis.svg?v=1',n:'Tennis 3D',sub:'Sport · un set contre l\'ordi, 3 niveaux',pl:'1',cat:'pc tel solo 3d',modes:[['facile','Facile','Il rate souvent, tu frappes tout seul'],['moyen','Moyen','Un bon joueur'],['difficile','Difficile','Il vise les lignes']]},
   {id:'baton',img:'thumb-baton.svg?v=1',n:'Coup de Bâton',sub:'Bagarre · avance et assomme tous ceux qui veulent te taper',pl:'1',cat:'pc tel solo',modes:[['facile','Facile','5 vies, ennemis plus mous'],['normal','Normal','3 vies'],['difficile','Difficile','2 vies, ils tapent fort']]},
   {id:'debouche',img:'thumb-debouche.svg?v=1',n:'Débouche moi',sub:'Réflexion · fais glisser les voitures pour libérer la blanche',pl:'1',cat:'pc tel solo',modes:[['easy','Facile','200 niveaux'],['mid','Moyen','200 niveaux'],['hard','Difficile','200 niveaux'],['exp','Expert','200 niveaux, 20 coups et plus']]},
+  {id:'garde',img:'thumb-garde.svg?v=1',n:'DEFEND MONTREUIL',sub:'Tower defense · invoque, fusionne, tiens 80 vagues de slimes',pl:'1–2',cat:'pc tel solo',modes:[['normal','Normal','Toi + un allié ordi, 80 vagues'],['dur','Difficile','Slimes bien plus costauds'],['online','À 2 en salon','Chacun son territoire, 2 maximum']]},
   {id:'bitume',img:'thumb-bitume.svg?v=1',n:'Bitume',sub:'Action · vole des voitures, missions, police aux trousses',pl:'1',cat:'pc tel solo',modes:[['histoire','Histoire','8 missions, partie sauvegardée'],['libre','Balade libre','La ville rien que pour toi'],['chaos','Chaos','Police aux trousses, tiens bon']]}
 ];
 (function(){
