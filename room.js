@@ -8,6 +8,7 @@
   var $=PP.$,esc=PP.esc,net=PP.net,sfx=PP.sfx,box=$('room-box'),T=function(s){return PP.t?PP.t(s):s},C=PP.cloud;
   var ONLINE=[
     {id:'fps',name:'Zone Morte',desc:'Zombies en équipe, on se relève entre potes',min:1,max:8},
+    {id:'volt',name:'Voltige',desc:'Parkour et zombies à plusieurs dans la ville',min:1,max:8},
     {id:'party',name:'Dernier Debout',desc:'Épreuves éliminatoires, bots en renfort',min:1,max:8},
     {id:'surv',name:'Survie',desc:'La même île pour tout le salon',min:1},
     {id:'sumo',name:'Sumo Arena',desc:'Pousse les autres dans le vide',min:2,max:4},

@@ -2102,6 +2102,10 @@
     if(id[0]==='c')skins.ch=i;else skins.gun=i;saveSkins();if(P&&vscene)setViewGun();openSkins();
   });
 
+  /* v95 : les armes et les zombies de Zone Morte sont aussi utilisés par Voltige */
+  PP.fpsKit={GUNS:GUNS,ZT:ZT,gun:function(t){return buildGun(t,GUNS[t]&&GUNS[t].col!=null?GUNS[t].col:0x2b2b30)},
+    zombie:function(t){if(!TX.blob)TX.blob=tex(64,64,function(g,w,h){var gr=g.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2);gr.addColorStop(0,'rgba(0,0,0,.55)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(0,0,w,h)});return zombieModel(t)},
+    anim:function(e,dt,mv){zAnim(e,dt,mv)}};
   PP._fps=function(){return {reload:reload,fire:fire,P:P,ents:ents,zone:zone,items:items,remotes:remotes,round:round,online:online,setMode:function(m){mode=m},doors:DOORS,stands:STANDS,perks:function(){return PERKS},buyPerk:function(p){buyPerk(p)},addZ:function(t){addZombie(t,1)},use:use,interact:interact,give:giveGun,keys:keys,explode:explode,addZombie:addZombie,mapId:mapId,unl:UNL,setAim:function(v){aiming=v},paused:function(){return paused},dbg:function(){return {waveT:waveT,wave:wave,waveLeft:waveLeft,mode:mode,cdT:cdT,shopOpen:shopOpen,running:running}}}};
   PP._fps=function(){return {P:P,ents:ents,explode:explode,addItem:addItem,wave:function(n){wave=n;nextWave()},pw:PW,deps:function(){return DEPS},ghost:function(){return ghost},add:addZombie,cam:cam,shop:openShop,stands:STANDS,spawnPerk:spawnPerk,perks:function(){return PERKS},buyPerk:buyPerk}};
   PP.games.fps={
