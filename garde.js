@@ -136,7 +136,7 @@
     var best=C.best('vague');
     setTimeout(function(){if(!G||!G.over)return;
       var again=G.mode!=='online'||net.isHost;
-      C.over(win?'Victoire !':'Défaite',(win?'Le boss final de la vague 80 est tombé. Bravo !':(why||'Trop d\'ennemis sur le chemin.')+'<br>Tu as tenu jusqu\'à la <b>vague '+w+'</b>.')+'<br>Record : vague '+(best>WMAX?'80 (gagné)':best),
+      C.over(win?'Victoire !':'Défaite',(win?(G.ally==='net'?'Bravo l\'équipe ! ':'')+'Le boss final de la vague 80 est tombé.':(why||'Trop d\'ennemis sur le chemin.')+'<br>Tu as tenu jusqu\'à la <b>vague '+w+'</b>.')+'<br>Record : vague '+(best>WMAX?'80 (gagné)':best),
         again?'Rejouer':false,again?function(){if(G.mode==='online')hostStart(C);else{startSolo(C);C.go()}}:null);
       if(!again)CP.over(win?'Victoire !':'Défaite',PP.$('garde-msg').innerHTML+'<br>Le chef du salon peut relancer.',false)},1300)}
 
@@ -147,7 +147,7 @@
     G.t-=dt;var loc=G.ally==='bot'?G.T:[G.T[0]];
     if(G.spawnN>0){G.spawnT-=dt;while(G.spawnN>0&&G.spawnT<=0){loc.forEach(function(T){T.e.push(enemy(G.w,G.D,G.boss))});G.spawnN--;G.spawnT+=G.iv||1}}
     loc.forEach(function(T){stepTerr(T,G.w,dt)});
-    if(G.ally==='bot'){botT-=dt;if(botT<=0){botT=.7+rnd()*.5;bot(G.T[1])}}
+    if(G.ally==='bot'){botT-=dt;if(botT<=0){botT=.7+rnd()*.5;bot(G.T[1]);var A1=G.T[1],Me=G.T[0];if(A1.gold>A1.cost*3+60&&Me.gold<Me.cost&&rnd()<.3){A1.gold-=40;Me.gold+=40;say(A1.name+' t\'a donné 40 or',1)}}}
     else if(P){P.e.forEach(function(e){e.s=(e.s+e.v*dt)%PER});P.fx.forEach(function(f){f.t-=dt});P.fx=P.fx.filter(function(f){return f.t>0})}
     if(G.ally==='net'){sendT-=dt;if(sendT<=0){sendT=.2;sync()}}
     var n=G.T[0].e.length+(G.ally==='bot'?G.T[1].e.length:(P?P.n:0));G.count=n;
@@ -161,15 +161,16 @@
   function sync(){var T=G.T[0];net.relay({t:'gd-s',g:T.g.map(function(c){return c?c.u+':'+c.n:0}),e:T.e.slice(0,110).map(function(e){return [+e.s.toFixed(2),Math.max(1,Math.round(e.hp/e.max*99)),e.k,e.boss?1:0,+((e.st>0?0:e.sl>0?1-e.slf:1)*e.v).toFixed(2)]}),n:T.e.length,w:G.w,gold:T.gold,nm:G.T[0].name})}
   function onNet(C,m){if(m.t!=='rel'||!m.d)return;var d=m.d;
     if(d.t==='gd-go'){if(net.isHost)return;var sl=net.slot(net.me.id);
-      if(sl>1){G=null;C.over('Partie à 2 joueurs','DEFEND MONTREUIL se joue à <b>2 maximum</b>. Cette partie a déjà ses 2 joueurs.',false);return}
+      if(sl>1){G=null;C.over('Partie à 2 joueurs','DEFEND MONTREUIL se joue à <b>2 maximum</b>. Ce duo a déjà ses 2 joueurs.',false);return}
       newGame('online','net',[net.me.name||'Toi',d.host||'Allié']);C.go();return}
     if(!G||G.ally!=='net')return;
     if(d.t==='gd-s'){var old=P;P={g:d.g.map(function(s){if(!s)return null;var a=String(s).split(':');return U[a[0]]?{u:a[0],n:+a[1]||1}:null}),e:d.e.map(function(a){var o={s:a[0],hp:a[1],max:99,k:a[2],boss:!!a[3],v:a[4],x:0,y:0};return o}),n:d.n,w:d.w,gold:d.gold,fx:old?old.fx:[]};if(d.nm)G.T[1].name=d.nm;return}
-    if(d.t==='gd-x'&&!G.over){G.fromNet=true;finish(C,false,'Ton allié a été débordé.');return}
+    if(d.t==='gd-give'){var Tm=G.T[0],fr=d.from||G.T[1].name;if(d.u&&U[d.u]){if(place(Tm,d.u)<0){Tm.gold+=SELL[U[d.u].r];say(fr+' t\'a donné '+U[d.u].n+' (plus de place : +'+SELL[U[d.u].r]+' or)',1)}else say(fr+' t\'a donné '+U[d.u].n,1)}else if(d.g){Tm.gold+=d.g;say(fr+' t\'a donné '+d.g+' or',1)}C.pop('CADEAU !','#3fe09a','46px');sfx.play('pickup');return}
+    if(d.t==='gd-x'&&!G.over){G.fromNet=true;finish(C,false,'Votre équipe a été débordée.');return}
     if(d.t==='gd-boss30'){G.pdone=true;if(G.done&&!G.over)finish(C,true);return}
     if(d.t==='gd-done'&&!G.over){G.fromNet=true;finish(C,true)}}
   function hostStart(C){var pl=net.players,mate=pl.filter(function(p){return p.id!==net.me.id})[0];
-    if(!mate){newGame('online','bot',[net.me.name||'Toi','Allié ordi']);PP.toast('Tu es seul dans le salon : un allié ordi prend l\'autre territoire');C.go();return}
+    if(!mate){newGame('online','bot',[net.me.name||'Toi','Allié ordi']);PP.toast('Tu es seul dans le salon : un coéquipier ordi prend l\'autre territoire');C.go();return}
     newGame('online','net',[net.me.name||'Toi',mate.name||'Allié']);net.relay({t:'gd-go',host:net.me.name||'Chef'});C.go()}
   function startSolo(C){clearSave();newGame(C.mode,'bot',[PP.myName()||'Toi','Allié ordi'])}
 
@@ -177,9 +178,9 @@
   function tall(){return document.body.classList.contains('pp-touch')&&innerHeight>innerWidth}
   function layout(C){var v=tall();if(LY&&LY.v===v)return;
     if(v)LY={v:v,W:540,H:960,ter:[{ox:10,oy:282,cs:52},{ox:90,oy:56,cs:36}],
-      b:{info:[10,600,520,80],sum:[10,688,250,112],fus:[270,688,125,112],sel:[405,688,125,112],p0:[10,812,166,66],p1:[187,812,166,66],rec:[364,812,166,66],u0:[10,886,166,66],u1:[187,886,166,66],u2:[364,886,166,66]}};
+      b:{info:[10,600,520,80],don:[420,604,106,30],sum:[10,688,250,112],fus:[270,688,125,112],sel:[405,688,125,112],p0:[10,812,166,66],p1:[187,812,166,66],rec:[364,812,166,66],u0:[10,886,166,66],u1:[187,886,166,66],u2:[364,886,166,66]}};
     else LY={v:v,W:960,H:540,ter:[{ox:20,oy:62,cs:44},{ox:500,oy:62,cs:44}],
-      b:{info:[20,334,300,92],sum:[336,330,288,100],fus:[640,334,145,92],sel:[795,334,145,92],p0:[20,442,140,88],p1:[170,442,140,88],rec:[320,442,140,88],u0:[500,442,140,88],u1:[650,442,140,88],u2:[800,442,140,88]}};
+      b:{info:[20,334,300,92],don:[224,338,92,30],sum:[336,330,288,100],fus:[640,334,145,92],sel:[795,334,145,92],p0:[20,442,140,88],p1:[170,442,140,88],rec:[320,442,140,88],u0:[500,442,140,88],u1:[650,442,140,88],u2:[800,442,140,88]}};
     C.W=LY.W;C.H=LY.H;C.cv.width=LY.W;C.cv.height=LY.H}
   function inR(r,x,y){return x>=r[0]&&x<=r[0]+r[2]&&y>=r[1]&&y<=r[1]+r[3]}
   function cellAt(x,y){var t=LY.ter[0],gx=(x-t.ox)/t.cs-1,gy=(y-t.oy)/t.cs-1;if(gx<0||gx>=8||gy<0||gy>=4)return -1;return (gy|0)*8+(gx|0)}
@@ -190,6 +191,10 @@
     if(a==='sum'){if(!room(T)){say('Plus de place : fusionne ou vends',0);sfx.play('lose');return}if(T.gold<T.cost){say('Pas assez d\'or',0);return}id=summon(T);got(C,id,'');return}
     if(a==='fus'){var c=T.g[T.sel];if(!c){say('Choisis d\'abord une case',0);return}if(c.n<3){say('Il faut 3 '+U[c.u].n+' sur la case',0);return}if(U[c.u].r>=3){say('Les mythiques se créent avec les RECETTES',0);return}id=fuse(T,T.sel);T.sel=T.last;got(C,id,'Fusion : ');return}
     if(a==='sel'){if(T.sel<0||!T.g[T.sel]){say('Choisis d\'abord une case',0);return}var r=U[T.g[T.sel].u].r;sell(T,T.sel);say('+'+SELL[r]+' or',1);sfx.play('tick');if(!T.g[T.sel])T.sel=-1;return}
+    if(a==='don'){var T2=G.ally==='bot'?G.T[1]:null,who=G.T[1].name;
+      if(T.sel>=0&&T.g[T.sel]){var c2=T.g[T.sel],uid=c2.u;if(T2&&place(T2,uid)<0){say('Plus de place chez '+who,0);return}if(!T2)net.relay({t:'gd-give',u:uid,from:T.name});
+        c2.n--;c2.cd.pop();if(c2.n<=0){T.g[T.sel]=null;T.sel=-1}T.aura=null;say(U[uid].n+' donné à '+who,1);sfx.play('pickup');return}
+      if(T.gold<50){say('Choisis une unité à donner, ou garde 50 or',0);return}T.gold-=50;if(T2)T2.gold+=50;else net.relay({t:'gd-give',g:50,from:T.name});say('50 or donnés à '+who,1);sfx.play('pickup');return}
     if(a==='rec'){G.rec=!G.rec;sfx.play('ui');return}
     if(a==='p0'||a==='p1'){var k=+a[1],p=PARI[k];if(G.wheel){return}if(T.gems<p[1]){say('Il faut '+p[1]+' gemme'+(p[1]>1?'s':''),0);return}if(!room(T)){say('Plus de place',0);return}
       /* la roue : une part gagnante (couleur de la rareté) et une part « raté », elle tourne puis s'arrête sur le résultat */
@@ -269,7 +274,7 @@
   function draw(C){var g=C.g;layout(C);var W=LY.W,H=LY.H;g.fillStyle='#1c1a18';g.fillRect(0,0,W,H);
     if(!G){txt(g,'DEFEND MONTREUIL',W/2,H/2,30);return}
     var T=G.T[0],me={g:T.g,e:T.e,fx:T.fx,sel:T.sel},al=G.ally==='bot'?{g:G.T[1].g,e:G.T[1].e,fx:G.T[1].fx}:(P||{g:[],e:[],fx:[]});
-    drawTerr(g,LY.ter[1],al,false,G.T[1].name+(G.ally==='bot'?'':(P?' · vague '+P.w:' · connexion…')),'#7fb0ff',P&&G.ally!=='bot'?P.w:G.w);
+    drawTerr(g,LY.ter[1],al,false,(G.ally==='bot'?G.T[1].name:'Coéquipier : '+G.T[1].name+(P?'':' · connexion…')),'#7fb0ff',P&&G.ally!=='bot'?P.w:G.w);
     drawTerr(g,LY.ter[0],me,true,T.name==='Toi'?'Toi':T.name+' (toi)','#3fe09a',G.w);
     /* barre du haut : vague, temps, ennemis */
     var n=G.count||0,bw=LY.v?250:340,bx=(W-bw)/2,f=Math.min(1,n/LIM);
@@ -277,7 +282,7 @@
     var sec=Math.max(0,Math.ceil(G.t));txt(g,(G.boss&&!LY.v?'BOSS ':'')+Math.floor(sec/60)+':'+('0'+sec%60).slice(-2),W-14,25,LY.v?19:22,G.boss&&sec<10?'#e2361b':CR,'right','800');
     g.fillStyle='#000';rr(g,bx,8,bw,34,10);g.fill();g.fillStyle=f>.8?'#e2361b':f>.55?'#f3c623':'#3fe09a';rr(g,bx,8,Math.max(10,bw*f),34,10);g.fill();
     g.strokeStyle='rgba(241,236,226,.3)';g.lineWidth=1.5;rr(g,bx,8,bw,34,10);g.stroke();
-    txt(g,'SLIMES '+n+' / '+LIM,bx+bw/2,25,LY.v?16:18,f>.55&&f<=.8?INK:CR,'center','900');
+    txt(g,'SLIMES (ÉQUIPE) '+n+' / '+LIM,bx+bw/2,25,LY.v?16:18,f>.55&&f<=.8?INK:CR,'center','900');
     /* panneau */
     var B=LY.b,r=B.info;g.fillStyle='#24211e';rr(g,r[0],r[1],r[2],r[3],12);g.fill();
     coin(g,r[0]+18,r[1]+18,9);txt(g,''+T.gold,r[0]+32,r[1]+18,17,'#f3c623','left','800');
@@ -287,6 +292,7 @@
       if(LY.v){txt(g,u.n+' ×'+c.n,r[0]+200,r[1]+18,15,RAR[u.r].c,'left','800');txt(g,st,r[0]+14,r[1]+42,12,'rgba(241,236,226,.8)','left','600');txt(g,pa,r[0]+14,r[1]+63,11.5,u.p?'#f3c623':dim,'left','600')}
       else{txt(g,u.n+' ×'+c.n,r[0]+14,r[1]+40,15,RAR[u.r].c,'left','800');txt(g,st,r[0]+14,r[1]+60,11,'rgba(241,236,226,.8)','left','600');g.save();g.beginPath();g.rect(r[0],r[1],r[2]-6,r[3]);g.clip();txt(g,pa,r[0]+14,r[1]+79,10.5,u.p?'#f3c623':dim,'left','600');g.restore()}}
     else{txt(g,'Touche une unité pour la choisir, puis une',r[0]+14,r[1]+(LY.v?42:44),12,dim,'left','600');txt(g,'autre case pour la déplacer. 3 identiques = fusion.',r[0]+14,r[1]+(LY.v?62:64),12,dim,'left','600')}
+    button(g,B.don,'DONNER',null,'#2f7d4f',true,false);
     button(g,B.sum,'INVOQUER',T.cost+' or',  '#e8a23a',T.gold>=T.cost&&room(T),false);
     var canF=c&&c.n===3&&U[c.u].r<3;button(g,B.fus,'FUSION',canF?'→ '+RAR[U[c.u].r+1].n:c&&U[c.u].r>=3?'voir recettes':'3 identiques','#a04ee0',canF,canF);
     button(g,B.sel,'VENDRE',c?'+'+SELL[U[c.u].r]+' or':'1 unité','#55595e',!!c,false);
@@ -341,14 +347,14 @@
   /* une petite règle de style : en vertical, le plateau ne dépasse pas l'écran */
   (function(){var s=document.createElement('style');s.textContent='.pp-touch #v-garde .stage.fs-on>canvas:first-child{width:auto;max-width:100%;max-height:calc(100dvh - 70px - env(safe-area-inset-top,0px));margin:0 auto}';document.head.appendChild(s)})();
 
-  var INTRO='Invoque des gardiens au hasard avec ton or, et pose-les sur ton territoire. <b>3 gardiens identiques</b> sur une case se fusionnent en un gardien plus rare : <span style="color:#a3a8ad">commune</span>, <span style="color:#3a8cff">rare</span>, <span style="color:#a04ee0">épique</span>, <span style="color:#f3c623">légendaire</span>, <span style="color:#e2361b">mythique</span>.<br>Les slimes tournent autour des territoires : à '+LIM+' slimes sur le terrain, c\'est perdu. Un boss toutes les 10 vagues et un boss final à la vague 80.';
+  var INTRO='Invoque des gardiens au hasard avec ton or, et pose-les sur ton territoire. <b>3 gardiens identiques</b> sur une case se fusionnent en un gardien plus rare : <span style="color:#a3a8ad">commune</span>, <span style="color:#3a8cff">rare</span>, <span style="color:#a04ee0">épique</span>, <span style="color:#f3c623">légendaire</span>, <span style="color:#e2361b">mythique</span>.<br>Les slimes tournent autour des territoires : à '+LIM+' slimes sur le terrain, c\'est perdu. Un boss toutes les 10 vagues et un boss final à la vague 80. Ton allié défend l\'autre territoire avec toi : bouton DONNER pour l\'aider.';
   PP.arcade({id:'garde',
     setup:function(C){CP=C;G=null;P=null;LY=null;layout(C);
       C.keysText('<kbd>Espace</kbd> invoquer · clic sur une unité puis sur une case pour la déplacer · <kbd>F</kbd> fusion · <kbd>V</kbd> vendre · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> paris · <kbd>4</kbd> <kbd>5</kbd> <kbd>6</kbd> améliorations');
       if(C.mode==='online'){
         C.listen(function(m){onNet(C,m)});
-        if(net.isHost)C.over('DEFEND MONTREUIL · à 2',INTRO+'<br><b>À 2 maximum</b> : chacun défend son territoire, si l\'un craque, vous perdez tous les deux.','Lancer la partie',function(){hostStart(C)});
-        else C.over('DEFEND MONTREUIL · à 2',INTRO+'<br>Le chef du salon lance la partie.',false);
+        if(net.isHost)C.over('DEFEND MONTREUIL · duo',INTRO+'<br><b>En duo, en équipe</b> : vous défendez Montreuil ensemble. Même compteur de slimes, même objectif, vous gagnez ou perdez ensemble. Le bouton <b>DONNER</b> passe une unité (ou 50 or) à ton coéquipier.','Lancer la partie',function(){hostStart(C)});
+        else C.over('DEFEND MONTREUIL · duo',INTRO+'<br><b>En duo, en équipe</b> contre les slimes.'+'<br>Le chef du salon lance la partie.',false);
         return}
       var s=loadSave();
       if(s&&s.mode===C.mode)C.over('DEFEND MONTREUIL',INTRO+'<br><br>Partie sauvegardée : <b>vague '+s.w+'</b>.<br><button type="button" class="primary" id="garde-new" style="margin-top:10px">Nouvelle partie</button>','Continuer (vague '+s.w+')',function(){resume(s);C.go()});
