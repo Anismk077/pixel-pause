@@ -107,7 +107,7 @@ window.PP=(function(){
 
 
   /* ---------- Réglages (gardés dans ce navigateur) ---------- */
-  var SET_DEF={vol:80,sens:100,fov:75,q:'auto',invY:false,fpsMeter:false},SET=Object.assign({},SET_DEF);
+  var SET_DEF={vol:80,sens:100,fov:75,q:'auto',invY:false,fpsMeter:false,zHp:true},SET=Object.assign({},SET_DEF);
   try{Object.assign(SET,JSON.parse(localStorage.getItem('pp-settings'))||{})}catch(e){}
   function setSetting(k,v){SET[k]=v;try{localStorage.setItem('pp-settings',JSON.stringify(SET))}catch(e){}document.dispatchEvent(new CustomEvent('pp-settings',{detail:SET}))}
   window.PP_settings=SET;
@@ -131,7 +131,8 @@ window.PP=(function(){
       '<div class="pz-set"><h4>Réglages</h4>'+rng('vol','Volume',0,100,5)+rng('sens','Sensibilité souris',30,250,5)+rng('fov','Champ de vision (3D)',60,100,1)+
       '<label class="pz-row"><span>Qualité (3D)</span><select data-set="q"><option value="auto">Auto</option><option value="haute">Haute</option><option value="basse">Basse (plus fluide)</option></select><em></em></label>'+
       '<label class="pz-row chk"><span>Inverser la souris (haut/bas)</span><input type="checkbox" data-set="invY"><em></em></label>'+
-      '<label class="pz-row chk"><span>Afficher les images par seconde</span><input type="checkbox" data-set="fpsMeter"><em></em></label></div></div>';
+      '<label class="pz-row chk"><span>Afficher les images par seconde</span><input type="checkbox" data-set="fpsMeter"><em></em></label>'+
+      '<label class="pz-row chk"><span>Zone Morte : vie des ennemis</span><input type="checkbox" data-set="zHp"><em></em></label></div></div>';
   }
   /* Recommencer : on ferme le jeu, on le rouvre à neuf et on relance la partie (tout est remis à zéro) */
   function restartGame(){var v=current;setPause(false);go('menu');go(v);
