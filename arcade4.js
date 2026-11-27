@@ -1,4 +1,4 @@
-/* Pixel Pause — jeux arcade, lot 4 : Avion 3D, Labyrinthe 3D, Basket 3D, Dessine et devine, Billard */
+/* Pixel Pause — jeux arcade, lot 4 : Labyrinthe 3D, Basket 3D, Dessine et devine, Billard */
 (function(){
   'use strict';
   var sfx=PP.sfx,ag=PP.ag,esc=PP.esc,INK='#141210',CR='#f1ece2',RED='#e2361b',YEL='#f3c623',BLU='#3fa9ff',GRN='#3fe09a';
@@ -6,38 +6,7 @@
   function clearScene(C){while(C.scene.children.length)C.scene.remove(C.scene.children[0]);C.scene.fog=null}
   function sun(C,sz){C.scene.add(new THREE.HemisphereLight(0xfff4e6,0x50505a,.9));var s=new THREE.DirectionalLight(0xffffff,1.1);s.position.set(30,60,20);if(sz){s.castShadow=true;s.shadow.mapSize.set(1024,1024);var c=s.shadow.camera;c.left=c.bottom=-sz;c.right=c.top=sz;c.far=200}C.scene.add(s);return s}
 
-  /* ================= AVION 3D ================= */
-  (function(){
-    var S;
-    function hgt(x,z){return Math.sin(x*.012)*14+Math.cos(z*.009)*12+Math.sin((x+z)*.021)*6-6}
-    function plane(){var g=new THREE.Group(),body=new THREE.Mesh(new THREE.CylinderGeometry(.45,.3,4,10),lam(0xe2361b));body.rotation.x=Math.PI/2;g.add(body);var nose=new THREE.Mesh(new THREE.ConeGeometry(.45,.8,10),lam(0xf1ece2));nose.rotation.x=-Math.PI/2;nose.position.z=-2.4;g.add(nose);
-      var wing=new THREE.Mesh(new THREE.BoxGeometry(6,.12,1.1),lam(0xf1ece2));wing.position.z=-.3;g.add(wing);var tail=new THREE.Mesh(new THREE.BoxGeometry(2.2,.1,.6),lam(0xf1ece2));tail.position.z=1.8;g.add(tail);var fin=new THREE.Mesh(new THREE.BoxGeometry(.1,.9,.7),lam(0xe2361b));fin.position.set(0,.45,1.8);g.add(fin);
-      var cab=new THREE.Mesh(new THREE.SphereGeometry(.38,10,8),lam(0x3fa9ff));cab.scale.set(1,.8,1.6);cab.position.set(0,.35,-.8);g.add(cab);var prop=new THREE.Mesh(new THREE.BoxGeometry(1.6,.12,.05),lam(0x222222));prop.position.z=-2.85;g.add(prop);g.userData.prop=prop;g.traverse(function(o){if(o.isMesh)o.castShadow=true});return g}
-    function ring(z){var x=(Math.random()-.5)*60,y=Math.max(hgt(x,z)+14,8+Math.random()*26),m=new THREE.Mesh(new THREE.TorusGeometry(4,.35,8,32),lam(0xf3c623,{emissive:0x5a4000}));m.position.set(x,y,z);S.sc.add(m);return {m:m,x:x,y:y,z:z,done:false}}
-    PP.arcade({id:'plane',three:true,
-      setup:function(C){ag.three(C);clearScene(C);var sc=C.scene;S={sc:sc};sun(C,0);sc.background=new THREE.Color(0x9fd3f2);sc.fog=new THREE.Fog(0x9fd3f2,120,420);
-        var g=new THREE.PlaneGeometry(1600,3000,120,220);g.rotateX(-Math.PI/2);S.gz=-1000;var p=g.attributes.position,col=new Float32Array(p.count*3),c=new THREE.Color();for(var i=0;i<p.count;i++){var x=p.getX(i),z=p.getZ(i),h=hgt(x,z+S.gz);p.setY(i,h);if(h<-2)c.setHex(0xd8c99a);else if(h<12)c.setHex(0x5c9a3e).lerp(new THREE.Color(0x3f7a2a),Math.random()*.3);else c.setHex(0x8a8478).lerp(new THREE.Color(0xf2f4f7),Math.max(0,(h-18)/10));col.set([c.r,c.g,c.b],i*3)}
-        g.setAttribute('color',new THREE.BufferAttribute(col,3));g.computeVertexNormals();S.ground=new THREE.Mesh(g,new THREE.MeshLambertMaterial({vertexColors:true,flatShading:true}));S.ground.position.z=S.gz;sc.add(S.ground);
-        var sea=new THREE.Mesh(new THREE.PlaneGeometry(4000,6000),lam(0x2a7fb0,{transparent:true,opacity:.85}));sea.rotation.x=-Math.PI/2;sea.position.y=-3;sc.add(sea);
-        for(var k=0;k<40;k++){var cl=new THREE.Mesh(new THREE.SphereGeometry(6+Math.random()*8,7,5),lam(0xffffff,{flatShading:true}));cl.scale.y=.45;cl.position.set((Math.random()-.5)*600,60+Math.random()*30,-Math.random()*2800);sc.add(cl)}
-        S.pl=plane();sc.add(S.pl);S.x=0;S.y=25;S.z=0;S.yaw=0;S.pitch=0;S.roll=0;S.sp=38;S.rings=[];S.next=-80;S.time=45;S.score=0;S.dist=0;S.mouse=null;
-        for(var r=0;r<8;r++){S.rings.push(ring(S.next));S.next-=70}
-        C.keysText('Souris ou <kbd>←</kbd><kbd>→</kbd> tourner · <kbd>↑</kbd><kbd>↓</kbd> (ou souris haut/bas) monter / descendre · <kbd>Maj</kbd> turbo · passe dans les anneaux dorés');
-        C.over('Avion 3D','Passe dans les anneaux : chacun rapporte des points et du temps. Ne touche pas le relief !<br>Record : <b>'+C.best('pts')+'</b>','Décoller')},
-      start:function(C){if(S.score||S.dist){this.setup(C);C.hide()}},
-      mouse:function(C,t,x,y){S.mouse=[x/960-.5,y/540-.5]},
-      step:function(C,dt){var k=C.keys,tr=0,pt=0;if(S.mouse){tr=-S.mouse[0]*2.2;pt=-S.mouse[1]*2}if(k.ArrowLeft)tr=1;if(k.ArrowRight)tr=-1;if(k.ArrowUp)pt=1;if(k.ArrowDown)pt=-1;
-        S.roll+=((tr*.7)-S.roll)*Math.min(1,dt*3);S.yaw+=S.roll*dt*1.2;S.pitch+=((pt*.45)-S.pitch)*Math.min(1,dt*2.5);var sp=S.sp*(k.ShiftLeft||k.ShiftRight?1.6:1);
-        S.x-=Math.sin(S.yaw)*Math.cos(S.pitch)*sp*dt;S.z-=Math.cos(S.yaw)*Math.cos(S.pitch)*sp*dt;S.y+=Math.sin(S.pitch)*sp*dt;S.y=Math.min(90,S.y);S.dist+=sp*dt;
-        S.pl.position.set(S.x,S.y,S.z);S.pl.rotation.set(S.pitch,S.yaw,S.roll,'YXZ');S.pl.userData.prop.rotation.z+=dt*40;
-        var back=new THREE.Vector3(Math.sin(S.yaw)*14,5,Math.cos(S.yaw)*14);C.cam.position.lerp(new THREE.Vector3(S.x+back.x,S.y+back.y,S.z+back.z),Math.min(1,dt*4));C.cam.lookAt(S.x,S.y+1,S.z);
-        if(S.z<S.gz-500){S.gz=S.z-1000;var gp=S.ground.geometry.attributes.position,gc=S.ground.geometry.attributes.color,cc=new THREE.Color();for(var vi=0;vi<gp.count;vi++){var vx=gp.getX(vi),vz=gp.getZ(vi),vh=hgt(vx,vz+S.gz);gp.setY(vi,vh);if(vh<-2)cc.setHex(0xd8c99a);else if(vh<12)cc.setHex(0x5c9a3e);else cc.setHex(0x8a8478).lerp(new THREE.Color(0xf2f4f7),Math.max(0,(vh-18)/10));gc.setXYZ(vi,cc.r,cc.g,cc.b)}gp.needsUpdate=true;gc.needsUpdate=true;S.ground.geometry.computeVertexNormals();S.ground.position.z=S.gz}
-        S.time-=dt;S.rings.forEach(function(r){if(r.done)return;r.m.rotation.y+=dt;var d=Math.hypot(S.x-r.x,S.y-r.y,S.z-r.z);if(d<4.2){r.done=true;r.m.material.color.setHex(0x3fe09a);S.score+=100;S.time+=4;sfx.play('win');C.pop('+100 · +4 s','#f3c623','44px')}});
-        S.rings=S.rings.filter(function(r){if(r.z>S.z+40){S.sc.remove(r.m);return false}return true});while(S.rings.length<8){S.rings.push(ring(Math.min(S.next,S.z-120)));S.next=Math.min(S.next,S.z-120)-70}
-        var gh=hgt(S.x,S.z)+0;if(S.y<Math.max(gh,-3)+1||S.time<=0){C.stop();sfx.play(S.time<=0?'tick':'kill');var nb=C.best('pts',S.score);if(S.score>=1500)C.win();C.over(S.time<=0?'Plus de carburant':'Crash !','Score : <b>'+S.score+'</b> · '+Math.round(S.dist)+' m'+(nb?' · nouveau record !':''),'Redécoller')}
-        C.hud('<span>Score <b>'+S.score+'</b></span><span>Carburant <b>'+Math.max(0,Math.ceil(S.time))+' s</b></span><span>Altitude <b>'+Math.round(S.y-gh)+' m</b></span>')},
-      draw:function(C){C.R.render(C.scene,C.cam)}});
-  })();
+  /* Avion 3D : déplacé dans avion.js (v89) */
 
   /* ================= LABYRINTHE 3D (v77) =================
      Nouveau labyrinthe à chaque partie : départ, sortie, clé et pièces placés au hasard.

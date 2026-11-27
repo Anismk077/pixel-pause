@@ -24,6 +24,10 @@
     roue:[['x','Space','LANCER']],
     rr:[['x','Digit2','+25'],['x','Digit4','+100'],['x','Space','OK<br>TIRER'],['x','KeyR','BARILLET'],['x','KeyP','PASSER']],
     /* v69 : Bitume — joystick pour marcher ou conduire, monter dans une voiture, frapper ou freiner */
+    /* v89 : Avion, Tennis et Coup de Bâton */
+    plane:[['u','ArrowUp','▲'],['l','ArrowLeft','◀'],['d','ArrowDown','▼'],['r','ArrowRight','▶'],['x','Space','TIR'],['x','ShiftLeft','TURBO']],
+    tennis:[['u','ArrowUp','▲'],['l','ArrowLeft','◀'],['d','ArrowDown','▼'],['r','ArrowRight','▶'],['x','Space','FRAPPE']],
+    baton:[['u','ArrowUp','▲'],['l','ArrowLeft','◀'],['d','ArrowDown','▼'],['r','ArrowRight','▶'],['x','Space','COUP'],['x','KeyK','SAUT'],['x','KeyL','TOUR']],
     bitume:[['u','ArrowUp','▲'],['l','ArrowLeft','◀'],['d','ArrowDown','▼'],['r','ArrowRight','▶'],['x','KeyE','VOITURE'],['x','Space','COUP<br>FREIN']]
   };
   var CAS={bj:1,poker:1,roue:1,rr:1};

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360">
+  <rect width="640" height="360" fill="#8fc8ee"/>
+  <rect y="150" width="640" height="210" fill="#3c8f5c"/>
+  <path d="M170 160 H470 L600 330 H40 Z" fill="#2e6fb3" stroke="#fff" stroke-width="5"/>
+  <path d="M205 160 L120 330 M435 160 L520 330 M150 235 H490 M320 235 V300" stroke="#fff" stroke-width="4" fill="none"/>
+  <rect x="80" y="214" width="480" height="32" fill="none" stroke="#141210" stroke-width="2" stroke-dasharray="3 3"/>
+  <rect x="80" y="210" width="480" height="6" fill="#fff"/>
+  <g stroke="#141210" stroke-width="3"><circle cx="420" cy="110" r="14" fill="#d9f24a"/></g>
+  <g stroke="#141210" stroke-width="3"><rect x="160" y="250" width="34" height="44" rx="8" fill="#e2361b"/><circle cx="177" cy="236" r="13" fill="#e8b98c"/><path d="M194 262 L230 226" stroke-width="5"/><ellipse cx="240" cy="214" rx="14" ry="18" fill="none" stroke="#e2361b" stroke-width="5"/></g>
+  <rect y="322" width="640" height="38" fill="#141210"/><rect y="322" width="640" height="5" fill="#e2361b"/>
+  <text x="320" y="350" font-family="Anton, Impact, sans-serif" font-size="26" fill="#f1ece2" text-anchor="middle">TENNIS 3D</text>
+</svg>

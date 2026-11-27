@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360">
+  <rect width="640" height="360" fill="#7cc4f0"/>
+  <g fill="#9fb3c8"><rect x="0" y="80" width="100" height="140"/><rect x="110" y="40" width="90" height="180"/><rect x="420" y="60" width="110" height="160"/><rect x="540" y="100" width="100" height="120"/></g>
+  <rect x="210" y="90" width="200" height="130" fill="#d9826a"/><rect x="226" y="104" width="168" height="26" fill="#e2361b"/>
+  <text x="310" y="124" font-family="Anton, Impact, sans-serif" font-size="20" fill="#fff" text-anchor="middle">PIZZA</text>
+  <rect y="220" width="640" height="140" fill="#5b5d66"/><rect y="220" width="640" height="30" fill="#9a9aa0"/>
+  <g stroke="#141210" stroke-width="4" stroke-linecap="round">
+    <path d="M250 300 L240 250 M270 300 L280 250" stroke="#2d5aa0" stroke-width="12"/>
+    <rect x="240" y="196" width="44" height="60" rx="12" fill="#f1ece2"/>
+    <circle cx="262" cy="180" r="17" fill="#d9a47a"/><path d="M245 172 Q262 155 279 172 Z" fill="#e2361b"/>
+    <path d="M282 210 L322 180" stroke="#d9a47a" stroke-width="10"/>
+    <path d="M300 200 L390 130" stroke="#a8723a" stroke-width="10"/>
+  </g>
+  <g stroke="#141210" stroke-width="3"><path d="M380 120 l14 -26 l6 24 l22 -12 l-10 22 l24 4 l-22 10 l12 20 l-24 -8 l-6 22 l-10 -22 l-20 12 l8 -22 l-22 -6 l24 -8z" fill="#f3c623"/></g>
+  <g stroke="#141210" stroke-width="4" stroke-linecap="round">
+    <path d="M440 300 L452 250 M470 300 L462 250" stroke="#2a2a33" stroke-width="12"/>
+    <rect x="436" y="196" width="44" height="60" rx="12" fill="#3f5a8a"/>
+    <circle cx="458" cy="180" r="17" fill="#e8b98c"/><path d="M441 176 A17 17 0 0 1 475 176 Z" fill="#6b4a2b"/>
+    <path d="M520 300 L528 250 M545 300 L540 250" stroke="#3a3a3a" stroke-width="14"/>
+    <rect x="512" y="186" width="54" height="70" rx="14" fill="#8a3a3a"/><circle cx="539" cy="168" r="19" fill="#c68a5a"/>
+  </g>
+  <rect y="322" width="640" height="38" fill="#141210"/><rect y="322" width="640" height="5" fill="#e2361b"/>
+  <text x="320" y="350" font-family="Anton, Impact, sans-serif" font-size="26" fill="#f1ece2" text-anchor="middle">COUP DE BÂTON</text>
+</svg>

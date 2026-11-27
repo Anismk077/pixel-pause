@@ -16,7 +16,7 @@ window.ARCADE_LIST=[
   {id:'memory',n:'Memory',sub:'Cartes · retrouve les paires',pl:'1–2',cat:'pc solo',modes:[['solo','Solo','Le moins de coups'],['duel','2 joueurs','Chacun son tour']]},
   {id:'mines',n:'Démineur',sub:'Réflexion · évite les mines',pl:'1',cat:'solo',modes:[['easy','Facile','12 × 8, 12 mines'],['mid','Moyen','16 × 10, 26 mines'],['hard','Difficile','20 × 11, 45 mines']]},
   {id:'pong',n:'Pong néon',sub:'Arcade · duel de raquettes',pl:'1–2',cat:'pc solo',modes:[['solo','Solo','Contre l\'ordinateur'],['duel','2 joueurs','Même clavier']]},
-  {id:'plane',n:'Avion 3D',sub:'3D · vole dans les anneaux',pl:'1',cat:'solo 3d',modes:[['solo','Solo','Le plus loin possible']]},
+  {id:'plane',n:'Avion 3D',sub:'3D · missions, vol libre et combats aériens en salon',pl:'1–6',cat:'pc tel solo 3d',modes:[['niveaux','Missions','8 missions, progression sauvée'],['libre','Vol libre','Anneaux à l\'infini sur toute l\'île'],['bot','Duel ordi','1 contre 1 contre un avion'],['online','Combat en salon','1v1 ou plus contre les potes du salon']]},
   {id:'maze',n:'Labyrinthe 3D',sub:'3D · labyrinthes au hasard, clé, fantômes, 6 niveaux',pl:'1',cat:'solo 3d',modes:[['easy','Facile','Petit, carte visible'],['mid','Moyen','Plus grand, une clé à trouver'],['hard','Difficile','Immense, sombre, avec fantômes'],['run','Aventure','6 niveaux de plus en plus durs']]},
   {id:'hoops',n:'Basket 3D',sub:'3D · paniers à 2 et 3 points',pl:'1–2',cat:'pc solo 3d',modes:[['solo','Solo','60 secondes chrono'],['duel','2 joueurs','60 s chacun']]},
   {id:'draw',n:'Dessine et devine',sub:'Party · un dessine, les autres devinent',pl:'2–12',cat:'tel',modes:[['online','En ligne','Tout le salon']]},
@@ -36,6 +36,8 @@ window.ARCADE_LIST=[
   {id:'roue',img:'thumb-roue.svg?v=1',n:'La Roue',sub:'Casino · mise et fais tourner la roue',pl:'1',cat:'pc tel solo',modes:[['solo','Solo','×1 à ×40']]},
   {id:'rr',img:'thumb-rr.svg?v=1',n:'Roulette russe',sub:'Casino · mise tes jetons, le dernier qui en a encore rafle tout',pl:'1–6',cat:'pc tel solo',modes:[['solo','Solo','Toi contre 3 bots'],['online','En ligne','2 à 6 potes du salon']]},
   {id:'marz',img:'thumb-marz.svg?v=2',n:'Marzoukeur',sub:'Fun · attrape les burgers, enchaîne les combos',pl:'1',cat:'pc tel solo',modes:[['solo','Solo','Le plus de kilos avant la ruine']]},
+  {id:'tennis',img:'thumb-tennis.svg?v=1',n:'Tennis 3D',sub:'Sport · un set contre l\'ordi, 3 niveaux',pl:'1',cat:'pc tel solo 3d',modes:[['facile','Facile','Il rate souvent, tu frappes tout seul'],['moyen','Moyen','Un bon joueur'],['difficile','Difficile','Il vise les lignes']]},
+  {id:'baton',img:'thumb-baton.svg?v=1',n:'Coup de Bâton',sub:'Bagarre · avance et assomme tous ceux qui veulent te taper',pl:'1',cat:'pc tel solo',modes:[['facile','Facile','5 vies, ennemis plus mous'],['normal','Normal','3 vies'],['difficile','Difficile','2 vies, ils tapent fort']]},
   {id:'bitume',img:'thumb-bitume.svg?v=1',n:'Bitume',sub:'Action · vole des voitures, missions, police aux trousses',pl:'1',cat:'pc tel solo',modes:[['histoire','Histoire','8 missions, partie sauvegardée'],['libre','Balade libre','La ville rien que pour toi'],['chaos','Chaos','Police aux trousses, tiens bon']]}
 ];
 (function(){
