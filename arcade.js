@@ -9,7 +9,7 @@
       C.g=d.three?null:cv.getContext('2d');
       /* v64 : chaque setup repart d'écouteurs réseau propres (sinon, après 2 clics sur un mode, chaque coup reçu était traité 2 fois) */
       if(d.setup&&!d.setup._pp){var setup0=d.setup;d.setup=function(c){(c||C).subs.forEach(function(u){try{u()}catch(e){}});(c||C).subs=[];return setup0.apply(this,arguments)};d.setup._pp=1}
-      C.over=function(title,msg,btn,cb){unlock();$(L.id+'-title').textContent=title;$(L.id+'-msg').innerHTML=msg||'';var b=$(L.id+'-start');b.textContent=btn||'Jouer';b.hidden=btn===false;ov.hidden=false;C.onBtn=cb||null};
+      C.over=function(title,msg,btn,cb){unlock();$(L.id+'-title').textContent=title;$(L.id+'-msg').innerHTML=msg||'';var b=$(L.id+'-start');b.textContent=btn||'Jouer';b.hidden=btn===false;ov.hidden=false;C.onBtn=cb||null;C.ovT=performance.now()};
       C.hide=function(){ov.hidden=true};
       C.hud=function(h){$(L.id+'-hud').innerHTML=h};
       C.keysText=function(h){$(L.id+'-keys').innerHTML=h};
@@ -58,7 +58,7 @@
       /* le mouvement est suivi sur toute la fenêtre : sortir du cadre ne bloque plus le jeu */
       window.addEventListener('pointermove',function(e){if(d.mouse&&PP.cur()===L.id&&(e.target===cv||C.running)){var p=pt(e);d.mouse(C,'move',p[0],p[1],e)}});
       window.addEventListener('pointerup',function(e){if(d.mouse&&PP.cur()===L.id){var p=pt(e);d.mouse(C,'up',p[0],p[1],e)}});
-      document.addEventListener('keydown',function(e){if(PP.cur()!==L.id||/INPUT|TEXTAREA/.test(e.target.tagName))return;C.keys[e.code]=true;if(C.running&&/^(Arrow|Space)/.test(e.code))e.preventDefault();if(d.key&&!e.repeat)d.key(C,e.code,true,e)});
+      document.addEventListener('keydown',function(e){if(PP.cur()!==L.id||/INPUT|TEXTAREA/.test(e.target.tagName))return;/* v70 : Entrée ou Espace appuie sur le bouton de l'écran de départ / fin, sans souris */if(!C.running&&!ov.hidden&&/^(Enter|NumpadEnter|Space)$/.test(e.code)&&!e.repeat&&performance.now()-(C.ovT||0)>600&&!(e.target.closest&&e.target.closest('button,a,select'))){var sb=$(L.id+'-start');if(sb&&!sb.hidden&&!sb.disabled){e.preventDefault();sb.click();return}}C.keys[e.code]=true;if(C.running&&/^(Arrow|Space)/.test(e.code))e.preventDefault();if(d.key&&!e.repeat)d.key(C,e.code,true,e)});
       document.addEventListener('keyup',function(e){if(PP.cur()!==L.id)return;C.keys[e.code]=false;if(d.key)d.key(C,e.code,false,e)});
       /* v64 : Alt+Tab ou onglet caché : on relâche toutes les touches tenues (sinon le perso court tout seul au retour) */
       function release(){var k=C.keys;C.keys={};Object.keys(k).forEach(function(code){if(k[code]&&d.key)try{d.key(C,code,false,{code:code,key:'',repeat:false,preventDefault:function(){},stopPropagation:function(){}})}catch(e){}})}

@@ -70,7 +70,7 @@
     var tubes;for(var tries=0;tries<200;tries++){for(var i=segs.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=segs[i];segs[i]=segs[j];segs[j]=t}
       tubes=[];for(var c2=0;c2<nc;c2++)tubes.push(segs.slice(c2*4,c2*4+4));if(!tubes.some(function(t){return t.every(function(x){return x===t[0]})}))break}
     for(var e=0;e<ne;e++)tubes.push([]);return tubes}
-  function pReset(C,keepLevel){var lv=keepLevel?P.level:1;P={tubes:pGen(C),sel:-1,anim:null,undo:[],moves:0,level:lv,extra:false,t:0,won:false,lift:[],shake:{},spark:[],hint:null,done:{},flash:{},nc:(LVL[C.mode]||LVL.easy)[0],hid:null,mask:null,startX:null};P.start=JSON.stringify(P.tubes);pLay()}
+  function pReset(C,keepLevel){var lv=keepLevel?P.level:1;P={tubes:pGen(C),sel:-1,kb:1,cur:0,anim:null,undo:[],moves:0,level:lv,extra:false,t:0,won:false,lift:[],shake:{},spark:[],hint:null,done:{},flash:{},nc:(LVL[C.mode]||LVL.easy)[0],hid:null,mask:null,startX:null};P.start=JSON.stringify(P.tubes);pLay()}
   function pLay(){var n=P.tubes.length,rows=n>8?2:1,per=Math.ceil(n/rows),tw=54,gap=Math.min(48,(W-90-per*tw)/(per-1||1)),th=4*SEG+20;P.pos=[];
     for(var i=0;i<n;i++){var r=Math.floor(i/per),cI=i%per,inRow=r===rows-1?n-per*(rows-1):per,rowW=inRow*tw+(inRow-1)*gap,x0=W/2-rowW/2;P.pos.push({x:x0+cI*(tw+gap),y:rows===2?(r?268:72):150,w:tw,h:th})}
     P.lift=P.tubes.map(function(){return 0})}
@@ -220,8 +220,9 @@
       C.over('Potions','Range les couleurs : chaque fiole doit finir remplie d\'une seule couleur.<br>On ne verse que sur la même couleur ou dans une fiole vide. Moins tu fais de coups, plus tu gagnes d\'étoiles.'+(sv&&sv.lv>1||sv&&!sv.nw&&sv.mv?'<br><b>Partie sauvegardée : tu reprends au niveau '+sv.lv+'.</b><br><button type="button" class="ghost" data-pot-r1>Repartir du niveau 1</button>':''),sv?'Continuer':'Jouer')},
     start:function(C){if(C.mode==='bot'){duelStart(C,genSolvable(C));return}if(!pLoad(C)){pReset(C,false);pMech(C)}},
     close:function(C){if(P&&C.running)pSave(C)},
-    mouse:function(C,t,x,y){if(P&&t!=='up')P.kb=0;if(t==='down'&&C.running)pClick(C,x,y);pHover(C,x,y)},
+    mouse:function(C,t,x,y){/* v70 : un petit mouvement de souris ne cache plus le curseur du clavier */if(P){if(t==='down')P.kb=0;else if(t==='move'){if(P.kx==null){P.kx=x;P.ky=y}if(Math.abs(x-P.kx)+Math.abs(y-P.ky)>40){P.kb=0;P.kx=x;P.ky=y}}}if(t==='down'&&C.running)pClick(C,x,y);pHover(C,x,y)},
     key:function(C,code,down){if(!down||!C.running||!P||P.won)return;
+      P.kx=null;
       /* v41 : tout au clavier. Flèches = déplacer le curseur de fiole en fiole, Espace ou Entrée = prendre / verser */
       var nT=P.tubes.length,per=nT>8?Math.ceil(nT/2):nT;if(P.cur==null||P.cur>=nT)P.cur=0;
       if(code==='ArrowRight'){P.cur=(P.cur+1)%nT;P.kb=1;sfx.play('tick');return}

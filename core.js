@@ -31,7 +31,7 @@ window.PP=(function(){
   document.addEventListener('click',function(e){var b=e.target.closest('button[id$="-start"],#sv-cont');if(!b)return;var v=b.closest('.view');if(v&&v.id!=='v-account')stat(v.id.slice(2),'parties')},true);
   document.addEventListener('keydown',function(e){
     if(e.key==='Enter'&&e.target.classList&&e.target.classList.contains('logo'))return go('menu');
-    if(e.key==='Enter'&&!/INPUT|TEXTAREA|SELECT|BUTTON/.test(e.target.tagName)){var v=document.querySelector('.view.on .overlay:not([hidden]) button');if(v){v.click();e.preventDefault()}}
+    if(e.key==='Enter'&&!/INPUT|TEXTAREA|SELECT|BUTTON/.test(e.target.tagName)){var v=document.querySelector('.view.on .overlay:not([hidden]) button[id$="-start"]:not([hidden])')||document.querySelector('.view.on .overlay:not([hidden]) button:not(.ghost):not([hidden])');if(v){v.click();e.preventDefault();e.stopImmediatePropagation()}}
   });
 
   /* ---------- Icônes pixel art 12x12 ---------- */
