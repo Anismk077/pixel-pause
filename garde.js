@@ -503,7 +503,7 @@
   var INTRO='Invoque des unités au hasard avec ton or et pose-les sur ton territoire. <b>3 unités identiques</b> sur une case se fusionnent en une unité plus rare : <span style="color:#a3a8ad">commune</span>, <span style="color:#3a8cff">rare</span>, <span style="color:#a04ee0">épique</span>, <span style="color:#f3c623">légendaire</span>. Les <span style="color:#e2361b">mythiques</span> se créent avec les recettes.<br>Les slimes sortent de vos camps et passent par le <b>chemin du milieu</b>, où vous pouvez tous les deux les taper. À '+LIM+' slimes sur le terrain, c\'est perdu. Un boss toutes les 10 vagues et un boss final à la vague 80.';
   PP.arcade({id:'garde',
     setup:function(C){CP=C;G=null;P=null;LY=null;layout(C);
-      C.keysText('<kbd>Espace</kbd> invoquer · maintiens une unité et glisse-la pour la déplacer · <kbd>F</kbd> fusion · <kbd>V</kbd> vendre · <kbd>1</kbd> <kbd>2</kbd> paris · <kbd>3</kbd> recettes · <kbd>4</kbd> améliorations · <kbd>D</kbd> donner · <kbd>X</kbd> vitesse ×2');
+      C.keysText('<kbd>Espace</kbd> invoquer · maintiens une unité et glisse-la pour la déplacer · <kbd>F</kbd> fusion · <kbd>S</kbd> vendre · <kbd>1</kbd> <kbd>2</kbd> paris · <kbd>3</kbd> recettes · <kbd>4</kbd> améliorations · <kbd>D</kbd> donner · <kbd>X</kbd> vitesse ×2');
       if(C.mode==='online'){
         C.listen(function(m){onNet(C,m)});
         if(net.isHost)C.over('DEFEND MONTREUIL · duo',INTRO+'<br><b>En duo, en équipe</b> : même compteur de slimes, même objectif, vous gagnez ou perdez ensemble. Le bouton <b>DONNER</b> passe une unité (ou 50 or) à ton coéquipier.','Lancer la partie',function(){hostStart(C)});
@@ -513,7 +513,7 @@
       if(s&&s.mode===C.mode)C.over('DEFEND MONTREUIL',INTRO+'<br><br>Partie sauvegardée : <b>vague '+s.w+'</b>.<br><button type="button" class="primary" id="garde-new" style="margin-top:10px">Nouvelle partie</button>','Continuer (vague '+s.w+')',function(){resume(s);C.go()});
       else C.over('DEFEND MONTREUIL',INTRO,'Jouer')},
     start:function(C){startSolo(C)},
-    key:function(C,code,down){if(!down)return;var A={Space:'sum',KeyF:'fus',KeyV:'sel',KeyD:'don',Digit1:'p0',Digit2:'p1',Digit3:'rec',Digit4:'upg',KeyX:'x2',Numpad1:'p0',Numpad2:'p1',Numpad3:'rec',Numpad4:'upg'}[code];
+    key:function(C,code,down){if(!down)return;var A={Space:'sum',KeyF:'fus',KeyV:'sel',KeyS:'sel',KeyD:'don',Digit1:'p0',Digit2:'p1',Digit3:'rec',Digit4:'upg',KeyX:'x2',Numpad1:'p0',Numpad2:'p1',Numpad3:'rec',Numpad4:'upg'}[code];
       if(A)act(C,A);if(code==='Escape'&&G){G.T[0].sel=-1;G.rec=false;G.upg=false}},
     /* toucher = choisir une unité ; maintenir et glisser = la déplacer */
     mouse:function(C,t,x,y){if(!G||G.over||!C.running){DRAG=null;return}var T=G.T[0];
