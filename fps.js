@@ -778,7 +778,28 @@
   }
   /* animations des zombies : démarche boiteuse propre à chacun, coureurs penchés bras en arrière, rampants au sol,
      attaque en deux temps (armé puis griffe), recul quand on les touche, kamikaze qui gonfle avant d'exploser */
-  function zAnim(e,dt,mv){
+  /* v78 : animations des zombies plus vivantes : mouvements lissés (plus de saccades), le corps tourne en douceur,
+     trébuchements, tics de la tête, et au repos ils se balancent bras ballants au lieu de rester figés */
+  var ZJ=[['root','rotation','x'],['root','rotation','z'],['root','position','y'],['torso','rotation','y'],['head','rotation','x'],['head','rotation','z'],['head','rotation','y']];
+  function zAnim(e,dt,mv){var p=e.m.userData.parts;if(!p||!p.root){zAnim0(e,dt,mv);return}
+    var ty0=e.m.rotation.y;if(e.ryaw==null)e.ryaw=ty0;var dy=ty0-e.ryaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));e.ryaw+=dy*Math.min(1,dt*(e.type==='runner'?10:6));e.m.rotation.y=e.ryaw;
+    var lim=[].concat(p.legs||[],p.arms||[],p.knees||[],p.elbows||[]),prev=lim.map(function(o){return [o.rotation.x,o.rotation.z]}),pj=ZJ.map(function(j){var o=p[j[0]];return o?o[j[1]][j[2]]:0});
+    zAnim0(e,dt,mv);
+    var now=performance.now()/1000,ty=e.type||'walker';
+    if(ty!=='crawler'&&!(e.rise<1)){
+      /* trébuche de temps en temps */
+      e.lurchCd=(e.lurchCd==null?2+Math.random()*6:e.lurchCd)-dt;if(mv&&e.lurchCd<=0&&ty!=='runner'){e.lurch=.7;e.lurchCd=4+Math.random()*7}
+      if(e.lurch>0){e.lurch-=dt;var lk=Math.sin((.7-e.lurch)/.7*Math.PI);p.root.rotation.x+=lk*.35;p.head.rotation.x+=lk*.4;if(p.arms[0]){p.arms[0].rotation.x-=lk*.7;p.arms[1].rotation.x-=lk*.5;p.arms[0].rotation.z-=lk*.3;p.arms[1].rotation.z+=lk*.3}}
+      /* tic nerveux de la tête */
+      e.ticCd=(e.ticCd==null?Math.random()*5:e.ticCd)-dt;if(e.ticCd<=0){e.tic=.25;e.ticCd=2+Math.random()*5;e.ticS=Math.random()<.5?-1:1}
+      if(e.tic>0){e.tic-=dt;p.head.rotation.z+=Math.sin(e.tic*40)*.25*e.ticS;p.head.rotation.y=e.ticS*.35*Math.sin(Math.max(0,e.tic)/.25*Math.PI)}else p.head.rotation.y=0;
+      /* au repos : bras ballants qui se balancent */
+      if(!mv&&!(e.atk>0)&&p.arms[0]){var sw=Math.sin(now*1.7+(e.x||0));p.arms[0].rotation.x=-.35+sw*.12;p.arms[1].rotation.x=-.25-sw*.1;if(p.elbows){p.elbows[0].rotation.x=-.25;p.elbows[1].rotation.x=-.35}p.root.rotation.x=.2+Math.sin(now*.9+(e.z||0))*.05;p.root.rotation.z+=Math.sin(now*.7+(e.x||0))*.06}
+    }
+    var k=Math.min(1,dt*(ty==='runner'||e.charge>0?22:14));if(e.atk>0)k=Math.min(1,dt*26);
+    lim.forEach(function(o,i){o.rotation.x=prev[i][0]+(o.rotation.x-prev[i][0])*k;o.rotation.z=prev[i][1]+(o.rotation.z-prev[i][1])*k});
+    ZJ.forEach(function(j,i){var o=p[j[0]];if(o)o[j[1]][j[2]]=pj[i]+(o[j[1]][j[2]]-pj[i])*k})}
+  function zAnim0(e,dt,mv){
     var p=e.m.userData.parts,ty=e.type||'walker',fast=ty==='runner'?1.9:ty==='tank'||ty==='brute'?.65:ty==='crawler'?1.2:ty==='exploder'?1.5:1;
     if(e.limp===undefined){e.limp=Math.random()*.45;e.side=Math.random()<.5?-1:1;e.armUp=Math.random()<.35}
     if(e.charge>0)fast*=2.2;
