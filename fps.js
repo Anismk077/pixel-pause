@@ -34,7 +34,12 @@
   GUNS.bullpup={n:'Fusil bullpup',dmg:31,rate:.08,mag:36,res:144,spread:.018,auto:true,rel:1.9,pel:1,zoom:44,kick:.018,sight:.1,grip:[0,-.09,.04],hg:[0,-.015,-.42],tier:3,price:2600,model:'rifle',col:0x2f3a2a};
   GUNS.tesla={n:'Fusil Tesla',dmg:42,rate:.11,mag:40,res:160,spread:.006,auto:true,rel:2.2,pel:1,zoom:50,kick:.02,sight:.115,grip:[0,-.1,.04],hg:null,tier:4,beam:true,price:4200,model:'ray',col:0x3fa9ff};
   /* v29 : boissons (stations dans la carte, 5000 chacune) et amélioration des armes à l'armurerie */
-  var PK={speed:{n:'Turbo-Cola',d:'Tu cours 25 % plus vite',col:0x2fb8ff},reload:{n:'Main Leste',d:'Recharges 2× plus rapides',col:0x3fbf6a},dmg:{n:'Rage Rouge',d:'+50 % de dégâts',col:0xe2361b},hp:{n:'Carapace',d:'Vie max 200',col:0xf3c623},rate:{n:'Tir Éclair',d:'Cadence +30 %',col:0xa46cf0}},PK_ORDER=['speed','reload','dmg','hp','rate'],PK_PRICE=5000,PERKS=[];
+  var PK={speed:{n:'Turbo-Cola',d:'Tu cours 25 % plus vite',col:0x2fb8ff},reload:{n:'Main Leste',d:'Recharges 2× plus rapides',col:0x3fbf6a},dmg:{n:'Rage Rouge',d:'+50 % de dégâts',col:0xe2361b},hp:{n:'Carapace',d:'Vie max 200',col:0xf3c623},rate:{n:'Tir Éclair',d:'Cadence +30 %',col:0xa46cf0}},PK_ORDER=['speed','reload','dmg','hp','rate'],PK_PRICE=5000,PK_MAX=4,PERKS=[];
+  /* v91 : 4 boissons max par joueur, chaque boisson bue rend les autres 1,5× plus chères */
+  function pkN(){return P&&P.perks?Object.keys(P.perks).length:0}
+  function pkPrice(){return Math.round(cost(PK_PRICE*Math.pow(1.5,pkN())))}
+  function perkSignTxt(id){return P&&P.perks&&P.perks[id]?'DÉJÀ BUE':pkN()>=PK_MAX?'MAX 4':'E · '+pkPrice().toLocaleString('fr-FR')}
+  function perkSigns(){PERKS.forEach(function(p){if(!p.g)return;var t=perkSignTxt(p.id);if(p.signT===t)return;if(p.sign){p.g.remove(p.sign);p.sign.material.map.dispose();p.sign.material.dispose()}var sg=label([PK[p.id].n.toUpperCase(),t],'#'+new THREE.Color(PK[p.id].col).getHexString());sg.position.set(0,3.25,0);sg.scale.set(2.1,.82,1);sg.raycast=function(){};p.g.add(sg);p.sign=sg;p.signT=t})}
   var UP_PRICE=[2500,5000,8000],UP_COL=[0,0x3a6ad8,0xa46cf0,0xe8b531];
   function upLv(t){return (P&&P.up&&P.up[t])||0}
   function magOf(t){return Math.round(GUNS[t].mag*(1+.3*upLv(t)))}
@@ -615,7 +620,7 @@
     B(1.0,.32,.06,dark,-.06,.42,.38);B(.94,.06,.1,chrome,-.06,.6,.42);
     // halo au sol qui pulse
     var glow=new THREE.Mesh(new THREE.PlaneGeometry(2.2,1.6),new THREE.MeshBasicMaterial({map:pwGlow(),color:d.col,transparent:true,opacity:.45,depthWrite:false,blending:THREE.AdditiveBlending}));glow.rotation.x=-Math.PI/2;glow.position.set(0,.03,.9);g.add(glow);p.glow=glow;
-    var sign=label([d.n.toUpperCase(),'E · '+cost(PK_PRICE).toLocaleString('fr-FR')],col);sign.position.set(0,3.25,0);sign.scale.set(2.1,.82,1);g.add(sign);
+    var sign=label([d.n.toUpperCase(),perkSignTxt(p.id)],col);sign.position.set(0,3.25,0);sign.scale.set(2.1,.82,1);g.add(sign);p.sign=sign;p.signT=perkSignTxt(p.id);
     g.traverse(function(o){o.raycast=function(){}});scene.add(g);p.g=g;perkCol(p,true);
   }
   /* animation : une bouteille de la couleur du pouvoir, que l'on débouche et que l'on boit */
@@ -1458,14 +1463,14 @@
     STANDS.forEach(function(s){var dd=Math.hypot(s.x-P.x,s.z-P.z);if(dd<3.1&&dd<best){best=dd;near={stand:s}}});
     PERKS.forEach(function(p){if(p.x==null)return;var dd=Math.hypot(p.x-P.x,p.z-P.z);if(dd<2.9&&dd<best){best=dd;near={perk:p}}});
     if(!near)setPrompt('');
-    else if(near.perk){var pkd=PK[near.perk.id],own=P.perks&&P.perks[near.perk.id];setPrompt(own?'<span><b>'+esc(pkd.n)+'</b> : déjà bue</span>':'<kbd>E</kbd><span>Boire <b>'+esc(pkd.n)+'</b> · '+esc(pkd.d)+'</span><em class="'+(P.pts>=cost(PK_PRICE)?'':'no')+'">'+cost(PK_PRICE)+'</em>')}
+    else if(near.perk){var pkd=PK[near.perk.id],own=P.perks&&P.perks[near.perk.id];setPrompt(own?'<span><b>'+esc(pkd.n)+'</b> : déjà bue</span>':pkN()>=PK_MAX?'<span>Tu as déjà <b>4 boissons</b> (maximum)</span>':'<kbd>E</kbd><span>Boire <b>'+esc(pkd.n)+'</b> · '+esc(pkd.d)+'</span><em class="'+(P.pts>=pkPrice()?'':'no')+'">'+pkPrice()+'</em>')}
     else if(near.door){var d=near.door,ok=P.pts>=cost(d.cost),to=ZNAME[UNL[d.a]?d.b:d.a];setPrompt('<kbd>E</kbd><span>Ouvrir vers <b>'+esc(to||'')+'</b></span><em class="'+(ok?'':'no')+'">'+cost(d.cost)+'</em>')}
     else setPrompt('<kbd>E</kbd><span>'+STN[near.stand.tier||0]+'</span><em>acheter</em>');
     if(keys.E){keys.E=false;use()}
   }
   function use(){if(!near||dead||P.down)return;if(near.perk)buyPerk(near.perk);else if(near.door)buyDoor(near.door);else openShop(near.stand)}
-  function buyPerk(p){var id=p.id,pk=PK[id];P.perks=P.perks||{};if(P.perks[id]){A.deny();return}if(P.pts<cost(PK_PRICE)){A.deny();PP.toast('Il te manque '+(PK_PRICE-P.pts)+' pièces','warn');return}
-    P.pts-=cost(PK_PRICE);popPts(-cost(PK_PRICE));P.perks[id]=1;A.buy();A.gulp();if(p.g)scene.remove(p.g);perkCol(p,false);var pi=PERKS.indexOf(p);if(pi>=0)PERKS.splice(pi,1);near=null;try{drawMiniBase()}catch(e){}if(id==='hp')P.hp=200;aiming=false;mouseDown=false;P.rel=0;P.drink=1;P.drinkS=performance.now();P.drinkC=pk.col;P.drinkFx=0;drinkModel(pk.col);var up=pk.n.toUpperCase();setTimeout(function(){center(up);setTimeout(function(){if(UI.center.textContent===up)center('')},1500)},1300);addFeed(pk.n+' : '+pk.d);hud()}
+  function buyPerk(p){var id=p.id,pk=PK[id];P.perks=P.perks||{};if(P.perks[id]||P.drink){A.deny();return}if(pkN()>=PK_MAX){A.deny();PP.toast('4 boissons maximum','warn');return}var pr=pkPrice();if(P.pts<pr){A.deny();PP.toast('Il te manque '+(pr-P.pts)+' pièces','warn');return}
+    P.pts-=pr;popPts(-pr);P.perks[id]=1;A.buy();A.gulp();near=null;perkSigns();if(id==='hp')P.hp=200;aiming=false;mouseDown=false;P.rel=0;P.drink=1;P.drinkS=performance.now();P.drinkC=pk.col;P.drinkFx=0;drinkModel(pk.col);var up=pk.n.toUpperCase();setTimeout(function(){center(up);setTimeout(function(){if(UI.center.textContent===up)center('')},1500)},1300);addFeed(pk.n+' : '+pk.d);hud()}
   function buyDoor(d){
     if(P.pts<cost(d.cost)){A.deny();PP.toast('Il te manque '+(d.cost-P.pts)+' pièces','warn');return}
     P.pts-=cost(d.cost);popPts(-cost(d.cost));if(coop)net.relay({g:'zdoor',i:DOORS.indexOf(d),n:net.me.name});openDoor(d);
@@ -1481,7 +1486,7 @@
     drawMiniBase();hud();
   }
   function stepDoors(dt){
-    PERKS.forEach(function(p,i){if(p.glow)p.glow.material.opacity=.35+Math.sin(performance.now()/350+i)*.15});
+    perkSigns();PERKS.forEach(function(p,i){if(p.glow)p.glow.material.opacity=.35+Math.sin(performance.now()/350+i)*.15});
     var tn=performance.now()/1000;DOORS.forEach(function(d,i){if(d.open||!d.lbls)return;var nearD=P&&Math.hypot(d.cx-P.x,d.cz-P.z)<9,ok=P&&P.pts>=cost(d.cost);d.lbls.forEach(function(l){l.position.y=l.userData.base+Math.sin(tn*2+i)*.07;var s=nearD&&ok?1+Math.sin(tn*5)*.04:1;l.scale.set(2.3*s,1.15*s,1);l.material.opacity=ok?1:.82})});
     openingDoors.forEach(function(d){d.anim+=dt;var k=Math.min(1,d.anim/.9);d.m.position.y=WH/2+k*k*WH;if(k>=1){d.done=1;d.m.visible=false}});openingDoors=openingDoors.filter(function(d){return !d.done})}
   var SHOP_EXTRA=[{id:'ammo',n:'Munitions',d:'Remplit les réserves de toutes tes armes',p:400},{id:'vest1',n:'Gilet léger',d:'+50 d\'armure',p:350},{id:'vest2',n:'Gilet lourd',d:'Armure remplie à 100',p:750},{id:'heal',n:'Trousse de soin',d:'Vie au maximum',p:300},{id:'fast',n:'Mains rapides',d:'Recharges 40 % plus rapides',p:1500},
@@ -1568,7 +1573,7 @@
       else{if(d.head)d.head.visible=Math.floor(performance.now()/300)%2===0;if(zs.some(function(e){return Math.hypot(e.x-d.x,e.z-d.z)<1.7})){explode(d.x,.4,d.z,5.5,coop&&!auth?0:280,d.mine?(net.me.name||'Toi'):(d.by||'Une mine'),d.mine,true);d.t=0}}});
     DEPS=DEPS.filter(function(d){if(d.t<=0){dropDep(d);return false}return true})}
   /* v32 : les boissons apparaissent au hasard sur la carte (une par vague, 3 au maximum) : va dessus et achète-la avec E */
-  function spawnPerk(){if(!P||mode!=='zombie'||PERKS.length>=3)return;var have=P.perks||{},ids=PK_ORDER.filter(function(k){return !have[k]&&!PERKS.some(function(p){return p.id===k})});if(!ids.length)return;
+  function spawnPerk(){if(!P||mode!=='zombie'||PERKS.length>=PK_ORDER.length)return;var ids=PK_ORDER.filter(function(k){return !PERKS.some(function(p){return p.id===k})});if(!ids.length)return;
     /* v45 : jamais deux boissons dans la même salle (zone) */
     var taken={},s=null;PERKS.forEach(function(q){taken[zoneOf(q.x,q.z)]=1;if(q.mx!=null)taken[zoneOf(q.mx-q.dx*.5,q.mz-q.dz*.5)]=1});s=perkSpot(taken);if(!s)return;
     var id=PP.pick(ids),p={id:id,x:s.x,z:s.z,mx:s.mx,mz:s.mz,dx:s.dx,dz:s.dz,ex:s.ex,ez:s.ez};buildPerk(p);PERKS.push(p);addFeed(PK[id].n+' est apparue sur la carte');try{drawMiniBase()}catch(e){}}
@@ -1662,16 +1667,16 @@
       var hot=e.hit>0?0x661111:0;if(e.hot!==hot){e.hot=hot;e.m.traverse(function(o){if(o.isMesh&&o.material.emissive)o.material.emissive.setHex(hot)})}
     });
     /* les zombies d'une vague arrivent petit à petit (24 en même temps au maximum) */
-    if(waveLeft>0){spawnT-=dt;if(spawnT<=0&&alive<24){spawnT=.35+Math.random()*.5;waveLeft--;addZombie(pickType(),1+wave*.09);hud()}}
+    if(waveLeft>0){spawnT-=dt;if(spawnT<=0&&alive<24){spawnT=.35+Math.random()*.5;waveLeft--;addZombie(pickType(),1+wave*.02);hud()}}
     else if(!alive){waveT-=dt;if(waveT>0&&wave){var tt=Math.ceil(waveT);if(tt!==P.wcd){P.wcd=tt;center('VAGUE '+(wave+1)+' DANS '+tt)}}if(waveT<=0)nextWave()}
   }
   function pickType(){var r=Math.random();if(wave>=5&&r<.08)return 'ghoul';if(wave>=4&&r>.9)return 'armored';if(wave>=2&&r<.2)return 'runner';if(wave>=3&&r<.3)return 'crawler';if(wave>=4&&r<.39)return 'spitter';if(wave>=4&&r<.47)return 'exploder';if(wave>=6&&r<.53)return 'tank';return 'walker'}
   var BOSSN=['ALEXANDRE','LUGANIZER','PAPONI','LEAO.J'];
   function nextWave(){
     wave++;center('');P.wcd=0;var n=Math.min(80,Math.round((5+wave*3)*D().cnt));waveLeft=n;spawnT=.5;
-    if(wave%5===0&&wave%15!==0){addZombie('brute',1+wave*.12);PP.toast('Une brute arrive !','warn')}
+    if(wave%5===0&&wave%15!==0){addZombie('brute',1+wave*.02);PP.toast('Une brute arrive !','warn')}
     /* v81 : un boss toutes les 15 vagues : 2× plus de vie, lent, barre de vie et nom en haut de l'écran */
-    if(wave%15===0){var bn=BOSSN[wave/15-1]||PP.pick(BOSSN),bz=addZombie('brute',(1+wave*.12)*2);bz.boss='BOSS VAGUE '+wave+' : '+bn;bz.sp*=.6;bz.m.scale.multiplyScalar(1.25);PP.toast('BOSS : '+bn,'warn');center(bn);setTimeout(function(){if(UI.center.textContent===bn)center('')},2500)}
+    if(wave%15===0){var bn=BOSSN[wave/15-1]||PP.pick(BOSSN),bz=addZombie('brute',(1+wave*.02)*2);bz.boss='BOSS VAGUE '+wave+' : '+bn;bz.sp*=.6;bz.m.scale.multiplyScalar(1.25);PP.toast('BOSS : '+bn,'warn');center(bn);setTimeout(function(){if(UI.center.textContent===bn)center('')},2500)}
     if(wave>1){var s=spawnFar(6);addItem(Math.random()<.5?'ammo':'med',s.x,s.z)}
     A.wave();PP.toast('Vague '+wave,'warn');hud();waveT=9;
   }
