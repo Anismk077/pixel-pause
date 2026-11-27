@@ -20,7 +20,18 @@
     function mm(b,depth,a,be,maxi,p){var o=3-p,wp=lines(b,p),wo=lines(b,o);if(wp)return 100000+depth;if(wo)return -100000-depth;if(!depth||full(b))return heur(b,p);
       var order=[3,2,4,1,5,0,6],best=maxi?-1e9:1e9;for(var i=0;i<7;i++){var c=order[i],r=top(b,c);if(r<0)continue;b[c][r]=maxi?p:o;var v=mm(b,depth-1,a,be,!maxi,p);b[c][r]=0;if(maxi){best=Math.max(best,v);a=Math.max(a,v)}else{best=Math.min(best,v);be=Math.min(be,v)}if(a>=be)break}return best}
     function aiMove(){var b=S.b,best=-1e9,bc=3,order=[3,2,4,1,5,0,6];order.forEach(function(c){var r=top(b,c);if(r<0)return;b[c][r]=2;var v=mm(b,5,-1e9,1e9,false,2)+(Math.random()*2);b[c][r]=0;if(v>best){best=v;bc=c}});return bc}
-    function pname(C,p){if(C.mode==='solo')return p===1?'Toi':'L\'ordi';if(S.names&&S.names[p-1])return S.names[p-1];return PN[p-1]}
+    /* v87 : on peut jouer contre 1, 2 ou 3 ordis (grande grille à 3 et 4) */
+    function vb(C){return C.mode==='solo'||C.mode==='b3'||C.mode==='b4'}
+    function aiMulti(p){var b=S.b,cs=[],c,r,k,ctr=(COLS-1)/2;for(c=0;c<COLS;c++)if(top(b,c)>=0)cs.push(c);if(!cs.length)return 0;
+      function winAt(c,q){var r=top(b,c);if(r<0)return false;b[c][r]=q;var w=!!lines(b,q);b[c][r]=0;return w}
+      for(k=0;k<cs.length;k++)if(winAt(cs[k],p))return cs[k];
+      for(var o=1;o<NP;o++){var q=(p-1+o)%NP+1;if(S.gone[q-1])continue;for(k=0;k<cs.length;k++)if(winAt(cs[k],q))return cs[k]}
+      var D=[[1,0],[0,1],[1,1],[1,-1]],best=-1e9,bc=cs[0];
+      cs.forEach(function(c){var r=top(b,c),sc=-Math.abs(c-ctr)*2+Math.random()*3;b[c][r]=p;
+        D.forEach(function(d){for(var s0=-3;s0<=0;s0++){var me=0,ok=true;for(var j=0;j<4;j++){var x=c+d[0]*(s0+j),y=r+d[1]*(s0+j);if(x<0||x>=COLS||y<0||y>=ROWS){ok=false;break}var v=b[x][y];if(v===p)me++;else if(v){ok=false;break}}if(ok)sc+=me===3?30:me===2?6:1}});
+        if(r+1<ROWS){b[c][r+1]=0;for(var o=1;o<NP;o++){var q=(p-1+o)%NP+1;b[c][r+1]=q;if(lines(b,q))sc-=400;b[c][r+1]=0}}
+        b[c][r]=0;if(sc>best){best=sc;bc=c}});return bc}
+    function pname(C,p){if(C.mode==='solo')return p===1?'Toi':'L\'ordi';if(vb(C))return p===1?'Toi':'Ordi '+PN[p-1];if(S.names&&S.names[p-1])return S.names[p-1];return PN[p-1]}
     /* v64 : on saute les joueurs qui ont quitté le salon (avant, la partie restait bloquée sur leur tour) */
     function nextTurn(){for(var k=0;k<NP;k++){S.turn=S.turn%NP+1;if(!S.gone||!S.gone[S.turn-1])break}}
     function alive(){var n=0;for(var k=0;k<NP;k++)if(!S.gone[k])n++;return n}
@@ -34,20 +45,20 @@
     /* v64 : n'importe quel joueur peut cliquer « Rejouer » : la nouvelle manche (numérotée) est envoyée à tous */
     function again(C){S.first=S.first%NP+1;for(var k=0;k<NP&&S.gone[S.first-1];k++)S.first=S.first%NP+1;S.rd++;newBoard();C.go();if(C.mode==='online')C.net.relay({t:'c4new',f:S.first,rd:S.rd});aiTurn(C)}
     function land(C){var a=S.anim;S.b[a.c][a.r]=a.p;S.anim=null;sfx.play('hit');C.shake(3);var w=lines(S.b,a.p);
-      if(w){S.over=true;S.win=w;S.score[a.p-1]++;C.pop('4 ALIGNÉS !',PC[a.p-1]);C.shake(8);if(C.mode==='solo'&&a.p===1)C.win();if(C.mode==='online'&&a.p-1===S.me)C.win();sfx.play(a.p===1||C.mode!=='solo'?'win':'lose');
+      if(w){S.over=true;S.win=w;S.score[a.p-1]++;C.pop('4 ALIGNÉS !',PC[a.p-1]);C.shake(8);if(vb(C)&&a.p===1)C.win();if(C.mode==='online'&&a.p-1===S.me)C.win();sfx.play(a.p===1||!vb(C)?'win':'lose');
         var sc=[];for(var i=0;i<NP;i++)sc.push('<b style="color:'+PC[i]+'">'+S.score[i]+'</b> '+PP.esc(pname(C,i+1)));
-        var rd=S.rd;setTimeout(function(){if(S.rd!==rd)return;C.over((C.mode==='solo'?(a.p===1?'Gagné !':'L\'ordi gagne'):pname(C,a.p)+' gagne !'),'Score : '+sc.join(' · '),'Rejouer',function(){again(C)})},900);return}
+        var rd=S.rd;setTimeout(function(){if(S.rd!==rd)return;C.over((vb(C)?(a.p===1?'Gagné !':C.mode==='solo'?'L\'ordi gagne':pname(C,a.p)+' gagne'):pname(C,a.p)+' gagne !'),'Score : '+sc.join(' · '),'Rejouer',function(){again(C)})},900);return}
       if(full(S.b)){S.over=true;var rd2=S.rd;setTimeout(function(){if(S.rd!==rd2)return;C.over('Égalité','Plus de place sur la grille.','Rejouer',function(){again(C)})},600);return}
       nextTurn();if(S.q.length){drop(C,S.q.shift(),true);return}aiTurn(C)}
-    function aiTurn(C){if(C.mode==='solo'&&S.turn===2&&!S.over)setTimeout(function(){if(S.turn===2&&!S.over&&!S.anim)drop(C,aiMove())},450)}
-    function myTurn(C){return C.mode==='duel'||C.mode==='p3'||C.mode==='p4'||(C.mode==='solo'&&S.turn===1)||(C.mode==='online'&&S.turn-1===S.me)}
+    function aiTurn(C){if(!vb(C)||S.turn===1||S.over)return;var t=S.turn;setTimeout(function(){if(S.turn===t&&!S.over&&!S.anim)drop(C,NP===2&&COLS===7?aiMove():aiMulti(t))},C.mode==='solo'?450:600)}
+    function myTurn(C){return C.mode==='duel'||C.mode==='p3'||C.mode==='p4'||(vb(C)&&S.turn===1)||(C.mode==='online'&&S.turn-1===S.me)}
     PP.arcade({id:'c4',
-      setup:function(C){S=fresh();var np=C.mode==='p3'?3:C.mode==='p4'?4:2;
+      setup:function(C){S=fresh();var np=C.mode==='p3'||C.mode==='b3'?3:C.mode==='p4'||C.mode==='b4'?4:2;
         if(C.mode==='online'){var pl=C.net.players.slice(0,4);np=Math.max(2,pl.length);var ids=pl.map(function(p){return p.id}),i=ids.indexOf(C.net.me.id);S.me=i<0?9:i;S.names=pl.map(function(p){return p.name});S.ids=ids;
           C.listen(function(m){if(m.t==='players'){onPlayers(C,m.players);return}if(m.t!=='rel')return;var d=m.d;if(d.t==='c4')drop(C,d.c,true);if(d.t==='c4new'&&(d.rd==null||d.rd>S.rd)){S.rd=d.rd||S.rd+1;S.first=d.f;newBoard();C.go()}})}
         layout(np);newBoard();
         C.keysText('Souris : clique une colonne · Clavier : <kbd>←</kbd><kbd>→</kbd> puis <kbd>Espace</kbd>');
-        var msg=C.mode==='solo'?'Tu joues les rouges contre l\'ordinateur. Aligne 4 jetons (ligne, colonne ou diagonale).':C.mode==='duel'?'Rouge contre jaune, chacun son tour sur le même écran.':
+        var msg=C.mode!=='solo'&&vb(C)?'Tu joues les rouges contre '+(np-1)+' ordis, sur une grande grille. Aligne 4 jetons avant eux !':vb(C)?'Tu joues les rouges contre l\'ordinateur. Aligne 4 jetons (ligne, colonne ou diagonale).':C.mode==='duel'?'Rouge contre jaune, chacun son tour sur le même écran.':
           C.mode!=='online'?np+' joueurs sur le même écran, chacun sa couleur, sur une grande grille. Le premier qui aligne 4 jetons gagne.':
           (S.me>3?'Le salon est complet (4 joueurs max) : tu regardes la partie.':np+' joueurs du salon sur '+(np>2?'une grande grille':'la grille')+'. Tu es <b style="color:'+PC[S.me]+'">'+PN[S.me]+'</b>.'+(np>2?' Plus on est, plus c\'est le chaos !':''));
         C.over('Quatre en ligne',msg,'Jouer')},
@@ -69,7 +80,7 @@
         for(var i=0;i<NP;i++){var left=i%2===0,x=left?(GX/2):(GX+COLS*CS+(960-GX-COLS*CS)/2),y=NP>2?(i<2?170:350):240,on=C.running&&!S.over&&S.turn===i+1;
           if(on){g.fillStyle='rgba(241,236,226,.08)';ag.rr(g,x-70,y-62,140,118,12);g.fill()}
           ag.txt(g,String(S.score[i]),x,y-12,NP>2?58:80,PC[i]);ag.mono(g,String(pname(C,i+1)).slice(0,12).toUpperCase(),x,y+36,14,on?PC[i]:CR)}
-        if(C.running&&!S.over)ag.mono(g,(myTurn(C)?(C.mode==='online'||C.mode==='solo'?'À toi':'Au tour de '+pname(C,S.turn)):C.mode==='solo'?'L\'ordi réfléchit…':'Au tour de '+pname(C,S.turn)),480,528,15,PC[S.turn-1]);
+        if(C.running&&!S.over)ag.mono(g,(myTurn(C)?(C.mode==='online'||vb(C)?'À toi':'Au tour de '+pname(C,S.turn)):vb(C)?(C.mode==='solo'?'L\'ordi':pname(C,S.turn))+' réfléchit…':'Au tour de '+pname(C,S.turn)),480,528,15,PC[S.turn-1]);
       }});
   })();
 

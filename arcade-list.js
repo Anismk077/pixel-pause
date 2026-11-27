@@ -1,7 +1,7 @@
 /* Pixel Pause — liste des jeux « arcade » : crée leurs pages et leurs lignes dans l'accueil
    (chargé avant core.js pour que la pause et le plein écran s'y branchent aussi). */
 window.ARCADE_LIST=[
-  {id:'c4',n:'Quatre en ligne',sub:'Stratégie · aligne 4 jetons, jusqu\'à 4 joueurs',pl:'1–4',cat:'pc tel solo',modes:[['solo','Solo','Contre l\'ordinateur'],['duel','2 joueurs','Chacun son tour, même écran'],['p3','3 joueurs','Grande grille, même écran'],['p4','4 joueurs','Grande grille, même écran'],['online','En ligne','2 à 4 potes du salon']]},
+  {id:'c4',n:'Quatre en ligne',sub:'Stratégie · aligne 4 jetons, jusqu\'à 4 joueurs',pl:'1–4',cat:'pc tel solo',modes:[['solo','Solo','Contre l\'ordinateur'],['b3','Contre 2 ordis','Grande grille, 3 couleurs'],['b4','Contre 3 ordis','Grande grille, 4 couleurs'],['duel','2 joueurs','Chacun son tour, même écran'],['p3','3 joueurs','Grande grille, même écran'],['p4','4 joueurs','Grande grille, même écran'],['online','En ligne','2 à 4 potes du salon']]},
   {id:'hockey',n:'Air Hockey',sub:'Duel · palets et rebonds',pl:'1–2',cat:'pc solo',modes:[['solo','Solo','Contre l\'ordinateur'],['duel','2 joueurs','ZQSD contre flèches']]},
   {id:'stack',n:'Tour Infinie',sub:'3D · empile au bon moment',pl:'1',cat:'solo 3d',modes:[['solo','Solo','Monte le plus haut possible']]},
   {id:'reflex',n:'Réflexes',sub:'Party · le plus rapide gagne',pl:'1–8',cat:'pc tel solo',modes:[['solo','Solo','Bats ton temps de réaction'],['duel','2 joueurs','A contre L, même clavier'],['online','En ligne','Tout le salon en même temps']]},
