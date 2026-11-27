@@ -23,9 +23,16 @@
     /* v29 : deux nouvelles armes (modèle de base réutilisé, couleur à elles) */
     dmr     :{n:'Fusil tactique',dmg:58,rate:.2,mag:15,res:60,spread:.009,auto:false,rel:1.8,pel:1,zoom:36,kick:.05,sight:.1,grip:[0,-.09,.04],hg:[0,-.015,-.42],tier:2,price:1800,model:'rifle',col:0x3a4a5e},
     pdw     :{n:'Sulfateuse',dmg:20,rate:.056,mag:42,res:168,spread:.026,auto:true,rel:1.5,pel:1,zoom:52,kick:.014,sight:.098,grip:[0,-.09,.02],hg:[0,-.035,-.24],tier:2,price:1900,model:'smg',col:0x5a3a6e}
-  },ORDER=['pistol','magnum','smg','rifle','shotgun','sniper','lmg','launcher','minigun','ray','dmr','pdw','rocket'],MAXSLOT=4,DEPS=[];
+  },ORDER=['pistol','magnum','smg','rifle','shotgun','sniper','lmg','launcher','minigun','ray','dmr','pdw','rocket','revolver','carbine','hunter','autoshot','bullpup','tesla'],MAXSLOT=4,DEPS=[];
   /* v32 : lance-roquettes (roquette droite et rapide, grosse explosion) */
   GUNS.rocket={n:'Lance-roquettes',dmg:420,rate:1.4,mag:1,res:8,spread:.002,auto:false,rel:2.4,pel:1,zoom:48,kick:.2,sight:.125,grip:[0,-.1,.06],hg:[0,-.06,-.36],tier:4,boom:true,price:4500,model:'launcher',col:0x4a5a3a,rad:7,rk:1};
+  /* v77 : six armes de plus */
+  GUNS.revolver={n:'Revolver doré',dmg:95,rate:.55,mag:6,res:42,spread:.007,auto:false,rel:2,pel:1,zoom:50,kick:.12,sight:.1,grip:[0,-.1,.04],hg:null,tier:1,price:800,model:'magnum',col:0xc9a24a};
+  GUNS.carbine={n:'Carabine',dmg:34,rate:.12,mag:25,res:100,spread:.016,auto:true,rel:1.6,pel:1,zoom:44,kick:.022,sight:.1,grip:[0,-.09,.04],hg:[0,-.015,-.42],tier:1,price:1100,model:'rifle',col:0x8a6a42};
+  GUNS.hunter={n:'Fusil de chasse',dmg:95,rate:.55,mag:8,res:32,spread:.05,auto:false,rel:2.1,pel:1,zoom:28,kick:.09,sight:.13,grip:[0,-.09,.05],hg:[0,-.025,-.5],tier:2,price:1600,model:'sniper',col:0x4a5a32};
+  GUNS.autoshot={n:'Pompe automatique',dmg:13,rate:.26,mag:10,res:40,spread:.085,auto:true,rel:2.4,pel:8,zoom:58,kick:.07,sight:.072,grip:[0,-.1,.08],hg:[0,-.04,-.46],tier:2,price:2400,model:'shotgun',col:0x7a2a22};
+  GUNS.bullpup={n:'Fusil bullpup',dmg:31,rate:.08,mag:36,res:144,spread:.018,auto:true,rel:1.9,pel:1,zoom:44,kick:.018,sight:.1,grip:[0,-.09,.04],hg:[0,-.015,-.42],tier:3,price:2600,model:'rifle',col:0x2f3a2a};
+  GUNS.tesla={n:'Fusil Tesla',dmg:42,rate:.11,mag:40,res:160,spread:.006,auto:true,rel:2.2,pel:1,zoom:50,kick:.02,sight:.115,grip:[0,-.1,.04],hg:null,tier:4,beam:true,price:4200,model:'ray',col:0x3fa9ff};
   /* v29 : boissons (stations dans la carte, 5000 chacune) et amélioration des armes à l'armurerie */
   var PK={speed:{n:'Turbo-Cola',d:'Tu cours 25 % plus vite',col:0x2fb8ff},reload:{n:'Main Leste',d:'Recharges 2× plus rapides',col:0x3fbf6a},dmg:{n:'Rage Rouge',d:'+50 % de dégâts',col:0xe2361b},hp:{n:'Carapace',d:'Vie max 200',col:0xf3c623},rate:{n:'Tir Éclair',d:'Cadence +30 %',col:0xa46cf0}},PK_ORDER=['speed','reload','dmg','hp','rate'],PK_PRICE=5000,PERKS=[];
   var UP_PRICE=[2500,5000,8000],UP_COL=[0,0x3a6ad8,0xa46cf0,0xe8b531];
@@ -1022,7 +1029,7 @@
   var ICON={pistol:'M14 6h36v6H32l-1 2h-6l-4 8h-7l4-8h-4z',magnum:'M10 7h12l3-2h8v2h21v4H33l-2 3h-6l-4 8h-7l4-8h-4z',smg:'M8 8h8v3h4V6h30v4h6v3H40v4h-5l-1-4h-6v9h-5v-9h-3l-3 7h-6l3-7h-4z',
     rifle:'M2 9h12l6-2h14V5h6v2h22v3H44v3H34v10h-5V13h-6l-3 7h-6l2-7H2z',shotgun:'M2 10h14l8-3h38v3H26v4h-8l-3 7H9l3-7H2z',sniper:'M2 10h12l8-2h12V5h14v3h16v2H34v4h-7l-3 7h-6l3-7H2z',
     lmg:'M4 9h12l6-3h26v4h14v3H44v3h-6v6h-8v-6h-4l-3 6h-6l3-6h-4l-1-3H4z',minigun:'M6 6h22v3h30v2H28v2h30v2H28v3H20v4h-6v-4H6z',ray:'M10 8a6 6 0 0 1 12 0h4v-2h3v2h3v-2h3v2h3v-2h3v2h4a2 2 0 0 1 0 6H22l-3 9h-7l3-9h-1a6 6 0 0 1-4-6z',launcher:'M4 9h10l4-2h6V4h14v3h22v6H38v3h-4v5h-7v-5h-6l-3 6h-6l3-6H4z'};
-  ICON.dmr=ICON.rifle;ICON.pdw=ICON.smg;ICON.rocket=ICON.launcher;
+  ICON.dmr=ICON.rifle;ICON.pdw=ICON.smg;ICON.rocket=ICON.launcher;ICON.revolver=ICON.magnum;ICON.carbine=ICON.rifle;ICON.hunter=ICON.sniper;ICON.autoshot=ICON.shotgun;ICON.bullpup=ICON.rifle;ICON.tesla=ICON.ray;
   function popPts(n){if(!UI.pops)return;var s=document.createElement('span');s.textContent=(n>0?'+':'')+n;s.className=n<0?'neg':'';UI.pops.appendChild(s);setTimeout(function(){s.remove()},950)}
   var promptTxt='';function setPrompt(t){if(t===promptTxt)return;promptTxt=t;UI.prompt.innerHTML=t||'';UI.prompt.classList.toggle('on',!!t)}
 
@@ -1085,7 +1092,7 @@
   function fire(){
     if(dead||P.down||P.rel>0||P.cd>0)return;if(online&&round&&performance.now()-round.t0<3000)return;var g=GUNS[P.gun],a=P.guns[P.gun];
     if(a.mag<=0){A.dry();reload();P.cd=.3;return}
-    var since=performance.now()-(P.lastShot||0);a.mag--;P.cd=g.rate*(P.perks&&P.perks.rate?.77:1);P.kick=Math.min(.25,P.kick+g.kick*(1-P.aimT*.35));P.shotN++;stats.shots++;A.shot(P.gun);if(P.gun!=='shotgun'&&P.gun!=='sniper'&&P.gun!=='launcher'&&P.gun!=='magnum')casing();shakeT=Math.max(shakeT,g.kick*1.2*(1-(P.aimT||0)*.8));
+    var since=performance.now()-(P.lastShot||0);a.mag--;P.cd=g.rate*(P.perks&&P.perks.rate?.77:1);P.kick=Math.min(.25,P.kick+g.kick*(1-P.aimT*.35));P.shotN++;stats.shots++;A.shot(GUNS[P.gun].model||P.gun);if(P.gun!=='shotgun'&&P.gun!=='sniper'&&P.gun!=='launcher'&&P.gun!=='magnum')casing();shakeT=Math.max(shakeT,g.kick*1.2*(1-(P.aimT||0)*.8));
     P.fireT=1;if(P.gun==='shotgun')P.pumpT=1.6;if(P.gun==='sniper')P.boltT=1.6;P.drumT=1;/* v26 : recul qui remonte l'arme, puis elle redescend toute seule quand on arrête de tirer */var rk=g.kick*(P.aimT>.5?.12:.22)*(P.crouch>.5?.75:1);P.pitch=Math.min(1.45,P.pitch+rk);P.rec=Math.min(.3,(P.rec||0)+rk*.85);P.yaw+=(Math.random()-.5)*rk*.3;P.lastShot=performance.now();smoke();
     if(g.boom){var fd0=fwd(),o0=new THREE.Vector3(P.x+fd0.x*.8,EYE+P.y-.15+fd0.y*.8,P.z+fd0.z*.8);launchNade(o0,fd0);muzzle.material.opacity=1;muzzleL.intensity=3;muzzleL.position.set(P.x,EYE+P.y,P.z);if(a.mag===0&&a.res>0)setTimeout(function(){if(P&&P.guns[P.gun]===a&&a.mag===0)reload()},250);hud();return}
     muzzle.scale.setScalar(.8+Math.random()*.9);muzzle.rotation.z=Math.random()*6;muzzle.material.opacity=1;if(viewGun&&viewGun.userData.core)viewGun.userData.core.material.opacity=1;muzzleL.intensity=3;muzzleL.position.set(P.x,EYE+P.y,P.z);
@@ -1404,7 +1411,7 @@
     /* v45 : jamais deux boissons dans la même salle (zone) */
     var taken={},s=null;PERKS.forEach(function(q){taken[zoneOf(q.x,q.z)]=1});for(var tr=0;tr<40;tr++){var c=spawnFar(9);if(!taken[zoneOf(c.x,c.z)]){s=c;break}}if(!s)return;
     var id=PP.pick(ids),p={id:id,x:s.x,z:s.z};buildPerk(p);PERKS.push(p);addFeed(PK[id].n+' est apparue sur la carte');try{drawMiniBase()}catch(e){}}
-  function shopList(){var tr=shopStand?shopStand.tier||0:0;return tr===2?['minigun','ray','rocket','launcher','lmg','sniper','dmr']:tr===1?['sniper','lmg','dmr','pdw','rifle','shotgun']:['magnum','smg','rifle','shotgun','pdw']}
+  function shopList(){var tr=shopStand?shopStand.tier||0:0;return tr===2?['minigun','ray','tesla','rocket','launcher','lmg','bullpup','sniper','dmr']:tr===1?['sniper','hunter','lmg','autoshot','dmr','pdw','carbine','rifle','shotgun']:['magnum','revolver','smg','carbine','rifle','shotgun','pdw']}
   function bar(v){return '<i><em style="--w:'+Math.round(Math.max(.06,Math.min(1,v))*100)+'%"></em></i>'}
   var XI={ammo:'M5 4h3v3H5zM10 4h3v3h-3zM15 4h3v3h-3zM5 8h3v12H5zM10 8h3v12h-3zM15 8h3v12h-3z',vest1:'M8 2l-5 4v15h8v-6h2v6h8V6l-5-4-2 4h-4z',vest2:'M8 2l-6 4v16h9v-6h2v6h9V6l-6-4-2 4h-4zM7 9h10v3H7z',heal:'M9 3h6v6h6v6h-6v6H9v-6H3V9h6z',fast:'M13 2L4 14h7l-2 8 9-12h-7z',turret:'M9 4h6v5h7v3h-7v2l4 7h-3l-3-5h-2l-3 5H5l4-7v-2H2V9h7z',wire:'M2 8l4 8 4-8 4 8 4-8 4 8M2 16l4-8 4 8 4-8 4 8 4-8M3 4v16M21 4v16',mine:'M12 5a2 2 0 0 1 2 2v2h3l4 6v3H3v-3l4-6h3V7a2 2 0 0 1 2-2z'};
   var TIERN=['Commune','Rare','Épique','Lourde','Légendaire'];
